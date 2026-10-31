@@ -1,4 +1,5 @@
 // Data loading, caching and shared helpers.
+import { inBag } from './bag.js';
 let _content, _products;
 
 async function load(url) {
@@ -7,7 +8,14 @@ async function load(url) {
   return r.json();
 }
 export const getContent = () => (_content ??= load('data/content.json'));
-export const getProducts = () => (_products ??= load('data/products.json'));
+export const getProducts = () => (_products ??= load('data/products.json').then(numberProducts));
+
+// Stable archive number: addedOn ascending, oldest = 001. Computed in memory only.
+function numberProducts(list) {
+  [...list].sort((a, b) => a.addedOn - b.addedOn || (a.slug < b.slug ? -1 : 1)).forEach((p, i) => { p.no = i + 1; });
+  return list;
+}
+export const catNo = (p) => 'No. ' + String(p.no).padStart(3, '0');
 
 export async function getProduct(slug) {
   const all = await getProducts();
@@ -36,12 +44,12 @@ export function cardHTML(p) {
   const img1 = p.images[0], img2 = p.images[1];
   return `<a class="card${p.sold ? ' card--sold' : ''}" href="${productUrl(p.slug)}">
   <div class="card__media">
-    ${p.sold ? '<span class="tag-sold">Sold</span>' : ''}
-    <img src="${esc(img1)}" alt="${esc(altFor(p, 0))}" width="960" height="1200" loading="lazy" decoding="async">
+    ${p.sold ? '<span class="tag-sold">Sold</span>' : inBag(p.slug) ? '<span class="tag-bag">In bag</span>' : ''}
+    <img src="${esc(img1)}" alt="${esc(altFor(p, 0))}" width="960" height="1200" loading="lazy" decoding="async" data-fade>
     ${img2 ? `<img class="alt" src="${esc(img2)}" alt="" width="960" height="1200" loading="lazy" decoding="async">` : ''}
   </div>
   <div class="card__body">
-    <p class="card__brand">${esc(p.brand)}</p>
+    <div class="card__top"><p class="card__brand">${esc(p.brand)}</p><p class="card__no">${catNo(p)}</p></div>
     <h3 class="card__name">${esc(p.name)}</h3>
     <p class="card__meta">Size ${esc(p.size)} · ${formatPrice(p.price)}</p>
   </div>

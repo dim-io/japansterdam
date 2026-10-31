@@ -2,8 +2,12 @@
 import { getContent, getProducts, formatPrice, esc, productUrl } from './data.js';
 import { getBag, bagCount, removeFromBag, setBag, onBagChange } from './bag.js';
 
-const content = await getContent().catch(() => ({ site: {} }));
-const site = content.site || {};
+// Static defaults so the chrome renders at once; content.json refines them later (data-site hooks).
+const site = {
+  instagram: 'https://www.instagram.com/japansterdam',
+  grailed: 'https://www.grailed.com/Japansterdam',
+  substack: 'https://substack.com/japansterdam',
+};
 const page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
 
 const ICON_INSTA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".8" fill="currentColor" stroke="none"/></svg>';
@@ -23,14 +27,14 @@ function headerHTML() {
   </div>
   <a class="hdr__logo" href="index.html" aria-label="Japansterdam, home"><img src="assets/img/site/header-logo.png" alt="Japansterdam" width="702" height="104"></a>
   <div class="hdr__tools">
-    <a class="icon-btn hdr__insta" href="${esc(site.instagram || '#')}" target="_blank" rel="noopener" aria-label="Instagram">${ICON_INSTA}</a>
+    <a class="icon-btn hdr__insta" href="${esc(site.instagram)}" data-site="instagram" target="_blank" rel="noopener" aria-label="Instagram">${ICON_INSTA}</a>
     <button class="icon-btn" type="button" aria-label="Open bag" data-open-bag>${ICON_BAG}<span class="bag-count" data-bag-count hidden>0</span></button>
   </div>
 </div>`;
 }
 
 function footerHTML() {
-  const ext = (href, label) => `<a class="ft-link" href="${esc(href)}" target="_blank" rel="noopener">${label}</a>`;
+  const ext = (key, label) => `<a class="ft-link" href="${esc(site[key])}" data-site="${key}" target="_blank" rel="noopener">${label}</a>`;
   return `<div class="ft">
   <div class="ft__top">
     <div class="ft__brand"><a href="index.html" aria-label="Japansterdam, home"><img src="assets/img/site/footer-logo.jpg" alt="Japansterdam" width="1535" height="1024" loading="lazy"></a></div>
@@ -43,13 +47,13 @@ function footerHTML() {
       <li><a class="ft-link" href="contact.html">Contact</a></li>
       <li><a class="ft-link" href="privacy-policy.html">Privacy Policy</a></li></ul></div>
     <div class="ft__col"><h2>Follow</h2><ul>
-      <li>${ext(site.instagram || '#', 'Instagram')}</li>
-      <li>${ext(site.grailed || '#', 'Grailed')}</li>
-      <li>${ext(site.substack || '#', 'Substack')}</li></ul></div>
+      <li>${ext('instagram', 'Instagram')}</li>
+      <li>${ext('grailed', 'Grailed')}</li>
+      <li>${ext('substack', 'Substack')}</li></ul></div>
   </div>
   <div class="ft__news">
     <p>Sign up to receive news and updates.</p>
-    <a class="btn btn--light" href="${esc(site.substack || '#')}" target="_blank" rel="noopener">Subscribe on Substack</a>
+    <a class="btn btn--light" href="${esc(site.substack)}" data-site="substack" target="_blank" rel="noopener">Subscribe on Substack</a>
   </div>
   <p class="ft__bottom">© 2026 Japansterdam · Amsterdam</p>
 </div>`;
@@ -69,7 +73,7 @@ menu.setAttribute('aria-modal', 'true');
 menu.setAttribute('aria-label', 'Menu');
 menu.innerHTML = `<div class="menu__top"><button class="icon-btn" type="button" aria-label="Close menu" data-close-menu>${ICON_CLOSE}</button></div>
 <nav class="menu__links" aria-label="Mobile">${navLinks()}</nav>
-<div class="menu__legal"><a href="${esc(site.instagram || '#')}" target="_blank" rel="noopener">Instagram</a><a href="faq.html">FAQs</a><a href="shipping-returns.html">Shipping</a></div>`;
+<div class="menu__legal"><a href="${esc(site.instagram)}" data-site="instagram" target="_blank" rel="noopener">Instagram</a><a href="faq.html">FAQs</a><a href="shipping-returns.html">Shipping</a></div>`;
 
 const overlay = document.createElement('div');
 overlay.className = 'overlay';
@@ -131,10 +135,38 @@ document.addEventListener('click', (e) => {
 });
 window.addEventListener('jp:openbag', openBag);
 
-// header border after scroll
-const onScroll = () => header?.classList.toggle('is-scrolled', window.scrollY > 4);
+// header border after scroll; compact header past 120px (with hysteresis so it never flickers)
+const onScroll = () => {
+  if (!header) return;
+  const y = window.scrollY;
+  header.classList.toggle('is-scrolled', y > 4);
+  if (y > 120) header.classList.add('is-compact');
+  else if (y < 90) header.classList.remove('is-compact');
+};
 window.addEventListener('scroll', onScroll, { passive: true });
 onScroll();
+
+// fill data-dependent bits once content.json has loaded
+getContent().then((c) => {
+  const s = c.site || {};
+  document.querySelectorAll('[data-site]').forEach((a) => { if (s[a.dataset.site]) a.href = s[a.dataset.site]; });
+}).catch(() => {});
+
+// Image reveal: fade in 300ms only after load; images already complete show at once.
+function reveal(img) {
+  if (img.classList.contains('is-loaded')) return;
+  const show = () => img.classList.add('is-loaded');
+  if (img.complete) return show();
+  img.addEventListener('load', show, { once: true });
+  img.addEventListener('error', show, { once: true });
+}
+const scan = (root) => {
+  if (root.nodeType !== 1) return;
+  if (root.matches('img[data-fade]')) reveal(root);
+  root.querySelectorAll?.('img[data-fade]').forEach(reveal);
+};
+new MutationObserver((list) => list.forEach((m) => m.addedNodes.forEach(scan))).observe(document.body, { childList: true, subtree: true });
+scan(document.body);
 
 // ---- bag ----
 async function renderDrawer() {
@@ -161,9 +193,19 @@ async function renderDrawer() {
     <a class="btn btn--primary btn--block" href="checkout.html">Checkout</a>`;
 }
 
+let prevCount = bagCount();
 function updateCount() {
   const n = bagCount();
-  document.querySelectorAll('[data-bag-count]').forEach((el) => { el.textContent = n; el.hidden = n === 0; });
+  const added = n > prevCount;
+  prevCount = n;
+  document.querySelectorAll('[data-bag-count]').forEach((el) => {
+    el.textContent = n; el.hidden = n === 0;
+    if (added) {
+      el.classList.remove('is-pulse');
+      void el.offsetWidth;
+      el.classList.add('is-pulse');
+    }
+  });
   const btn = document.querySelector('[data-open-bag]');
   if (btn) btn.setAttribute('aria-label', n ? `Open bag, ${n} item${n > 1 ? 's' : ''}` : 'Open bag');
 }
