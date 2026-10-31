@@ -1,0 +1,86 @@
+{
+  "site": {
+    "name": "Japansterdam",
+    "tagline": "Curated Japanese garments",
+    "subline": "Pre-owned & archive pieces",
+    "email": "info@japansterdam.com",
+    "instagram": "https://www.instagram.com/japansterdam",
+    "grailed": "https://www.grailed.com/Japansterdam",
+    "substack": "https://substack.com/japansterdam",
+    "founded": "Founded in Amsterdam, 2026."
+  },
+  "home": {
+    "marquee": "Now online: Kapital, Needles, Visvim, Fumito Ganryu, Comme des Garçons, Uniform Experiment, Fragment Design, Engineered Garments, Ts(S), Nonnative & more",
+    "collectionTitle": "Explore our current collection",
+    "collectionCta": "Shop all",
+    "quote": "I hand-pick every piece for the character, craftsmanship and attention to detail that draw me to Japanese fashion.",
+    "quoteBy": "Sam — Founder & Curator",
+    "testimonialsTitle": "What our customers say",
+    "testimonials": [
+      { "text": "A small selection, but so many good pieces. Picked up a beautiful pair of Kapital trousers — accurately described, carefully packed, and even nicer in person.", "name": "Daan V." },
+      { "text": "Found a Needles shirt I’d been looking for for ages. Sam helped me check the measurements before ordering, and the fit was spot on. Really pleased with it.", "name": "Oliver M." },
+      { "text": "Had a few questions about the condition of an older piece and got clear answers and extra photos. Would happily buy from Sam again.", "name": "Liam D." }
+    ]
+  },
+  "shop": {
+    "title": "Shop",
+    "promises": [
+      "Dispatched within 2 business days.",
+      "Personally selected pieces.",
+      "Detailed photos. Clear descriptions."
+    ],
+    "closingQuote": "Every piece curated here stands as a tribute to the unmatched craft, beauty, and soul of Japanese fashion.",
+    "shippingNote": "Shipped from Europe with tracking. Quick worldwide shipping available."
+  },
+  "about": {
+    "title": "Founded in Amsterdam, 2026.",
+    "paragraphs": [
+      "JAPANSTERDAM was born out of a deep reverence for the artistry hidden within Japanese garment making. Based in Amsterdam, we bridge the gap between Tokyo’s legendary fashion districts and the global stage.",
+      "We don’t just source clothing; we collect stories. Every piece in our curation is handpicked for its character, structural integrity, and historical weight—specializing in the intersection of utilitarian workwear, timeless heritage, subcultural streetwear, and boundary-pushing avant-garde.",
+      "Our mission is simple: to bring you rare, exceptional garments that bypass fast-fashion trends, celebrating the absolute pinnacle of Japanese textile craft and design."
+    ],
+    "signature": "Sam De Greef — Founder & Curator",
+    "closingQuote": "Every piece curated here stands as a tribute to the unmatched craft, beauty, and soul of Japanese fashion."
+  },
+  "contact": {
+    "title": "Contact us.",
+    "intro": "For questions about fit, condition, or any piece in the collection, feel free to get in touch. I’m happy to help.",
+    "label": "Inquiries"
+  },
+  "shipping": {
+    "title": "Shipping & Returns",
+    "sections": [
+      { "heading": "Shipping", "body": "Every order ships from Amsterdam with tracking and is dispatched within 2 business days. We ship worldwide. Shipping costs depend on the destination; you receive the total by email before you pay." },
+      { "heading": "Packing", "body": "Every piece is checked, folded and packed by hand." },
+      { "heading": "Returns", "body": "Most pieces are one of a kind. If you are unsure about size or condition, email us before ordering and we will send extra photos or measurements. For a return, email info@japansterdam.com within 14 days of delivery." }
+    ]
+  },
+  "faq": {
+    "title": "FAQs",
+    "items": [
+      { "q": "Are the pieces new?", "a": "No. Everything is pre-owned or archive. Each listing describes the condition, and every piece is photographed in detail." },
+      { "q": "How many of each item do you have?", "a": "One. Each listing is a single piece in a single size. Once it’s sold, it’s gone." },
+      { "q": "How do Japanese sizes compare?", "a": "Japanese brands often number their sizes (1 to 5) and tend to run smaller than European sizing. Every listing states the size; see the size guide, or email us for exact measurements." },
+      { "q": "Can I ask for more photos?", "a": "Yes. Email info@japansterdam.com with the name of the piece and we will send extra photos or measurements." },
+      { "q": "Where do you ship from?", "a": "From Amsterdam, with tracking, to anywhere in the world." },
+      { "q": "Do you also sell elsewhere?", "a": "Some pieces are also listed on our Grailed shop." }
+    ]
+  },
+  "sizeGuide": {
+    "title": "Size Guide",
+    "intro": "Japanese brands often use numbered sizes and tend to run smaller. When in doubt, email us for exact measurements of the piece.",
+    "tables": [
+      { "heading": "Tops", "columns": ["Size", "Chest"], "rows": [["XS (0–2)", "34”–35.5”"], ["S (4–6)", "36”–38.5”"], ["M (8–10)", "39”–41.5”"], ["L (10–12)", "42”–44.5”"], ["XL (14)", "45”–47.5”"]] },
+      { "heading": "Bottoms", "columns": ["Size", "Waist", "Hip"], "rows": [["30", "26”–28.5”", "31”–33.5”"], ["32", "29”–31.5”", "34”–36.5”"], ["34", "32”–34.5”", "37”–39.5”"], ["36", "35”–37.5”", "40”–42.5”"], ["38", "38”–40.5”", "43”–45.5”"]] },
+      { "heading": "Shoes", "columns": ["US", "UK", "EU"], "rows": [["7", "6.5", "40"], ["7.5", "7", "41"], ["8", "7.5", "41.5"], ["8.5", "8", "42"], ["9", "8.5", "43"], ["9.5", "9", "43.5"], ["10", "9.5", "44"], ["10.5", "10", "44.5"], ["11", "10.5", "45"], ["11.5", "11", "45.5"], ["12", "11.5", "46"], ["12.5", "12", "47"], ["13", "12.5", "47.5"], ["13.5", "13", "48"]] }
+    ]
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "sections": [
+      { "heading": "What we store", "body": "This site does not use tracking or advertising cookies. Your shopping bag is kept in your own browser (local storage) and is never sent to us until you place an order request." },
+      { "heading": "Order requests", "body": "When you send an order request, we receive your name, email address, shipping address and the pieces you chose. We use these only to handle your order and to reply to you." },
+      { "heading": "Questions", "body": "Want to know what we have stored about you, or have it removed? Email info@japansterdam.com." }
+    ]
+  }
+}
