@@ -1,14 +1,32 @@
 // Data loading, caching and shared helpers.
 import { inBag } from './bag.js';
+import { API_BASE } from './config.js';
 let _content, _products;
 
-async function load(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(url + ' ' + r.status);
-  return r.json();
+async function fetchJson(url, timeoutMs) {
+  const ctl = new AbortController();
+  const t = timeoutMs ? setTimeout(() => ctl.abort(), timeoutMs) : null;
+  try {
+    const r = await fetch(url, { signal: ctl.signal });
+    if (!r.ok) throw new Error(url + ' ' + r.status);
+    return await r.json();
+  } finally {
+    if (t) clearTimeout(t);
+  }
 }
-export const getContent = () => (_content ??= load('data/content.json'));
-export const getProducts = () => (_products ??= load('data/products.json').then(numberProducts));
+// With an API configured: try it first (4s limit), fall back to the static files.
+async function load(apiPath, staticUrl) {
+  if (API_BASE) {
+    try {
+      return await fetchJson(API_BASE.replace(/\/+$/, '') + apiPath, 4000);
+    } catch (e) {
+      console.warn('API unavailable, using static data', e);
+    }
+  }
+  return fetchJson(staticUrl);
+}
+export const getContent = () => (_content ??= load('/public/content', 'data/content.json'));
+export const getProducts = () => (_products ??= load('/public/products', 'data/products.json').then(numberProducts));
 
 // Stable archive number: addedOn ascending, oldest = 001. Computed in memory only.
 function numberProducts(list) {

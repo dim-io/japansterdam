@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Japansterdam admin</title>
+<link rel="icon" type="image/svg+xml" href="../assets/icons/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<main id="login" class="login" hidden>
+  <form class="login__box" id="login-form" autocomplete="on">
+    <img class="login__logo" src="../assets/img/site/header-logo.png" alt="Japansterdam" width="351" height="52">
+    <label class="field"><span>Name</span><input id="login-user" name="username" autocomplete="username" autocapitalize="none" required></label>
+    <label class="field"><span>Password</span><input id="login-pass" name="password" type="password" autocomplete="current-password" required></label>
+    <p class="login__error" id="login-error" role="alert"></p>
+    <button class="btn btn--primary btn--block" type="submit">Log in</button>
+  </form>
+</main>
+
+<div id="app" class="app" hidden>
+  <aside class="side">
+    <a class="side__logo" href="#/products"><img src="../assets/img/site/header-logo.png" alt="Japansterdam" width="351" height="52"></a>
+    <nav class="side__nav" aria-label="Admin">
+      <a href="#/products" data-nav="products">Products</a>
+      <a href="#/pages" data-nav="pages">Pages</a>
+      <a href="../" target="_blank" rel="noopener">View site ↗</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <div class="top__title" id="top-title"></div>
+      <div class="menu">
+        <button class="profile" id="profile-btn" aria-haspopup="true" aria-expanded="false"><span class="profile__initial" id="profile-initial"></span><span class="profile__name" id="profile-name"></span></button>
+        <div class="menu__list" id="profile-menu" hidden>
+          <button data-act="profile">Profile</button>
+          <button data-act="password">Change password</button>
+          <button data-act="logout">Log out</button>
+        </div>
+      </div>
+    </header>
+    <div class="view" id="view"></div>
+  </div>
+</div>
+
+<dialog id="dlg-profile" class="dlg">
+  <form method="dialog" id="form-profile">
+    <h2>Profile</h2>
+    <label class="field"><span>Display name</span><input id="profile-display" maxlength="60" required></label>
+    <p class="form-error" id="profile-error" role="alert"></p>
+    <div class="dlg__actions"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn btn--primary" id="profile-save" value="ok">Save</button></div>
+  </form>
+</dialog>
+<dialog id="dlg-password" class="dlg">
+  <form method="dialog" id="form-password">
+    <h2>Change password</h2>
+    <label class="field"><span>Current password</span><input id="pw-cur" type="password" autocomplete="current-password" required></label>
+    <label class="field"><span>New password</span><input id="pw-new" type="password" autocomplete="new-password" required></label>
+    <label class="field"><span>Repeat new password</span><input id="pw-rep" type="password" autocomplete="new-password" required></label>
+    <p class="hint">At least 4 characters. A longer one is safer.</p>
+    <p class="form-error" id="pw-error" role="alert"></p>
+    <div class="dlg__actions"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn btn--primary" id="pw-save" value="ok">Change password</button></div>
+  </form>
+</dialog>
+<dialog id="dlg-confirm" class="dlg">
+  <form method="dialog">
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-text"></p>
+    <div class="dlg__actions"><button class="btn" value="cancel" id="confirm-cancel">Cancel</button><button class="btn btn--primary" value="ok" id="confirm-ok">OK</button></div>
+  </form>
+</dialog>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script type="module" src="admin.js"></script>
+</body>
+</html>

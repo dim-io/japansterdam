@@ -1,0 +1,17 @@
+name = "japansterdam-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://dim-io.github.io,http://localhost:8080,http://127.0.0.1:8080"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "japansterdam"
+database_id = "4e52cd67-a370-400b-b79b-ca1527cc03de"
+migrations_dir = "migrations"
+
+# Uploaded product photos (Workers KV; R2 is not enabled on this account)
+[[kv_namespaces]]
+binding = "IMAGES"
+id = "8a168c9f3c4f4594a08248a29656d8dc"
