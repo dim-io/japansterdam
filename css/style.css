@@ -421,7 +421,6 @@ img[data-fade].is-loaded{opacity:1}
 .about__img img{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:center 40%}
 .about__body{grid-area:body;min-width:0;max-width:48ch}
 .about__body>p:not(.about__sig){margin-bottom:24px;font-size:17px;line-height:1.75}
-.about__body>p:first-child:not(.about__sig){font-size:19px;line-height:1.65}
 .about__sig{display:flex;align-items:center;gap:12px;margin-top:36px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;line-height:1.6}
 .about__sig::before{content:"";width:24px;height:2px;background:var(--red);flex:none}
 .about-pair{display:grid;gap:32px;margin-top:72px;align-items:center}
