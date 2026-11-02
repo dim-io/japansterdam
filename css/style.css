@@ -183,7 +183,10 @@ img[data-fade].is-loaded{opacity:1}
   .quote-sec__img{aspect-ratio:auto;min-height:640px}
   .quote-sec__text{padding:80px max(var(--pad),5vw)}
 }
-.testi__title{text-align:center;margin-bottom:48px}
+.section.brands{padding-bottom:48px}
+.testimonials{--line:#d8d2c6;background:var(--cream);padding:64px 0}
+.testi__title{text-align:center;margin-bottom:40px;font-size:clamp(28px,4vw,56px)}
+@media(min-width:900px){.section.brands{padding-bottom:72px}.testimonials{padding:88px 0}}
 .testi__grid{display:grid}
 .testi__nav{display:none}
 .testi{padding:32px 0;display:flex;flex-direction:column;gap:20px;margin:0}
