@@ -118,6 +118,7 @@ img[data-fade].is-loaded{opacity:1}
 .ft__top{display:grid;grid-template-columns:1fr 1fr;gap:40px 24px}
 .ft__brand{grid-column:1/-1}
 .ft__brand img{width:min(260px,70%);height:auto;animation:none!important}
+@media(max-width:899px){.ft__brand img{margin-inline:auto}}
 .ft__col h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:12px;color:#fff}
 .ft__col li{margin:0}
 .ft__news{margin-top:56px;padding-top:32px;border-top:1px solid #2c2c2c;display:flex;flex-direction:column;gap:20px;align-items:flex-start}
