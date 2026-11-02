@@ -1,6 +1,28 @@
 import './layout.js';
 import { getContent, getProducts, byNewest, cardHTML, esc, catNo, productUrl, brandUrl, formatPrice } from './data.js';
 
+// The pictured CTA is baked into the photo. Keep its real link aligned with
+// the source-image rectangle, including the crop caused by object-fit: cover.
+const heroLink = document.getElementById('hero-collection-link');
+const heroImage = document.querySelector('.hero__model > img');
+if (heroLink && heroImage) {
+  const positionHeroLink = () => {
+    const w = heroImage.clientWidth, h = heroImage.clientHeight;
+    const iw = heroImage.naturalWidth || Number(heroImage.getAttribute('width'));
+    const ih = heroImage.naturalHeight || Number(heroImage.getAttribute('height'));
+    const scale = Math.max(w / iw, h / ih);
+    const width = iw * scale, height = ih * scale;
+    heroLink.style.left = ((w - width) / 2 + width * .82) + 'px';
+    heroLink.style.top = ((h - height) / 2 + height * .535) + 'px';
+    heroLink.style.width = (width * .295) + 'px';
+    heroLink.style.height = (height * .043) + 'px';
+  };
+  positionHeroLink();
+  heroImage.addEventListener('load', positionHeroLink);
+  if ('ResizeObserver' in window) new ResizeObserver(positionHeroLink).observe(heroImage);
+  else window.addEventListener('resize', positionHeroLink);
+}
+
 const [c, products] = await Promise.all([getContent(), getProducts()]);
 const h = c.home;
 
