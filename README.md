@@ -44,6 +44,14 @@ npx wrangler dev --port 8787
 
 Then set `API_BASE = "http://localhost:8787"` in `js/config.js` and run `python3 -m http.server 8080` in the project root. Open http://localhost:8080/admin/. CORS allows `localhost:8080`, `127.0.0.1:8080` and `https://dim-io.github.io` (var `ALLOWED_ORIGINS` in `api/wrangler.toml`).
 
+### Product condition
+
+Product saves require **Condition** (New / unworn, Excellent, Very good, Good or Fair) and **Condition notes** (up to 600 characters). Describe wear, fading, repairs and flaws, or explicitly state the absence of visible flaws. Distinguish intentional distressing from wear and add real detail photos for flaws. Photo-number references must be checked after reordering photos.
+
+Condition and its plain-text notes appear directly below Size, above the buy button, with no accordion or badge. Existing products are not automatically graded: until assessed in the admin they display “Not yet assessed”. Opening the editor does not change any saved data. Condition is required the next time a product is saved (including changing its sold status).
+
+Run condition validation checks with `node --test api/scripts/test-condition.mjs`.
+
 ### Product measurements
 
 In `/admin/`, open a product and fill in **Measurements**: Chest, Shoulder, Sleeve length, Length and Hem. Enter flat garment measurements in centimeters (decimals supported); leave unavailable fields blank. Save as usual. The editor shows calculated inches and a live preview. Every product page shows the block with CM selected by default and an IN switch; inches are calculated as centimeters / 2.54, rounded to one decimal. Blank values display an em dash.

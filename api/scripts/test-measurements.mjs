@@ -7,7 +7,7 @@ const source = await readFile(new URL('../src/index.js', import.meta.url), 'utf8
 const { cleanProduct } = await import('data:text/javascript;base64,' + Buffer.from(source + '\nexport { cleanProduct };').toString('base64'));
 const displaySource = await readFile(new URL('../../js/measurements.js', import.meta.url), 'utf8');
 const { formatMeasurement } = await import('data:text/javascript;base64,' + Buffer.from(displaySource).toString('base64'));
-const product = { name: 'Test garment', category: 'Tops', price: 100, images: [] };
+const product = { name: 'Test garment', category: 'Tops', price: 100, images: [], condition: 'Very good', conditionNotes: 'Light signs of wear. No visible holes or stains.' };
 const clean = (measurements) => cleanProduct({ ...product, measurements }, 'test', 123);
 
 test('centimeters remain the stored source of truth for all five fields', () => {

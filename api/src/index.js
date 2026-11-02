@@ -1,6 +1,7 @@
 // japansterdam-api: Cloudflare Worker (D1 + R2). No dependencies.
 
 const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Accessories'];
+const CONDITIONS = ['New / unworn', 'Excellent', 'Very good', 'Good', 'Fair'];
 const SESSION_MS = 30 * 24 * 3600 * 1000;
 const MAX_FAILS = 8;
 const FAIL_WINDOW_MS = 15 * 60 * 1000;
@@ -159,6 +160,11 @@ function cleanProduct(input, slug, addedOn) {
   }
   const brand = str(input.brand);
   const size = str(input.size);
+  const condition = str(input.condition);
+  const conditionNotes = str(input.conditionNotes);
+  if (!CONDITIONS.includes(condition)) throw new HttpError(400, 'Choose a condition: ' + CONDITIONS.join(', '));
+  if (!conditionNotes) throw new HttpError(400, 'Condition notes are required. Describe wear, flaws or the absence of visible flaws.');
+  if (conditionNotes.length > 600) throw new HttpError(400, 'Condition notes must be 600 characters or fewer');
   const measurements = {};
   if (input.measurements !== undefined && !isObj(input.measurements)) throw new HttpError(400, 'Measurements must be an object');
   for (const key of ['chest', 'shoulder', 'sleeveLength', 'length', 'hem']) {
@@ -177,6 +183,8 @@ function cleanProduct(input, slug, addedOn) {
     brands: brand ? [brand] : [],
     category,
     size,
+    condition,
+    conditionNotes,
     sizeTags: size ? [size] : [],
     price,
     currency: 'EUR',
@@ -357,6 +365,8 @@ async function handle(request, env, ctx) {
           const input = await readJson(request);
           // Older editor tabs may not send the new field; only an explicit {} clears it.
           if (isObj(input) && input.measurements === undefined) input.measurements = old.measurements;
+          if (isObj(input) && input.condition === undefined) input.condition = old.condition;
+          if (isObj(input) && input.conditionNotes === undefined) input.conditionNotes = old.conditionNotes;
           const product = cleanProduct(input, slug, old.addedOn || Date.now());
           await env.DB.prepare('UPDATE products SET data = ?, updated_at = ? WHERE slug = ?').bind(JSON.stringify(product), Date.now(), slug).run();
           await audit(env, user.id, 'product.update', slug);

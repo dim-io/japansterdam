@@ -46,7 +46,7 @@ if (!p) {
       url: new URL(productUrl(p.slug), location.href).href,
       price: Number(p.price).toFixed(2),
       priceCurrency: 'EUR',
-      itemCondition: 'https://schema.org/UsedCondition',
+      itemCondition: p.condition === 'New / unworn' ? 'https://schema.org/NewCondition' : 'https://schema.org/UsedCondition',
       availability: p.sold ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
     },
   });
@@ -67,6 +67,7 @@ if (!p) {
       <div><dt>Brand</dt><dd>${esc(p.brand)}</dd></div>
       <div><dt>Category</dt><dd>${esc(p.category)}</dd></div>
       <div><dt>Size</dt><dd>${esc(p.size)}</dd></div>
+      <div class="facts__condition"><dt>Condition</dt><dd>${esc(p.condition || 'Not yet assessed')}${p.conditionNotes ? `<p class="condition-notes">${esc(p.conditionNotes)}</p>` : ''}</dd></div>
       <div><dt>Ref</dt><dd class="tnum">${catNo(p)}</dd></div>
     </dl>
     <button class="btn btn--primary btn--block" type="button" id="add-btn"></button>

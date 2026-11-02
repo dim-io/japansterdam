@@ -4,6 +4,7 @@ import { MEASUREMENT_FIELDS, formatMeasurement, measurementsBlock } from '../js/
 
 const TOKEN_KEY = 'jp_admin_token';
 const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Accessories'];
+const CONDITIONS = ['New / unworn', 'Excellent', 'Very good', 'Good', 'Fair'];
 const SECTION_NAMES = {
   site: 'General', home: 'Home page', shop: 'Shop', about: 'About', contact: 'Contact', shipping: 'Shipping & returns',
   faq: 'FAQ', sizeGuide: 'Size guide', privacy: 'Privacy', product: 'Product page',
@@ -378,6 +379,13 @@ async function viewEditor(slugParam) {
   const name = bind('name', { type: 'text', required: true, maxlength: '200', autocomplete: 'off' });
   const brand = bind('brand', { type: 'text', list: 'brand-list', autocomplete: 'off' });
   const size = bind('size', { type: 'text', autocomplete: 'off' });
+  const condition = h('select', { required: true, 'aria-label': 'Condition' },
+    h('option', { value: '', selected: !d.condition, disabled: true }, 'Choose condition'),
+    CONDITIONS.map((value) => h('option', { value, selected: value === d.condition }, value)));
+  condition.addEventListener('change', () => { d.condition = condition.value; mark(); });
+  const conditionNotes = h('textarea', { required: true, maxlength: '600', rows: '3', 'aria-label': 'Condition notes', placeholder: 'Describe wear, fading, repairs and flaws. If none are visible, say so.' });
+  conditionNotes.value = d.conditionNotes || '';
+  conditionNotes.addEventListener('input', () => { d.conditionNotes = conditionNotes.value; conditionNotes.setCustomValidity(''); mark(); });
   const price = bind('price', { type: 'number', min: '0', step: '1', inputmode: 'decimal' }, 'number');
   const cat = h('select', {}, CATEGORIES.map((c) => h('option', { value: c, selected: c === d.category }, c)));
   cat.addEventListener('change', () => { d.category = cat.value; mark(); });
@@ -470,6 +478,9 @@ async function viewEditor(slugParam) {
   async function save() {
     if (!d.name.trim()) { toast('Give the product a name first.', true); name.focus(); return; }
     if (uploading) { toast('Wait for the uploads to finish.', true); return; }
+    if (!condition.reportValidity()) return;
+    conditionNotes.setCustomValidity(conditionNotes.value.trim() ? '' : 'Please describe the condition of this garment.');
+    if (!conditionNotes.reportValidity()) return;
     for (const { input } of measurementInputs) {
       if (!input.reportValidity()) return;
     }
@@ -480,6 +491,10 @@ async function viewEditor(slugParam) {
       const saved = isNew && !slug
         ? await api('/admin/products', { method: 'POST', body })
         : await api('/admin/products/' + encodeURIComponent(slug), { method: 'PUT', body });
+      if (saved.condition !== d.condition || saved.conditionNotes !== d.conditionNotes.trim()) {
+        if (isNew) slug = saved.slug;
+        throw new Error('Condition was not saved. The backend needs the latest update.');
+      }
       // An older Worker drops unknown fields. Never report those measurements as saved.
       if (MEASUREMENT_FIELDS.some(([key]) => d.measurements[key] !== undefined && saved.measurements?.[key] !== d.measurements[key])) {
         if (isNew) slug = saved.slug;
@@ -516,6 +531,9 @@ async function viewEditor(slugParam) {
           field('Name', name),
           h('div', { class: 'grid2' }, field('Brand', brand), field('Category', cat)),
           h('div', { class: 'grid2' }, field('Size', size), field('Price', h('span', { class: 'price-wrap', style: 'display:block' }, price))),
+          field('Condition (required)', condition),
+          field('Condition notes (required)', conditionNotes),
+          h('p', { class: 'hint' }, 'Describe the actual garment. Distinguish intentional distressing from wear. Add a clear real detail photo for every flaw; check photo numbers after reordering.'),
           h('label', { class: 'switch' }, sold, 'Sold')),
         h('section', { class: 'panel' }, h('h2', {}, 'Description'), bar, rte, src),
         h('section', { class: 'panel' }, h('h2', {}, 'Measurements'),
