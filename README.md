@@ -15,6 +15,7 @@ Then open http://localhost:8080/. (Opening the files directly from disk does not
 - `data/content.json` holds all page copy. `data/products.json` holds the products. Edit these files to change the site.
 - `js/layout.js` is the single source for header, footer, menu and bag drawer.
 - `js/data.js` loads the JSON and has shared helpers. `js/bag.js` keeps the bag in localStorage (`jp_bag`).
+- `js/product-urls.js` generates readable product URLs from the current brand and name, without changing CMS IDs or shopping bags. Legacy product URLs still resolve and display the current descriptive URL. All shop, home, bag, checkout and admin preview links use the same routing. Check with `node --test tests/product-urls.mjs`.
 - Each page loads its own module: `home.js`, `shop.js`, `product.js`, `checkout.js`, `pages.js` (about, contact, FAQ, shipping, size guide, privacy).
 - `404.html` sets `<base href="/japansterdam/">`; change it if the site moves to another path or domain root.
 - There is no payment provider yet: checkout opens an email with the order request.

@@ -1,7 +1,9 @@
 // Data loading, caching and shared helpers.
 import { inBag } from './bag.js';
 import { API_BASE } from './config.js';
+import { createProductRoutes, productPath } from './product-urls.js';
 let _content, _products;
+let productRoutes;
 
 async function fetchJson(url, timeoutMs) {
   const ctl = new AbortController();
@@ -26,7 +28,10 @@ async function load(apiPath, staticUrl) {
   return fetchJson(staticUrl);
 }
 export const getContent = () => (_content ??= load('/public/content', 'data/content.json'));
-export const getProducts = () => (_products ??= load('/public/products', 'data/products.json').then(numberProducts));
+export const getProducts = () => (_products ??= load('/public/products', 'data/products.json').then((list) => {
+  productRoutes = createProductRoutes(list);
+  return numberProducts(list);
+}));
 
 // Stable archive number: addedOn ascending, oldest = 001. Computed in memory only.
 function numberProducts(list) {
@@ -36,8 +41,8 @@ function numberProducts(list) {
 export const catNo = (p) => 'No. ' + String(p.no).padStart(3, '0');
 
 export async function getProduct(slug) {
-  const all = await getProducts();
-  return all.find((p) => p.slug === slug) || null;
+  await getProducts();
+  return productRoutes.find(slug);
 }
 
 export const formatPrice = (n) => '€' + Math.round(Number(n)).toLocaleString('en-US');
@@ -47,7 +52,7 @@ export const esc = (s) =>
 
 export const stripHtml = (h) => String(h || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
-export const productUrl = (slug) => 'product.html?p=' + encodeURIComponent(slug);
+export const productUrl = (slug) => productRoutes ? productRoutes.urlFor(slug) : productPath(slug);
 export const brandUrl = (brand) => 'shop.html?brand=' + encodeURIComponent(brand);
 
 export const byNewest = (a, b) => b.addedOn - a.addedOn;

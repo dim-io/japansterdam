@@ -1,4 +1,5 @@
 import { API_BASE } from '../js/config.js';
+import { createProductRoutes } from '../js/product-urls.js';
 import { MEASUREMENT_FIELDS, formatMeasurement, measurementsBlock } from '../js/measurements.js';
 
 const TOKEN_KEY = 'jp_admin_token';
@@ -487,6 +488,7 @@ async function viewEditor(slugParam) {
       for (const u of removedOurs.splice(0)) api('/admin/images', { method: 'DELETE', body: { url: u } }).catch(() => {});
       const i = products.findIndex((p) => p.slug === saved.slug);
       if (i >= 0) products[i] = saved; else products.unshift(saved);
+      if (viewLink) viewLink.href = '../' + createProductRoutes(products).urlFor(saved.slug);
       setDirty(false); toast('Saved');
       if (isNew) { location.hash = '#/products/' + encodeURIComponent(saved.slug); return; }
       Object.assign(d, saved); refreshPreview();
@@ -502,7 +504,7 @@ async function viewEditor(slugParam) {
       products = products.filter((p) => p.slug !== slug); setDirty(false); toast('Product deleted'); location.hash = '#/products';
     } catch (e) { toast(e.message, true); }
   } }, 'Delete');
-  const viewLink = isNew ? '' : h('a', { class: 'btn', href: '../product.html?p=' + encodeURIComponent(slug), target: '_blank', rel: 'noopener' }, 'View on site ↗');
+  const viewLink = isNew ? '' : h('a', { class: 'btn', href: '../' + createProductRoutes(products).urlFor(slug), target: '_blank', rel: 'noopener' }, 'View on site ↗');
 
   const field = (label, ctrl, cls) => h('label', { class: 'field' + (cls ? ' ' + cls : '') }, h('span', {}, label), ctrl);
   $('#view').replaceChildren(
