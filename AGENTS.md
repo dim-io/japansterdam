@@ -12,5 +12,6 @@ Dimitri en Sam werken allebei in dit project, elk met een eigen assistent. Zodat
 
 - De site staat op GitHub Pages (https://dim-io.github.io/japansterdam/). Elke push naar `main` staat binnen een minuut live.
 - **Producten en paginateksten komen uit het beheerscherm** (`/admin/`), niet uit `data/products.json` en `data/content.json`. Die twee bestanden zijn alleen een reserve als de backend niet bereikbaar is. Wil je producten of teksten aanpassen, doe dat dan via het beheerscherm.
-- De backend (map `api/`) draait op Cloudflare. Een wijziging daar is pas live na `cd api && npx wrangler deploy`, en daarvoor heb je toegang tot het Cloudflare-account nodig. Zie `README.md`.
+- De backend (map `api/`) draait op Cloudflare. **Je hoeft niet zelf te deployen**: bij elke push die iets in `api/` verandert, zet GitHub Actions de backend automatisch live (`.github/workflows/deploy-api.yml`). Nieuwe databasemigraties in `api/migrations/` (genummerd, bijvoorbeeld `0002_...sql`) worden daarbij eerst uitgevoerd. Controleer na zo'n push met `gh run list --workflow deploy-api.yml -L 1` of het gelukt is.
+- Wijzig nooit een migratie die al bestaat; maak altijd een nieuwe.
 - Zet nooit wachtwoorden, tokens of `.dev.vars` in de repo.
