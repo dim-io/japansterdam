@@ -1,4 +1,4 @@
-import './layout.js';
+import './layout.js?v=grailed-links';
 import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from './data.js';
 import { onBagChange } from './bag.js';
 

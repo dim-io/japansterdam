@@ -1,5 +1,5 @@
 // Renders about, contact, faq, shipping, size guide and privacy from data/content.json.
-import './layout.js';
+import './layout.js?v=grailed-links';
 import { getContent, esc } from './data.js';
 
 const c = await getContent();

@@ -28,6 +28,7 @@ function headerHTML() {
   <a class="hdr__logo" href="index.html" aria-label="Japansterdam, home"><img src="assets/img/site/header-logo.png" alt="Japansterdam" width="702" height="104"></a>
   <div class="hdr__tools">
     <a class="icon-btn hdr__insta" href="${esc(site.instagram)}" data-site="instagram" target="_blank" rel="noopener" aria-label="Instagram">${ICON_INSTA}</a>
+    <a class="icon-btn hdr__grailed" href="${esc(site.grailed)}" data-site="grailed" target="_blank" rel="noopener" aria-label="Shop Japansterdam on Grailed" title="Shop Japansterdam on Grailed"><img src="assets/icons/grailed.png" width="22" height="22" alt=""></a>
     <button class="icon-btn" type="button" aria-label="Open bag" data-open-bag>${ICON_BAG}<span class="bag-count" data-bag-count hidden>0</span></button>
   </div>
 </div>`;
@@ -48,7 +49,7 @@ function footerHTML() {
       <li><a class="ft-link" href="privacy-policy.html">Privacy Policy</a></li></ul></div>
     <div class="ft__col"><h2>Follow</h2><ul>
       <li>${ext('instagram', 'Instagram')}</li>
-      <li>${ext('grailed', 'Grailed')}</li>
+      <li>${ext('grailed', 'Visit our Grailed shop ↗')}</li>
       <li>${ext('substack', 'Substack')}</li></ul></div>
   </div>
   <div class="ft__news">
@@ -73,7 +74,7 @@ menu.setAttribute('aria-modal', 'true');
 menu.setAttribute('aria-label', 'Menu');
 menu.innerHTML = `<div class="menu__top"><button class="icon-btn" type="button" aria-label="Close menu" data-close-menu>${ICON_CLOSE}</button></div>
 <nav class="menu__links" aria-label="Mobile">${navLinks()}</nav>
-<div class="menu__legal"><a href="${esc(site.instagram)}" data-site="instagram" target="_blank" rel="noopener">Instagram</a><a href="faq.html">FAQs</a><a href="shipping-returns.html">Shipping</a></div>`;
+<div class="menu__legal"><a href="${esc(site.instagram)}" data-site="instagram" target="_blank" rel="noopener">Instagram</a><a href="${esc(site.grailed)}" data-site="grailed" target="_blank" rel="noopener">Grailed ↗</a><a href="faq.html">FAQs</a><a href="shipping-returns.html">Shipping</a></div>`;
 
 const overlay = document.createElement('div');
 overlay.className = 'overlay';

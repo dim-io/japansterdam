@@ -1,4 +1,4 @@
-import './layout.js';
+import './layout.js?v=grailed-links';
 import { initHomeMotion } from './home-motion.js';
 import { getContent, getProducts, byNewest, cardHTML, esc, catNo, productUrl, brandUrl, formatPrice } from './data.js';
 
