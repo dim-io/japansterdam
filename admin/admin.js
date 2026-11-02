@@ -1,4 +1,5 @@
 import { API_BASE } from '../js/config.js';
+import { MEASUREMENT_FIELDS, formatMeasurement, measurementsBlock } from '../js/measurements.js';
 
 const TOKEN_KEY = 'jp_admin_token';
 const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Accessories'];
@@ -344,6 +345,7 @@ async function viewEditor(slugParam) {
   const orig = isNew ? null : products.find((p) => p.slug === slugParam);
   if (!isNew && !orig) { $('#view').replaceChildren(h('p', { class: 'loading' }, 'This product does not exist (anymore). '), h('a', { class: 'btn', href: '#/products' }, 'Back to products')); return; }
   const d = JSON.parse(JSON.stringify(orig || blankProduct()));
+  d.measurements = d.measurements || {};
   let slug = orig?.slug;
   const removedOurs = [];
   const nums = numberMap();
@@ -352,7 +354,19 @@ async function viewEditor(slugParam) {
 
   const mark = () => { setDirty(true); refreshPreview(); };
   const previewHost = h('div', {});
-  function refreshPreview() { previewHost.replaceChildren(previewCard(d, noText())); }
+  function refreshPreview() { previewHost.replaceChildren(previewCard(d, noText()), measurementsBlock(d.measurements)); }
+
+  const measurementInputs = MEASUREMENT_FIELDS.map(([key, label]) => {
+    const input = h('input', { type: 'number', min: '0.1', max: '1000', step: 'any', inputmode: 'decimal', value: d.measurements[key] ?? '', 'aria-label': label + ' in centimeters' });
+    const inches = h('output', { class: 'measurement-inches' }, formatMeasurement(d.measurements[key], 'in'));
+    input.addEventListener('input', () => {
+      if (input.value === '') delete d.measurements[key];
+      else d.measurements[key] = Number(input.value);
+      inches.textContent = formatMeasurement(d.measurements[key], 'in');
+      mark();
+    });
+    return { input, element: h('label', { class: 'field' }, h('span', {}, label + ' (cm)'), h('span', { class: 'measurement-input' }, input, inches)) };
+  });
 
   const bind = (key, attrs = {}, type) => {
     const i = h('input', { ...attrs, value: d[key] ?? '' });
@@ -455,6 +469,9 @@ async function viewEditor(slugParam) {
   async function save() {
     if (!d.name.trim()) { toast('Give the product a name first.', true); name.focus(); return; }
     if (uploading) { toast('Wait for the uploads to finish.', true); return; }
+    for (const { input } of measurementInputs) {
+      if (!input.reportValidity()) return;
+    }
     if (htmlMode) d.description = src.value;
     saveBtn.disabled = true;
     try {
@@ -462,6 +479,11 @@ async function viewEditor(slugParam) {
       const saved = isNew && !slug
         ? await api('/admin/products', { method: 'POST', body })
         : await api('/admin/products/' + encodeURIComponent(slug), { method: 'PUT', body });
+      // An older Worker drops unknown fields. Never report those measurements as saved.
+      if (MEASUREMENT_FIELDS.some(([key]) => d.measurements[key] !== undefined && saved.measurements?.[key] !== d.measurements[key])) {
+        if (isNew) slug = saved.slug;
+        throw new Error('Measurements were not saved. The Cloudflare backend needs the latest update.');
+      }
       for (const u of removedOurs.splice(0)) api('/admin/images', { method: 'DELETE', body: { url: u } }).catch(() => {});
       const i = products.findIndex((p) => p.slug === saved.slug);
       if (i >= 0) products[i] = saved; else products.unshift(saved);
@@ -494,6 +516,9 @@ async function viewEditor(slugParam) {
           h('div', { class: 'grid2' }, field('Size', size), field('Price', h('span', { class: 'price-wrap', style: 'display:block' }, price))),
           h('label', { class: 'switch' }, sold, 'Sold')),
         h('section', { class: 'panel' }, h('h2', {}, 'Description'), bar, rte, src),
+        h('section', { class: 'panel' }, h('h2', {}, 'Measurements'),
+          h('p', { class: 'measurement-help' }, 'Enter centimeters only. Inches are calculated automatically. Measure the garment flat; leave unavailable measurements blank.'),
+          h('div', { class: 'grid2' }, measurementInputs.map(({ element }) => element))),
         h('section', { class: 'panel' }, h('h2', {}, 'Photos'), grid, drop)),
       h('div', { class: 'preview-wrap' }, h('div', { class: 'preview' }, h('p', { class: 'label' }, 'Preview in shop'), previewHost))),
     h('div', { class: 'savebar' }, saveBtn, h('span', { class: 'dirty' }, 'Unsaved changes'), h('span', { class: 'grow' }), viewLink, delBtn));

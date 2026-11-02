@@ -43,6 +43,14 @@ npx wrangler dev --port 8787
 
 Then set `API_BASE = "http://localhost:8787"` in `js/config.js` and run `python3 -m http.server 8080` in the project root. Open http://localhost:8080/admin/. CORS allows `localhost:8080`, `127.0.0.1:8080` and `https://dim-io.github.io` (var `ALLOWED_ORIGINS` in `api/wrangler.toml`).
 
+### Product measurements
+
+In `/admin/`, open a product and fill in **Measurements**: Chest, Shoulder, Sleeve length, Length and Hem. Enter flat garment measurements in centimeters (decimals supported); leave unavailable fields blank. Save as usual. The editor shows calculated inches and a live preview. Every product page shows the block with CM selected by default and an IN switch; inches are calculated as centimeters / 2.54, rounded to one decimal. Blank values display an em dash.
+
+Measurements are stored in the product JSON under `measurements` (`chest`, `shoulder`, `sleeveLength`, `length`, `hem`), so no database migration is needed. Pushing changes in `api/` to `main` deploys the updated Worker automatically through `.github/workflows/deploy-api.yml`. Check that the deployment succeeds: an older Worker does not save measurement fields. The editor reports an error if the backend does not return the saved measurements.
+
+Run measurement validation and conversion checks from the repository root with `node --test api/scripts/test-measurements.mjs`.
+
 ### Seed
 
 `api/scripts/seed.mjs` writes `api/.seed.sql` (git-ignored) from `data/products.json` and `data/content.json` and upserts one user. The name, display name and password come only from the env vars `SEED_USER`, `SEED_NAME`, `SEED_PASSWORD`. Seeding replaces all products and content. Add `--content-only` to skip the user. Run the generated file with `npx wrangler d1 execute japansterdam --local --file .seed.sql` or `--remote`. Delete `.seed.sql` afterwards.

@@ -89,6 +89,10 @@ input:focus,select:focus,textarea:focus,.rte:focus{outline:2px solid var(--red);
 .panel{background:var(--paper);border:1px solid var(--line);padding:20px;margin-bottom:20px}
 .panel h2{margin-bottom:14px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.measurement-help{margin-bottom:16px;font-size:13px;color:var(--muted)}
+.measurement-input{display:flex;align-items:center;gap:12px}
+.measurement-input input{min-width:0;flex:1;width:100%}
+.measurement-inches{flex:none;min-width:64px;text-align:right;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
 .price-wrap{position:relative}.price-wrap input{padding-left:26px}.price-wrap::before{content:"€";position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:1;color:var(--muted);margin-top:0}
 .switch{display:inline-flex;align-items:center;gap:10px;min-height:40px;cursor:pointer;font-size:14px}
 .switch input{width:18px;height:18px;accent-color:var(--ink)}

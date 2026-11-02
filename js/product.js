@@ -1,4 +1,5 @@
 import './layout.js';
+import { measurementsBlock } from './measurements.js';
 import { getContent, getProducts, getProduct, formatPrice, esc, stripHtml, productUrl, brandUrl, altFor, cardHTML, catNo, related, setMeta, jsonLd } from './data.js';
 import { inBag, addToBag, onBagChange } from './bag.js';
 
@@ -61,6 +62,7 @@ if (!p) {
     <button class="btn btn--primary btn--block" type="button" id="add-btn"></button>
     ${p.sold ? '' : `<p class="pdp__once">${esc((c.product && c.product.oneOnly) || '')}</p>`}
     <div class="pdp__desc rich">${p.description}</div>
+    <div id="product-measurements"></div>
     <div class="acc">
       <details><summary>Size guide</summary><div class="acc__body"><a href="size-guide.html">Open the size guide</a></div></details>
       <details><summary>Questions? Email ${esc(email)}</summary><div class="acc__body"><a href="mailto:${esc(email)}?subject=${subject}">${esc(email)}</a></div></details>
@@ -68,6 +70,8 @@ if (!p) {
   </div>
 </div>
 ${p.sold ? '' : `<div class="buybar" id="buybar"><div class="buybar__info"><span class="buybar__name">${esc(p.name)}</span><span class="buybar__price">${formatPrice(p.price)}</span></div><button class="btn btn--primary btn--sm" type="button" id="bar-btn"></button></div>`}`;
+
+  document.getElementById('product-measurements').replaceChildren(measurementsBlock(p.measurements));
 
   // main + sticky-bar buttons share one state
   const btn = document.getElementById('add-btn');

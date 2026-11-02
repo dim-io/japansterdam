@@ -159,6 +159,16 @@ function cleanProduct(input, slug, addedOn) {
   }
   const brand = str(input.brand);
   const size = str(input.size);
+  const measurements = {};
+  if (input.measurements !== undefined && !isObj(input.measurements)) throw new HttpError(400, 'Measurements must be an object');
+  for (const key of ['chest', 'shoulder', 'sleeveLength', 'length', 'hem']) {
+    const value = input.measurements?.[key];
+    if (value === undefined || value === null || value === '') continue;
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0.1 || value > 1000) {
+      throw new HttpError(400, key + ' must be a measurement in centimeters between 0.1 and 1000');
+    }
+    measurements[key] = value;
+  }
   return {
     slug,
     name,
@@ -174,6 +184,7 @@ function cleanProduct(input, slug, addedOn) {
     addedOn,
     description: sanitizeHtml(input.description || ''),
     images: images.map((i) => i.trim()),
+    measurements,
   };
 }
 
@@ -343,7 +354,10 @@ async function handle(request, env, ctx) {
           const row = await env.DB.prepare('SELECT data FROM products WHERE slug = ?').bind(slug).first();
           if (!row) throw new HttpError(404, 'Product not found');
           const old = JSON.parse(row.data);
-          const product = cleanProduct(await readJson(request), slug, old.addedOn || Date.now());
+          const input = await readJson(request);
+          // Older editor tabs may not send the new field; only an explicit {} clears it.
+          if (isObj(input) && input.measurements === undefined) input.measurements = old.measurements;
+          const product = cleanProduct(input, slug, old.addedOn || Date.now());
           await env.DB.prepare('UPDATE products SET data = ?, updated_at = ? WHERE slug = ?').bind(JSON.stringify(product), Date.now(), slug).run();
           await audit(env, user.id, 'product.update', slug);
           return json(product);
