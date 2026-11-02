@@ -1,8 +1,8 @@
 import './layout.js';
 import { getContent, getProducts, byNewest, cardHTML, esc, catNo, productUrl, brandUrl, formatPrice } from './data.js';
 
-// The pictured CTA is baked into the photo. Keep its real link aligned with
-// the source-image rectangle, including the crop caused by object-fit: cover.
+// Cover the pictured CTA with an opaque HTML button so the original border
+// cannot double up with its hover state. Account for object-fit: cover cropping.
 const heroLink = document.getElementById('hero-collection-link');
 const heroImage = document.querySelector('.hero__model > img');
 if (heroLink && heroImage) {
@@ -16,6 +16,9 @@ if (heroLink && heroImage) {
     heroLink.style.top = ((h - height) / 2 + height * .535) + 'px';
     heroLink.style.width = (width * .295) + 'px';
     heroLink.style.height = (height * .043) + 'px';
+    heroLink.style.setProperty('--hero-cta-width', (width * .295 + 2) + 'px');
+    heroLink.style.setProperty('--hero-cta-height', (height * .043 + 2) + 'px');
+    heroLink.style.setProperty('--hero-cta-font', (width * .016) + 'px');
   };
   positionHeroLink();
   heroImage.addEventListener('load', positionHeroLink);
