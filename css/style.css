@@ -242,6 +242,19 @@ img[data-fade].is-loaded{opacity:1}
   .brand-index.is-hover .brand-row.is-active{opacity:1}
   .brand-row.is-active .brand-row__name{transform:translateX(12px)}
 }
+/* Compact homepage selection; the remaining brands expand on request. */
+.section.brands{padding-top:64px}
+.brands .brand-index{margin-top:32px}
+.brands .brand-row{padding:14px 4px 14px 0}
+.brands .brand-row__name{font-size:clamp(22px,2.2vw,32px);line-height:1.15}
+.brands .brand-row__n{font-size:10px}
+.brands__toggle{display:inline-flex;align-items:center;min-height:44px;margin-top:24px;padding:10px 0;border:0;border-bottom:1px solid var(--ink);background:none;color:var(--ink);font:500 11px/1.4 var(--body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.brands__toggle:hover{border-bottom-color:var(--red)}
+@media(min-width:700px){
+  .brands .brand-index{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px;border-top:0}
+  .brands .brand-index li{border-top:1px solid var(--line);border-bottom:0}
+  .brands .brand-row{height:100%;padding:18px 12px 18px 0}
+}
 .brand-float{position:fixed;left:0;top:0;z-index:60;width:220px;aspect-ratio:4/5;background:var(--stone);pointer-events:none;opacity:0;transition:opacity .15s ease;will-change:transform}
 .brand-float.is-on{opacity:1}
 .brand-float img{width:100%;height:100%;object-fit:cover}

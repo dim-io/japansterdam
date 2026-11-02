@@ -54,7 +54,9 @@ requestAnimationFrame(() => {
 });
 
 // collection
-document.getElementById('collection-title').textContent = h.collectionTitle;
+// Keep custom CMS headings; shorten the original default for the tighter showcase.
+const collectionTitle = h.collectionTitle?.trim();
+document.getElementById('collection-title').textContent = !collectionTitle || /^Explore our current collection[.!]?$/i.test(collectionTitle) ? 'Selected pieces' : collectionTitle;
 const cta = document.getElementById('collection-cta');
 cta.textContent = h.collectionCta;
 // The API returns the owner's curated shop order: use its first available
@@ -70,9 +72,28 @@ for (const p of newest) {
   const e = byBrand.get(p.brand);
   if (e) e.n++; else byBrand.set(p.brand, { brand: p.brand, n: 1, img: p.images[0] }); // newest piece comes first
 }
-const rows = [...byBrand.values()].sort((a, b) => a.brand.localeCompare(b.brand, 'en', { sensitivity: 'base' }));
+// The owner's curated shop order also selects the featured brands. Available
+// pieces take priority; retain all other brands in the expandable index.
+const featured = [...new Set(products.filter((p) => !p.sold).map((p) => p.brand))].slice(0, 10);
+const allBrands = [...byBrand.values()].sort((a, b) => a.brand.localeCompare(b.brand, 'en', { sensitivity: 'base' }));
+const rows = [...featured.map((brand) => byBrand.get(brand)), ...allBrands.filter((r) => !featured.includes(r.brand))];
+const visibleCount = Math.min(10, rows.length);
 const list = document.getElementById('brand-index');
-list.innerHTML = rows.map((r) => `<li><a class="brand-row" href="${brandUrl(r.brand)}" data-img="${esc(r.img)}"><span class="brand-row__name">${esc(r.brand)}<sup class="brand-row__n" aria-label="${r.n} ${r.n === 1 ? 'piece' : 'pieces'}">${r.n}</sup></span></a></li>`).join('');
+list.innerHTML = rows.map((r, i) => `<li${i >= visibleCount ? ' class="brand-index__extra" hidden' : ''}><a class="brand-row" href="${brandUrl(r.brand)}" data-img="${esc(r.img)}"><span class="brand-row__name">${esc(r.brand)}<sup class="brand-row__n" aria-label="${r.n} ${r.n === 1 ? 'piece' : 'pieces'}">${r.n}</sup></span></a></li>`).join('');
+
+let clearBrandPreview = () => {};
+const brandsToggle = document.getElementById('brands-toggle');
+const extraRows = [...list.querySelectorAll('.brand-index__extra')];
+brandsToggle.hidden = !extraRows.length;
+brandsToggle.addEventListener('click', () => {
+  clearBrandPreview();
+  const expanded = brandsToggle.getAttribute('aria-expanded') !== 'true';
+  extraRows.forEach((row) => { row.hidden = !expanded; });
+  brandsToggle.setAttribute('aria-expanded', String(expanded));
+  brandsToggle.textContent = expanded ? 'Show fewer brands −' : 'View all brands +';
+  // Keep focus on the control when collapsing a long list.
+  if (!expanded) brandsToggle.scrollIntoView({ block: 'nearest' });
+});
 
 if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
   const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -111,12 +132,14 @@ if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
     float.classList.add('is-on');
   });
   list.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') move(e); });
-  list.addEventListener('pointerleave', () => {
+  clearBrandPreview = () => {
     list.classList.remove('is-hover');
     list.querySelector('.is-active')?.classList.remove('is-active');
     float.classList.remove('is-on');
     shown = false;
-  });
+  };
+  list.addEventListener('pointerleave', clearBrandPreview);
+  window.addEventListener('resize', clearBrandPreview);
 }
 
 // quote
