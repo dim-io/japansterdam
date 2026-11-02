@@ -11,22 +11,29 @@ const blocks = (sections) => sections.map((s) => `<section class="block"><h2>${e
 const views = {
   about() {
     const a = c.about;
-    return `<div class="page page--flush"><div class="wrap">
+    const paragraphs = a.paragraphs || [];
+    const statement = a.closingQuote || paragraphs[0] || a.title;
+    const body = !a.closingQuote && paragraphs.length ? paragraphs.slice(1) : paragraphs;
+    return `<div class="page page--flush page--about"><div class="wrap">
   <div class="about">
-    <div class="about__img"><img src="assets/img/site/about-sam.jpg" alt="Sam, founder and curator of Japansterdam" width="1538" height="2000" fetchpriority="high"></div>
-    <div class="about__text">
-      <h1 class="eyebrow">${esc(a.title)}</h1>
-      ${a.paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}
+    <div class="about__intro">
+      <p class="eyebrow">${esc(a.title)}</p>
+      <h1 class="display about__headline">${esc(statement)}</h1>
+    </div>
+    <figure class="about__img"><img src="assets/img/site/about-sam.jpg" alt="Sam, founder and curator of Japansterdam" width="1538" height="2000" fetchpriority="high"></figure>
+    <div class="about__body">
+      ${body.map((p) => `<p>${esc(p)}</p>`).join('')}
       <p class="about__sig">${esc(a.signature)}</p>
     </div>
   </div>
   <div class="about-pair">
-    <img src="assets/img/site/about-label.jpg" alt="Close-up of a garment label with three red crosses" width="2000" height="1333" loading="lazy">
-    <img src="assets/img/site/about-sewing.jpg" alt="Sewing machine in the workshop" width="2000" height="1333" loading="lazy">
+    <figure class="about-pair__label"><img src="assets/img/site/about-label.jpg" alt="Close-up of a garment label with three red crosses" width="2000" height="1333" loading="lazy"></figure>
+    <figure class="about-pair__atelier"><img src="assets/img/site/about-sewing.jpg" alt="Sewing machine in the workshop" width="2000" height="1333" loading="lazy"></figure>
   </div>
+  </div>
+  <section class="about-close" aria-label="Follow Japansterdam"><div class="wrap">
   <div class="insta"><p class="display" style="font-size:clamp(20px,2.4vw,32px)">Follow us on Instagram</p><a class="btn" href="${esc(c.site.instagram)}" target="_blank" rel="noopener">Instagram</a></div>
-  </div>
-  <section class="about-close"><div class="wrap"><blockquote>“${esc(a.closingQuote)}”</blockquote></div></section></div>`;
+  </div></section></div>`;
   },
   contact() {
     const t = c.contact, mail = c.site.email;

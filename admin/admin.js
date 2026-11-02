@@ -636,7 +636,7 @@ async function viewPages(sectionKey) {
 
   const form = h('div', {});
   const sectionVal = content[key];
-  if (sectionVal && typeof sectionVal === 'object' && !Array.isArray(sectionVal)) Object.keys(sectionVal).forEach((c) => form.append(renderField(sectionVal, c, humanize(c))));
+  if (sectionVal && typeof sectionVal === 'object' && !Array.isArray(sectionVal)) Object.keys(sectionVal).forEach((c) => form.append(renderField(sectionVal, c, key === 'about' && c === 'closingQuote' ? 'Opening statement' : humanize(c))));
   else form.append(renderField(content, key, label(key)));
 
   const saveBtn = h('button', { type: 'button', class: 'btn btn--primary' }, 'Save all pages');
