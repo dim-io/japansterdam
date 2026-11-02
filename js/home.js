@@ -57,8 +57,10 @@ requestAnimationFrame(() => {
 document.getElementById('collection-title').textContent = h.collectionTitle;
 const cta = document.getElementById('collection-cta');
 cta.textContent = h.collectionCta;
+// The API returns the owner's curated shop order: use its first available
+// pieces for the homepage showcase, rather than independently sorting by date.
+const pick = products.filter((p) => !p.sold).slice(0, 4);
 const newest = [...products].sort(byNewest);
-const pick = newest.filter((p) => !p.sold).slice(0, 4);
 document.getElementById('collection-grid').innerHTML = pick.map(cardHTML).join('');
 
 // brand index
