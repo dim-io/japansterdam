@@ -229,6 +229,7 @@ async function viewProducts() {
   const root = $('#view');
   const nums = numberMap();
   let dragSlug = null;
+  let savingOrder = false;
 
   const count = h('span', { class: 'count' });
   const list = h('div', { class: 'plist' });
@@ -237,19 +238,28 @@ async function viewProducts() {
     ['all', 'available', 'sold'].map((f) => h('button', { type: 'button', 'data-f': f, onclick: () => { listState.filter = f; draw(); } }, f === 'all' ? 'All' : f === 'available' ? 'Available' : 'Sold')));
   search.addEventListener('input', () => { listState.q = search.value; draw(); });
   root.replaceChildren(
+    h('p', { class: 'hint', style: 'margin:0 0 16px' }, 'Shop order: put your strongest pieces first. This is the default “Curated selection” in the shop. Use ⇡ to move a piece straight to the top, drag to arrange the rest, or use the arrows. Changes save automatically; sold pieces appear last in the shop.'),
     h('div', { class: 'toolbar' }, h('div', { class: 'grow' }, search), seg, count, h('a', { class: 'btn btn--primary', href: '#/products/new' }, 'New product')),
     list, h('p', { class: 'hint', id: 'reorder-hint', style: 'margin-top:10px' }, ''));
 
-  async function persistOrder() {
-    try { await api('/admin/products/reorder', { method: 'POST', body: { slugs: products.map((p) => p.slug) } }); toast('Order saved'); }
-    catch (e) { toast(e.message, true); await loadProducts(true); draw(); }
+  async function persistOrder(previousOrder) {
+    savingOrder = true; draw();
+    try { await api('/admin/products/reorder', { method: 'POST', body: { slugs: products.map((p) => p.slug) } }); toast('Shop order saved'); }
+    catch (e) {
+      products = previousOrder;
+      toast(e.message, true);
+      try { await loadProducts(true); } catch {}
+    }
+    finally { savingOrder = false; draw(); }
   }
   function move(slug, toIndex) {
+    if (savingOrder) return;
     const from = products.findIndex((p) => p.slug === slug);
     if (from < 0 || toIndex < 0 || toIndex >= products.length || from === toIndex) return;
+    const previousOrder = [...products];
     const [p] = products.splice(from, 1);
     products.splice(toIndex, 0, p);
-    draw(); persistOrder();
+    dragSlug = null; persistOrder(previousOrder);
   }
   async function toggleSold(p, btn) {
     btn.disabled = true;
@@ -262,20 +272,22 @@ async function viewProducts() {
   function draw() {
     const q = listState.q.trim().toLowerCase();
     const filtering = !!q || listState.filter !== 'all';
+    const canReorder = !filtering && !savingOrder;
     seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.f === listState.filter));
     const rows = products.filter((p) => (listState.filter === 'all' || (listState.filter === 'sold') === !!p.sold) && (!q || (p.name + ' ' + p.brand).toLowerCase().includes(q)));
     count.textContent = `${rows.length} of ${products.length}`;
-    $('#reorder-hint').textContent = filtering ? 'Clear the search and filter to change the order.' : 'Drag the ⋮⋮ handle or use the arrows to change the order shown on the shop.';
+    $('#reorder-hint').textContent = savingOrder ? 'Saving shop order…' : filtering ? 'Clear the search and filter to change the order.' : 'Drag the ⋮⋮ handle, use ⇡ to move to the top, or use the arrows. This order is the default in the shop.';
     list.replaceChildren(
       h('div', { class: 'prow prow--head' }, h('span', {}, ''), h('span', {}, ''), h('span', {}, 'No.'), h('span', {}, 'Name'), h('span', {}, 'Brand'), h('span', {}, 'Size'), h('span', {}, 'Price'), h('span', {}, 'Status')),
       ...(rows.length ? rows.map((p) => {
         const idx = products.indexOf(p);
-        const row = h('div', { class: 'prow', tabindex: '0', role: 'link', 'aria-label': 'Edit ' + p.name, draggable: filtering ? null : 'true' },
+        const row = h('div', { class: 'prow', tabindex: '0', role: 'link', 'aria-label': 'Edit ' + p.name, draggable: canReorder ? 'true' : null },
           h('div', { class: 'handle', onclick: (e) => e.stopPropagation() },
             filtering ? '' : [h('span', { class: 'grip', 'aria-hidden': 'true', title: 'Drag to reorder' }, '⋮⋮'),
               h('span', { class: 'moves' },
-                h('button', { type: 'button', 'aria-label': 'Move up', disabled: idx === 0, onclick: () => move(p.slug, idx - 1) }, '▲'),
-                h('button', { type: 'button', 'aria-label': 'Move down', disabled: idx === products.length - 1, onclick: () => move(p.slug, idx + 1) }, '▼'))]),
+                h('button', { type: 'button', 'aria-label': 'Move to top', title: 'Move to top of the shop', disabled: !canReorder || idx === 0, onclick: () => move(p.slug, 0) }, '⇡'),
+                h('button', { type: 'button', 'aria-label': 'Move up', disabled: !canReorder || idx === 0, onclick: () => move(p.slug, idx - 1) }, '▲'),
+                h('button', { type: 'button', 'aria-label': 'Move down', disabled: !canReorder || idx === products.length - 1, onclick: () => move(p.slug, idx + 1) }, '▼'))]),
           p.images?.[0] ? h('img', { class: 'prow__thumb', src: imgSrc(p.images[0]), alt: '', loading: 'lazy' }) : h('span', { class: 'prow__thumb' }),
           h('span', { class: 'prow__no' }, noLabel(nums.get(p.slug))),
           h('span', { class: 'prow__name', title: p.name }, p.name),
@@ -286,7 +298,7 @@ async function viewProducts() {
         const open = () => { location.hash = '#/products/' + encodeURIComponent(p.slug); };
         row.addEventListener('click', open);
         row.addEventListener('keydown', (e) => { if (e.target === row && e.key === 'Enter') open(); });
-        if (!filtering) {
+        if (canReorder) {
           row.addEventListener('dragstart', (e) => { dragSlug = p.slug; row.classList.add('is-drag'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', p.slug); });
           row.addEventListener('dragend', () => { dragSlug = null; row.classList.remove('is-drag'); list.querySelectorAll('.is-over').forEach((x) => x.classList.remove('is-over')); });
           row.addEventListener('dragover', (e) => { if (dragSlug) { e.preventDefault(); row.classList.add('is-over'); } });
@@ -502,7 +514,7 @@ async function viewEditor(slugParam) {
       }
       for (const u of removedOurs.splice(0)) api('/admin/images', { method: 'DELETE', body: { url: u } }).catch(() => {});
       const i = products.findIndex((p) => p.slug === saved.slug);
-      if (i >= 0) products[i] = saved; else products.unshift(saved);
+      if (i >= 0) products[i] = saved; else products.push(saved);
       if (viewLink) viewLink.href = '../' + createProductRoutes(products).urlFor(saved.slug);
       setDirty(false); toast('Saved');
       if (isNew) { location.hash = '#/products/' + encodeURIComponent(saved.slug); return; }

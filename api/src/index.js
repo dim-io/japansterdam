@@ -334,9 +334,9 @@ async function handle(request, env, ctx) {
         if (!name) throw new HttpError(400, 'Name is required');
         const slug = await uniqueSlug(env, name);
         const product = cleanProduct(b, slug, Date.now());
-        // new products go first (position below the current minimum)
-        const min = await env.DB.prepare('SELECT MIN(position) AS m FROM products').first();
-        const pos = (min?.m ?? 1) - 1;
+        // Preserve the owner's curated opening selection when adding a garment.
+        const max = await env.DB.prepare('SELECT MAX(position) AS m FROM products').first();
+        const pos = (max?.m ?? -1) + 1;
         await env.DB.prepare('INSERT INTO products (slug, data, position, updated_at) VALUES (?, ?, ?, ?)').bind(slug, JSON.stringify(product), pos, Date.now()).run();
         await audit(env, user.id, 'product.create', slug);
         return json(product, 201);

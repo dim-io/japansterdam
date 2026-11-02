@@ -4,7 +4,7 @@ import { onBagChange } from './bag.js';
 
 const [c, products] = await Promise.all([getContent(), getProducts()]);
 const CATS = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets'];
-const SORTS = { newest: 'Newest', 'price-asc': 'Price: low to high', 'price-desc': 'Price: high to low' };
+const SORTS = { curated: 'Curated selection', newest: 'Newest', 'price-asc': 'Price: low to high', 'price-desc': 'Price: high to low' };
 
 document.getElementById('shop-title').textContent = c.shop.title;
 
@@ -63,12 +63,12 @@ function readState() {
   const cat = q.get('category') || '';
   const brand = q.get('brand') || '';
   const size = q.get('size') || '';
-  const sort = q.get('sort') || 'newest';
+  const sort = q.get('sort') || 'curated';
   return {
     category: CATS.includes(cat) ? cat : '',
     brand: brands.includes(brand) ? brand : '',
     size: sizes.includes(size) ? size : '',
-    sort: SORTS[sort] ? sort : 'newest',
+    sort: Object.hasOwn(SORTS, sort) ? sort : 'curated',
   };
 }
 function writeUrl() {
@@ -76,7 +76,7 @@ function writeUrl() {
   if (state.category) q.set('category', state.category);
   if (state.brand) q.set('brand', state.brand);
   if (state.size) q.set('size', state.size);
-  if (state.sort !== 'newest') q.set('sort', state.sort);
+  if (state.sort !== 'curated') q.set('sort', state.sort);
   const s = q.toString();
   history.replaceState(null, '', location.pathname + (s ? '?' + s : ''));
 }
@@ -91,7 +91,9 @@ function render() {
   for (const cat of CATS) counts[cat] = products.filter((p) => other(p) && p.category === cat).length;
   chipsEl.querySelectorAll('.chip').forEach((b) => { b.querySelector('.chip__n').textContent = counts[b.dataset.cat]; });
   let list = products.filter((p) => (!state.category || p.category === state.category) && (!state.brand || p.brand === state.brand) && (!state.size || p.size === state.size));
-  const cmp = state.sort === 'price-asc' ? (a, b) => a.price - b.price : state.sort === 'price-desc' ? (a, b) => b.price - a.price : byNewest;
+  // Filtering keeps the CMS order. Stable sorting only moves sold pieces down
+  // unless the visitor explicitly chooses a date or price order.
+  const cmp = state.sort === 'price-asc' ? (a, b) => a.price - b.price : state.sort === 'price-desc' ? (a, b) => b.price - a.price : state.sort === 'newest' ? byNewest : () => 0;
   list.sort((a, b) => byAvailability(a, b) || cmp(a, b));
   countEl.textContent = list.length + (list.length === 1 ? ' piece' : ' pieces');
   grid.innerHTML = list.length
@@ -103,21 +105,24 @@ chipsEl.addEventListener('click', (e) => {
   const b = e.target.closest('.chip');
   if (!b) return;
   state.category = b.dataset.cat;
-  writeUrl(); onBagChange(render);
-paintDensity();
-render();
+  writeUrl();
+  paintDensity();
+  render();
 });
 for (const [el, key] of [[brandSel, 'brand'], [sizeSel, 'size'], [sortSel, 'sort']]) {
-  el.addEventListener('change', () => { state[key] = el.value; writeUrl(); onBagChange(render);
-paintDensity();
-render(); });
+  el.addEventListener('change', () => {
+    state[key] = el.value;
+    writeUrl();
+    paintDensity();
+    render();
+  });
 }
 grid.addEventListener('click', (e) => {
   if (!e.target.closest('[data-reset]')) return;
   state.category = state.brand = state.size = '';
-  writeUrl(); onBagChange(render);
-paintDensity();
-render();
+  writeUrl();
+  paintDensity();
+  render();
 });
 
 // promises + closing quote

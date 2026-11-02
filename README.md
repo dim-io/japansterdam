@@ -44,6 +44,10 @@ npx wrangler dev --port 8787
 
 Then set `API_BASE = "http://localhost:8787"` in `js/config.js` and run `python3 -m http.server 8080` in the project root. Open http://localhost:8080/admin/. CORS allows `localhost:8080`, `127.0.0.1:8080` and `https://dim-io.github.io` (var `ALLOWED_ORIGINS` in `api/wrangler.toml`).
 
+### Curated shop order
+
+The shop defaults to **Curated selection**, following the order saved in `/admin/` → Products. Use **⇡** (Move to top), drag a product, or use the up/down arrows; changes save automatically. Clear searches and filters before reordering. Sold pieces appear after available pieces. New products are appended so the owner's opening selection stays in place. Visitors can switch to Newest or price sorting, including while filtering by brand, size or category; `?sort=newest` links keep that choice on refresh.
+
 ### Product condition
 
 Product saves require **Condition** (New / unworn, Excellent, Very good, Good or Fair) and **Condition notes** (up to 600 characters). Describe wear, fading, repairs and flaws, or explicitly state the absence of visible flaws. Distinguish intentional distressing from wear and add real detail photos for flaws. Photo-number references must be checked after reordering photos.
