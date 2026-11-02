@@ -1,4 +1,5 @@
 import './layout.js';
+import { initHomeMotion } from './home-motion.js';
 import { getContent, getProducts, byNewest, cardHTML, esc, catNo, productUrl, brandUrl, formatPrice } from './data.js';
 
 // Cover the pictured CTA with an opaque HTML button so the original border
@@ -125,3 +126,5 @@ document.getElementById('testi-title').textContent = h.testimonialsTitle;
 document.getElementById('testi-grid').innerHTML = h.testimonials
   .map((t) => `<figure class="testi"><span class="testi__mark" aria-hidden="true">“</span><blockquote>${esc(t.text)}</blockquote><figcaption>${esc(t.name)}</figcaption></figure>`)
   .join('');
+
+initHomeMotion();
