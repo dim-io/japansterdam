@@ -27,7 +27,7 @@ export function normalizeRow(row, observedAt) {
   return item;
 }
 
-export async function probe({ token, fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now() }) {
+export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now() }) {
   if (!token || /\s/.test(token)) throw new Error('Sla eerst je Apify API-token op als GitHub-secret APIFY_TOKEN.');
   const api = async (endpoint, { method = 'GET', body } = {}) => {
     let response;
@@ -38,7 +38,14 @@ export async function probe({ token, fetcher = fetch, sleep = (ms) => new Promis
     if (!response.ok) throw new Error('Apify gaf HTTP ' + response.status + '. Controleer je token, toegang tot de scraper en gratis tegoed.');
     return response.json();
   };
-  const started = await api('/actors/' + ACTOR + '/runs?timeout=90&maxItems=3&maxTotalChargeUsd=' + MAX_COST + '&restartOnError=false', { method: 'POST', body: INPUT });
+  if (!/^\d+(?:,\d+){0,9}$/.test(brandIds)) throw new Error('Ongeldige merkselectie.');
+  const search = new URL('https://www.vinted.nl/catalog');
+  brandIds.split(',').forEach((id) => search.searchParams.append('brand_ids[]', id));
+  search.searchParams.set('price_to', '40');
+  search.searchParams.set('currency', 'EUR');
+  search.searchParams.set('order', 'newest_first');
+  const input = { ...INPUT, brandIds, searchQueries: [search.href] };
+  const started = await api('/actors/' + ACTOR + '/runs?timeout=90&maxItems=3&maxTotalChargeUsd=' + MAX_COST + '&restartOnError=false', { method: 'POST', body: input });
   let run = started.data;
   if (!run || !/^[A-Za-z0-9]+$/.test(run.id || '')) throw new Error('Apify gaf geen geldig runnummer terug.');
   const deadline = now() + 120_000;

@@ -19,7 +19,10 @@ export function garmentType(name) {
 export function estimateFromShop(item, products, config) {
   const brand = identifyBrand(item.brand, config), type = garmentType(item.title);
   if (!brand || !type) return null;
+  // A mass-market collaboration is not comparable to the mainline label.
+  const collaboration = /\b(uniqlo|gu)\b/.exec(normalize(item.title + ' ' + (item.description || '')))?.[1] || null;
   const references = products.filter((p) => identifyBrand(p.brand, config) === brand && garmentType(p.name) === type
+    && ((/\b(uniqlo|gu)\b/.exec(normalize(p.name))?.[1] || null) === collaboration)
     && typeof p.price === 'number' && Number.isFinite(p.price) && p.price > 0);
   if (!references.length) return null;
   const prices = references.map((p) => p.price).sort((a, b) => a - b);

@@ -1,6 +1,6 @@
 # Japansterdam vondstenradar
 
-**Status: Telegram-test geslaagd en een Apify-proef leverde drie beschikbare advertenties tot €40 op. De volledige proef koppelt nu ophalen, een voorzichtige beoordeling en één Telegrammelding. Het uurschema staat uit.** Er is geen betaald abonnement afgesloten en de radar koopt nooit automatisch iets.
+**Status: Telegram en Apify zijn getest. De volledige proef heeft echte Needles-advertenties beoordeeld en een gemarkeerde proefmelding verzonden. Er staat nu een afzonderlijke, begrensde 24-uurs proef klaar voor Needles en Kapital.** Er is geen betaald abonnement afgesloten en de radar koopt nooit automatisch iets.
 
 Rechtstreekse toegang tot Vinted gaf tijdens de controle HTTP 403. Deze versie omzeilt geen toegangsscherm en bevat geen werkende Vinted-scraper. De officiële Pro Integrations API levert voorraad-/orderbeheer, geen brede cataloguszoekfeed. De generieke radar kan een advertentiefeed met het onderstaande contract verwerken; de Apify-proef is inmiddels afzonderlijk aangesloten. Alleen een lijst zoekresultaten uit Google biedt geen betrouwbare uurlijkse dekking van nieuwe advertenties.
 
@@ -78,6 +78,16 @@ De test gebruikt het gratis Apify-tegoed als dat beschikbaar is. Hij sluit geen 
 `trial.mjs` gebruikt de bestaande Apify- en Telegram-secrets, haalt maximaal drie verse Needles-advertenties op en controleert de actuele Japansterdam-prijsreferenties. Hij verstuurt maximaal één bericht met **PROEFMELDING**, ook wanneer geen kandidaat de koopjesdrempel haalt. Een afgewezen kandidaat wordt niet alsnog als goede koop aangeprezen. Ontbreken prijsreferenties, dan bevat de melding alleen de gevonden gegevens en de reden waarom er geen waardering mogelijk is.
 
 [De volledige proef](https://github.com/dim-io/japansterdam/actions/workflows/deal-radar-trial.yml) start handmatig of bij een expliciete nieuwe `trial-request.json` op `main`. Hij start geen uurmonitor. Na bevestigde Telegrambezorging wordt het request-ID onthouden; dezelfde proef wordt bij een herhaling overgeslagen zolang de cache beschikbaar is. De Apify-kostenlimiet blijft $0,02 per uitvoering. Het standaard-uurschema is nog niet met deze Apify-proef verbonden: uitbreiding van merken, maandbudget en echte dekking worden eerst apart bepaald.
+
+## Begrensde 24-uurs pilot
+
+`pilot.json` legt het start- en eindtijdstip vast. [Radar 24-uurs proef](https://github.com/dim-io/japansterdam/actions/workflows/deal-radar-pilot.yml) controleert rond minuut 23 van elk uur **Needles en Kapital samen** met hun echte Vinted-merkfilters. Dit is nadrukkelijk niet de volledige merkenlijst: per controle worden maximaal drie nieuwste resultaten opgehaald. De geprogrammeerde eindtijd stopt de scanner ook als een workflow later wordt gestart of opnieuw wordt uitgevoerd. Daarna schakelt een aparte stap deze pilotworkflow zelf uit.
+
+Er zijn maximaal 25 scanpogingen ingesteld, met $0,02 kostenlimiet per Apify-run. De teller en dubbele-meldingencontrole gebruiken Actions-cache. Als die cache wordt gewist kan de teller verloren gaan; de vaste eindtijd blijft wel gelden. Verbruik van andere Apify-tools, eventuele opslag/API-reads en eigen GitHub Actions-limieten vallen buiten deze per-runlimiet. De pilot verlengt zichzelf niet en koopt geen extra tegoed.
+
+Alleen kandidaten die de ingestelde score én margevoorwaarden halen worden gemeld. Bij gebruik van eigen shopvraagprijzen draagt de melding duidelijk **SCHATTING**. Dit zijn regels op feedgegevens, geen AI-fotoanalyse. Uniqlo/GU-samenwerkingen worden niet vergeleken met hoofdcollecties zonder zulke samenwerking. Geen passende referentie betekent onbekende flipwaarde en geen koopjesalert.
+
+Het oude generieke uurschema blijft apart uit via `RADAR_ENABLED`. Deze proef kan onmiddellijk worden gestopt door `enabled` in `pilot.json` op `false` te zetten, of door de pilotworkflow in GitHub uit te schakelen. Voor een nieuwe proef na afloop moeten het venster en de workflow bewust opnieuw worden ingeschakeld.
 
 ## Lokaal
 
