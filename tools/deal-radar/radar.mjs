@@ -61,8 +61,13 @@ export function assess(item, config, now = Date.now()) {
       && source.protocol === 'https:' && !source.username && !source.password && source.href !== url;
   });
   const uniqueComps = [...new Map(comps.map((c) => [c.url, c])).values()];
-  if (uniqueComps.length < 2) return reject('Minimaal twee recente verkochte exemplaren van hetzelfde model nodig voor een onderbouwde flipanalyse');
-  const resale = median(uniqueComps.map((c) => c.price)) * .9;
+  const estimate = item.valuation;
+  const estimated = uniqueComps.length < 2;
+  if (estimated && !(estimate?.basis === 'japansterdam_asking' && positive(estimate.low) && estimate.low > 0
+    && positive(estimate.high) && estimate.high >= estimate.low && Array.isArray(estimate.references) && estimate.references.length)) {
+    return reject('Geen passende prijsreferentie: flipwaarde blijft onbekend');
+  }
+  const resale = estimated ? estimate.low : median(uniqueComps.map((c) => c.price)) * .9;
   const exactCosts = positive(item.shippingCost) && positive(item.buyerFee);
   const buyingExtras = exactCosts ? item.shippingCost + item.buyerFee : config.buyingCostReserve;
   const totalCost = item.price + buyingExtras;
@@ -77,7 +82,10 @@ export function assess(item, config, now = Date.now()) {
     score, scores: { flip: +flip.toFixed(1), price: +price.toFixed(1), condition, fit }, resale, margin, totalCost, roi,
     resaleFeeReserve: config.resaleFeeReserve, packingReserve: config.packingReserve,
     costNote: exactCosts ? 'Kosten uit feed' : `Inclusief ${euro(config.buyingCostReserve)} kostenreserve; exacte koperskosten/verzending controleren`,
-    conditionNote: 'Staat volgens verkoper/feed; labels, slijtage en foto’s zelf controleren',
+    conditionNote: 'Staat volgens verkoper/feed; labels, slijtage en foto’s zelf controleren. Geen automatische foto-authenticatie.',
+    valuationKind: estimated ? 'estimate' : 'sold_comparables',
+    valuationHigh: estimated ? estimate.high : null,
+    valuationReferences: estimated ? estimate.references : [],
     comparables: uniqueComps.slice(0, 3).map((c) => ({ url: c.url, price: c.price })) };
 }
 
@@ -86,11 +94,13 @@ export function alertText(deal) {
     `JAPANSTERDAM FIND · ${deal.score}/10`,
     `${deal.brand} — ${deal.title}`, `Maat: ${deal.size} · Vraagprijs: ${euro(deal.price)}`,
     `Flipbaarheid ${deal.scores.flip}/10 · Prijs ${deal.scores.price}/10 · Staat ${deal.scores.condition}/10 · Fit ${deal.scores.fit}/10`,
-    `Conservatieve verkoopindicatie: ${euro(deal.resale)} (schatting, geen garantie)`,
+    deal.valuationKind === 'estimate'
+      ? `Voorlopige verkoopinschatting: ${euro(deal.resale)}–${euro(deal.valuationHigh)}. Gebaseerd op eigen shopvraagprijzen, GEEN bewezen marktwaarde.`
+      : `Conservatieve verkoopindicatie: ${euro(deal.resale)} (schatting, geen garantie)`,
     `Inkoop incl. kosten/reserve: ${euro(deal.totalCost)} · Ruimte na ${Math.round(deal.resaleFeeReserve * 100)}% verkoopkosten en ${euro(deal.packingReserve)} verpakking: ${euro(deal.margin)} vóór belasting en eigen tijd`,
     deal.costNote, deal.conditionNote,
-    'Gebaseerd op recente verkochte exemplaren van hetzelfde model:',
-    ...deal.comparables.map((c) => `${euro(c.price)} · ${c.url}`),
+    deal.valuationKind === 'estimate' ? 'Referentie: 45–65% van eigen vraagprijzen voor hetzelfde merk en kledingtype; uitvoering kan sterk verschillen:' : 'Gebaseerd op recente verkochte exemplaren van hetzelfde model:',
+    ...(deal.valuationKind === 'estimate' ? deal.valuationReferences.map((c) => `${euro(c.price)} · ${c.title}`) : deal.comparables.map((c) => `${euro(c.price)} · ${c.url}`)),
     'Bekijk het item:', deal.url,
   ].join('\n');
 }

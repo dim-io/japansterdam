@@ -1,8 +1,8 @@
 # Japansterdam vondstenradar
 
-**Status: beoordelaar en Telegramkoppeling gebouwd; nog geen werkende Vinted-feed aangesloten. Het uurschema staat daarom uit.** Er is geen betaald abonnement afgesloten en de radar koopt nooit automatisch iets.
+**Status: Telegram-test geslaagd en een Apify-proef leverde drie beschikbare advertenties tot €40 op. De volledige proef koppelt nu ophalen, een voorzichtige beoordeling en één Telegrammelding. Het uurschema staat uit.** Er is geen betaald abonnement afgesloten en de radar koopt nooit automatisch iets.
 
-Rechtstreekse toegang tot Vinted gaf tijdens de controle HTTP 403. Deze versie omzeilt geen toegangsscherm en bevat geen werkende Vinted-scraper. De officiële Pro Integrations API levert voorraad-/orderbeheer, geen brede cataloguszoekfeed. Een toegankelijke advertentiefeed met de onderstaande gegevens is nodig vóór activering. Alleen een lijst zoekresultaten uit Google biedt geen betrouwbare uurlijkse dekking van nieuwe advertenties.
+Rechtstreekse toegang tot Vinted gaf tijdens de controle HTTP 403. Deze versie omzeilt geen toegangsscherm en bevat geen werkende Vinted-scraper. De officiële Pro Integrations API levert voorraad-/orderbeheer, geen brede cataloguszoekfeed. De generieke radar kan een advertentiefeed met het onderstaande contract verwerken; de Apify-proef is inmiddels afzonderlijk aangesloten. Alleen een lijst zoekresultaten uit Google biedt geen betrouwbare uurlijkse dekking van nieuwe advertenties.
 
 ## Wat werkt
 
@@ -12,8 +12,8 @@ Rechtstreekse toegang tot Vinted gaf tijdens de controle HTTP 403. Deze versie o
 - Alert vanaf **8,2/10**, minimaal **€50 geraamde marge**, minimaal **120% rendement op inkoopkosten**, minimaal goede staat, maximaal vijf meldingen per ronde.
 - Elke melding bevat scores, reden, maat, inkoopprijs, verkoopindicatie, kostenreserves, bronlinks en directe Vinted-link. Beoordeling is op aangeleverde gegevens; de code doet geen AI-fotoanalyse of authenticiteitsgarantie.
 - Alleen EUR-prijzen tot €40; geen bundels. Beschikbaarheid/prijs moet in de laatste 90 minuten gecontroleerd zijn. Ook oude, weggezakte advertenties kunnen kwalificeren zolang ze nu nog beschikbaar zijn; een leeftijdslimiet is optioneel instelbaar.
-- Geen verzonnen verkoopwaardes: minimaal twee recente daadwerkelijk verkochte exemplaren van hetzelfde model, met bronlinks. Vraagprijzen tellen niet als gerealiseerde verkopen. De feed moet die vergelijkingen aanleveren; zonder die informatie wordt een item als onvoldoende onderbouwd overgeslagen, niet als bewezen slechte deal beschouwd.
-- Conservatieve indicatie: mediaan van de vergelijkingen minus 10%. Verder 15% verkoopkosten, €2 verpakking en bij ontbrekende exacte inkoopkosten €10 reserve voor verzending/koperskosten. Marge is vóór belasting en eigen tijd, geen winstgarantie. De reserves zijn aanpasbaar in `config.json`.
+- Verkochte vergelijkingen hebben voorrang: minimaal twee recente verkochte exemplaren van hetzelfde model, met bronlinks. Daarnaast accepteert de beoordelaar een expliciet gemarkeerde schatting op basis van eigen Japansterdam-vraagprijzen. De volledige proef zoekt daarvoor hetzelfde merk én kledingtype in de actuele product-API en rekent met 45–65% van de mediaan. Dit is een grove regel, geen gemeten marktwaarde; uitvoering, maat, materiaal en verkoopbaarheid kunnen sterk verschillen. Zonder passende referentie blijft de flipwaarde onbekend. Vraagprijzen worden nooit als gerealiseerde verkopen gepresenteerd.
+- Conservatieve indicatie bij verkochte vergelijkingen: mediaan minus 10%. Bij een shopschatting wordt de onderkant van de genoemde bandbreedte gebruikt. Verder 15% verkoopkosten, €2 verpakking en bij ontbrekende exacte inkoopkosten €10 reserve voor verzending/koperskosten. Marge is vóór belasting en eigen tijd, geen winstgarantie. De reserves zijn aanpasbaar in `config.json`.
 - Dubbele ID’s binnen een ronde worden samengevoegd. Een eerdere alert wordt alleen herhaald bij minstens 20% prijsdaling. Status wordt direct na bevestigde Telegrambezorging opgeslagen.
 
 ## Aansluiten
@@ -64,7 +64,7 @@ De bron wordt via HTTPS opgehaald, met optioneel `Authorization: Bearer <RADAR_F
 
 ## Eerste Apify-proef zonder uurschema
 
-Er is een beperkte koppeling voorbereid voor `omkar-cloud/vinted-scraper`. Deze is nog niet met het account van de eigenaar uitgevoerd; bronkwaliteit en actuele bereikbaarheid zijn dus nog onbevestigd.
+Er is een beperkte koppeling voorbereid voor `omkar-cloud/vinted-scraper`. Deze gaf in de eerste echte proef drie geldige EUR-advertenties tot €40 met bevestigde beschikbaarheid. Dit is nog geen bewijs van volledige dekking of bruikbare verkoopwaardering voor alle merken.
 
 1. Maak in Apify onder **API & Integrations** een apart API-token voor Japansterdam. Bewaar het als GitHub Actions-secret `APIFY_TOKEN`; deel het niet in de chat.
 2. Start [Vinted proefscan](https://github.com/dim-io/japansterdam/actions/workflows/vinted-probe.yml) handmatig op `main`.
@@ -72,6 +72,12 @@ Er is een beperkte koppeling voorbereid voor `omkar-cloud/vinted-scraper`. Deze 
 4. Bekijk de samenvatting van de run. Die toont de ontvangen links, prijs, merk, staat en of beschikbaarheid expliciet bevestigd is. Ontbrekende velden blijven onbekend.
 
 De test gebruikt het gratis Apify-tegoed als dat beschikbaar is. Hij sluit geen abonnement af. Er is nog geen bewezen dekking voor alle merken ieder uur; vergelijkingsprijzen en koppeling aan de beoordelaar zijn vervolgwerk. Deze proef activeert geen schema en verstuurt geen koopjesmeldingen. Bronnen: [scraperdocumentatie](https://apify.com/omkar-cloud/vinted-scraper), [Apify API-limieten](https://docs.apify.com/api/v2/actors-runs-post).
+
+## Volledige eenmalige proef
+
+`trial.mjs` gebruikt de bestaande Apify- en Telegram-secrets, haalt maximaal drie verse Needles-advertenties op en controleert de actuele Japansterdam-prijsreferenties. Hij verstuurt maximaal één bericht met **PROEFMELDING**, ook wanneer geen kandidaat de koopjesdrempel haalt. Een afgewezen kandidaat wordt niet alsnog als goede koop aangeprezen. Ontbreken prijsreferenties, dan bevat de melding alleen de gevonden gegevens en de reden waarom er geen waardering mogelijk is.
+
+[De volledige proef](https://github.com/dim-io/japansterdam/actions/workflows/deal-radar-trial.yml) start handmatig of bij een expliciete nieuwe `trial-request.json` op `main`. Hij start geen uurmonitor. Na bevestigde Telegrambezorging wordt het request-ID onthouden; dezelfde proef wordt bij een herhaling overgeslagen zolang de cache beschikbaar is. De Apify-kostenlimiet blijft $0,02 per uitvoering. Het standaard-uurschema is nog niet met deze Apify-proef verbonden: uitbreiding van merken, maandbudget en echte dekking worden eerst apart bepaald.
 
 ## Lokaal
 

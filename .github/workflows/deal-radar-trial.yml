@@ -1,0 +1,42 @@
+name: Radar volledige proef
+
+on:
+  push:
+    branches: [main]
+    paths: ['tools/deal-radar/trial-request.json']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: japansterdam-radar-full-trial
+  cancel-in-progress: false
+
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/cache/restore@v4
+        with:
+          path: tools/deal-radar/.state/trial.json
+          key: radar-trial-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: radar-trial-
+      - name: Test beoordeling en bezorging
+        run: node --test tools/deal-radar/radar.test.mjs tools/deal-radar/trial.test.mjs tools/deal-radar/apify-probe.test.mjs
+      - name: Haal echte advertenties op en verstuur één proefmelding
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node tools/deal-radar/trial.mjs
+      - uses: actions/cache/save@v4
+        if: always() && hashFiles('tools/deal-radar/.state/trial.json') != ''
+        with:
+          path: tools/deal-radar/.state/trial.json
+          key: radar-trial-${{ github.run_id }}-${{ github.run_attempt }}
