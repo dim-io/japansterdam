@@ -1,0 +1,32 @@
+name: Telegram koppelen
+
+on:
+  workflow_dispatch:
+    inputs:
+      pairing_code:
+        description: Plak de koppelcode uit de ChatGPT-instructies
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: japansterdam-telegram-connect
+  cancel-in-progress: false
+
+jobs:
+  connect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Koppel je eigen Telegramchat
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_USERNAME: japansterdam_radar_bot
+          TELEGRAM_PAIRING_CODE: ${{ inputs.pairing_code }}
+        run: node tools/deal-radar/connect-telegram.mjs
