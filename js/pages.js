@@ -23,7 +23,10 @@ const views = {
     <figure class="about__img"><img src="assets/img/site/about-sam.jpg" alt="Sam, founder and curator of Japansterdam" width="1538" height="2000" fetchpriority="high"></figure>
     <div class="about__body">
       ${body.map((p) => `<p>${esc(p)}</p>`).join('')}
-      <p class="about__sig">${esc(a.signature)}</p>
+      <div class="about__signature">
+        <img src="assets/img/site/sam-signature.webp" alt="" width="496" height="218" class="about__autograph">
+        <p class="about__sig">${esc(a.signature)}</p>
+      </div>
     </div>
   </div>
   <div class="about-pair">

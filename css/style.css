@@ -428,8 +428,9 @@ img[data-fade].is-loaded{opacity:1}
 .about__img img{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:center 40%}
 .about__body{grid-area:body;min-width:0;max-width:62ch}
 .about__body>p:not(.about__sig){margin-bottom:24px;font-size:17px;line-height:1.75}
-.about__sig{display:flex;align-items:center;gap:12px;margin-top:24px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;line-height:1.6}
-.about__sig::before{content:"";width:24px;height:2px;background:var(--red);flex:none}
+.about__signature{margin-top:20px}
+.about__autograph{width:120px;height:auto;margin-bottom:10px}
+.about__sig{margin-top:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;line-height:1.6}
 .about-pair{display:grid;gap:32px;margin-top:72px;align-items:center}
 .about-pair figure{overflow:hidden}
 .about-pair__label{width:82%;aspect-ratio:4/5}
@@ -445,8 +446,8 @@ img[data-fade].is-loaded{opacity:1}
   .about__intro .eyebrow{margin-bottom:18px}
   .about__headline{font-size:clamp(26px,2.5vw,36px);line-height:1.08;max-width:28ch}
   .about__body>p:not(.about__sig){font-size:15px;line-height:1.65;margin-bottom:18px}
-  .about__body>p:nth-last-child(2){margin-bottom:0}
-  .about__sig{margin-top:22px}
+  .about__body>p:last-of-type{margin-bottom:0}
+  .about__signature{margin-top:18px}
   .about__img{position:sticky;top:calc(var(--header-h) + 24px)}
   .about__img img{aspect-ratio:3/4;max-height:calc(100svh - var(--header-h) - 48px)}
   .about-pair{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(40px,6vw,80px);margin-top:120px}
@@ -461,8 +462,9 @@ img[data-fade].is-loaded{opacity:1}
   .about__intro .eyebrow{margin-bottom:14px}
   .about__headline{font-size:clamp(24px,2.2vw,30px)}
   .about__body>p:not(.about__sig){font-size:14px;line-height:1.6;margin-bottom:14px}
-  .about__body>p:nth-last-child(2){margin-bottom:0}
-  .about__sig{margin-top:18px}
+  .about__body>p:last-of-type{margin-bottom:0}
+  .about__signature{margin-top:14px}
+  .about__autograph{width:104px;margin-bottom:8px}
 }
 
 /* contact */
