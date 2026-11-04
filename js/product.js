@@ -1,5 +1,5 @@
 import './layout.js?v=grailed-links';
-import { measurementsBlock } from './measurements.js?v=garment-types';
+import { measurementsBlock } from './measurements.js?v=unit-note';
 import { getContent, getProducts, getProduct, formatPrice, esc, stripHtml, productUrl, brandUrl, altFor, cardHTML, catNo, related, setMeta, jsonLd } from './data.js';
 import { inBag, addToBag, onBagChange } from './bag.js';
 

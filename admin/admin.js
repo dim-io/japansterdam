@@ -1,6 +1,6 @@
 import { API_BASE } from '../js/config.js';
 import { createProductRoutes } from '../js/product-urls.js';
-import { TOP_MEASUREMENT_FIELDS, BOTTOM_MEASUREMENT_FIELDS, measurementGroups, formatMeasurement, measurementsBlock } from '../js/measurements.js?v=garment-types';
+import { TOP_MEASUREMENT_FIELDS, BOTTOM_MEASUREMENT_FIELDS, measurementGroups, formatMeasurement, measurementsBlock } from '../js/measurements.js?v=unit-note';
 
 const TOKEN_KEY = 'jp_admin_token';
 const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Accessories'];

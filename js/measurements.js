@@ -85,10 +85,10 @@ export function measurementsBlock(measurements = {}, category = 'Tops') {
   function paint(unit) {
     buttons.forEach(([key, button]) => button.setAttribute('aria-pressed', String(key === unit)));
     values.forEach(([cm, value]) => { value.textContent = formatMeasurement(cm, unit); });
+    note.textContent = `Measured flat in ${unit === 'in' ? 'inches' : 'centimeters'}; widths are not doubled. Approximate measurements; — indicates unavailable.`;
   }
   const note = document.createElement('p');
   note.className = 'measurements__note';
-  note.textContent = 'Measured flat in centimeters; widths are not doubled. Approximate measurements; — indicates unavailable.';
   head.append(title, toggle);
   section.append(head, body, note);
   paint('cm');
