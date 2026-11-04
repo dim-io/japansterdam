@@ -25,7 +25,10 @@ test('probe restricts the run, uses header authentication and reports only three
       assert.equal(url.searchParams.get('maxTotalChargeUsd'), '0.02');
       assert.equal(url.searchParams.get('timeout'), '90');
       const input = JSON.parse(options.body);
-      assert.deepEqual(input.searchQueries, ['Needles']);
+      assert.equal(input.searchQueries.length, 1);
+      assert.equal(new URL(input.searchQueries[0]).searchParams.get('brand_ids[]'), '360271');
+      assert.equal(new URL(input.searchQueries[0]).searchParams.get('price_to'), '40');
+      assert.equal(input.brandIds, '360271');
       assert.equal(input.maxResults, 3);
       assert.equal(input.maxPrice, 40);
       return Response.json({ data: { id: 'Run123', status: 'SUCCEEDED', defaultDatasetId: 'Data123', finishedAt: '2026-11-04T12:00:00Z' } });

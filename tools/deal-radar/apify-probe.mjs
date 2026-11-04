@@ -5,7 +5,9 @@ import { listingUrl } from './radar.mjs';
 const API = 'https://api.apify.com/v2';
 const ACTOR = 'omkar-cloud~vinted-scraper';
 const MAX_COST = .02;
-const INPUT = { searchQueries: ['Needles'], country: 'nl', sortBy: 'newest_first', maxPrice: 40, maxResults: 3, includeDetails: true, language: 'en' };
+// Vinted's catalog identifies the fashion label Needles as brand 360271.
+// A plain keyword also returns sewing needles and unrelated tagged items.
+const INPUT = { searchQueries: ['https://www.vinted.nl/catalog?brand_ids%5B%5D=360271&price_to=40&currency=EUR&order=newest_first'], brandIds: '360271', country: 'nl', sortBy: 'newest_first', maxPrice: 40, maxResults: 3, includeDetails: true, language: 'en' };
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'TIMED-OUT', 'ABORTED']);
 
 // Keep missing fields unknown. A successful search is not evidence that a

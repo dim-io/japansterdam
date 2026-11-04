@@ -8,7 +8,7 @@ export function garmentType(name) {
   const text = normalize(name);
   if (/\b(set|co ord|coord|ensemble|suit)\b/.test(text)) return 'set';
   if (/\b(short|shorts|bermuda|bermudas)\b/.test(text)) return 'shorts';
-  if (/\b(pants|trousers|pantalon|pantalone|broek|jeans|hose)\b/.test(text)) return 'trousers';
+  if (/\b(pants|trousers|pantalon|pantalone|broek|jeans|hose|jogging|joggers)\b/.test(text)) return 'trousers';
   if (/\b(t shirt|tshirt|tee)\b/.test(text)) return 'tee';
   if (/\b(shirt|chemise|overhemd|hemd)\b/.test(text)) return 'shirt';
   if (/\b(hoodie|sweatshirt|sweater|knit|cardigan|trui)\b/.test(text)) return 'knit';

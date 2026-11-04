@@ -91,3 +91,7 @@ RADAR_DRY_RUN=true node tools/deal-radar/radar.mjs
 ```
 
 Bronnen: [Vinted-voorwaarden §6](https://www.vinted.nl/terms-and-conditions), [Vinted Pro Integrations](https://pro-docs.svc.vinted.com/), [Telegram Bot API](https://core.telegram.org/bots/api).
+
+### Bevinding eerste volledige proef
+
+Een zoekopdracht op alleen het woord Needles bleek ook naainaalden en irrelevante advertenties op te leveren. De beoordelaar wees die af op merk. De bronzoekopdracht is daarom aangescherpt naar de officiële Vinted-merkfilter `360271` ([catalogus](https://www.vinted.nl/catalog/582-verryttelyasut/brand/360271-needles)), zonder categorie- of maatbeperking, met €40 als bovengrens. Een geslaagde HTTP-aanroep alleen is onvoldoende: ook de relevantie van de ontvangen advertenties wordt gecontroleerd.
