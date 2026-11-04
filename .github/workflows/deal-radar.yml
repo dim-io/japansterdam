@@ -1,0 +1,50 @@
+name: Japansterdam vondstenradar
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Alleen beoordelen; geen Telegramberichten verzenden
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: japansterdam-deal-radar
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    # No hourly jobs or alerts until the owner has connected a working source.
+    if: vars.RADAR_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Controleer beoordelingsregels
+        run: node --test tools/deal-radar/radar.test.mjs
+      - uses: actions/cache/restore@v4
+        with:
+          path: tools/deal-radar/.state
+          key: radar-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: radar-${{ github.ref_name }}-
+      - name: Controleer nieuwe vondsten
+        env:
+          RADAR_FEED_URL: ${{ secrets.RADAR_FEED_URL }}
+          RADAR_FEED_TOKEN: ${{ secrets.RADAR_FEED_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RADAR_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+        run: node tools/deal-radar/radar.mjs
+      - uses: actions/cache/save@v4
+        if: always() && hashFiles('tools/deal-radar/.state/alerts.json') != '' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+        with:
+          path: tools/deal-radar/.state
+          key: radar-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
