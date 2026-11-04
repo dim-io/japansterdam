@@ -181,3 +181,7 @@ fieldset.grp legend{padding:0 8px;font-size:11px;letter-spacing:.1em;text-transf
   .plinks button{border-bottom:0;border-left:0;border-bottom:2px solid transparent;white-space:nowrap}.plinks button.is-active{border-bottom-color:var(--ink)}
   .grid2{grid-template-columns:1fr}
 }
+
+.measurement-group{min-width:0;padding:0;border:0;margin:0}
+.measurement-group + .measurement-group{margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+.measurement-group legend{padding:0;margin-bottom:14px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}

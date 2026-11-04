@@ -1,5 +1,5 @@
 import './layout.js?v=grailed-links';
-import { measurementsBlock } from './measurements.js';
+import { measurementsBlock } from './measurements.js?v=garment-types';
 import { getContent, getProducts, getProduct, formatPrice, esc, stripHtml, productUrl, brandUrl, altFor, cardHTML, catNo, related, setMeta, jsonLd } from './data.js';
 import { inBag, addToBag, onBagChange } from './bag.js';
 
@@ -82,7 +82,7 @@ if (!p) {
 </div>
 ${p.sold ? '' : `<div class="buybar" id="buybar"><div class="buybar__info"><span class="buybar__name">${esc(p.name)}</span><span class="buybar__price">${formatPrice(p.price)}</span></div><button class="btn btn--primary btn--sm" type="button" id="bar-btn"></button></div>`}`;
 
-  document.getElementById('product-measurements').replaceChildren(measurementsBlock(p.measurements));
+  document.getElementById('product-measurements').replaceChildren(measurementsBlock(p.measurements, p.category));
 
   // main + sticky-bar buttons share one state
   const btn = document.getElementById('add-btn');

@@ -165,15 +165,24 @@ function cleanProduct(input, slug, addedOn) {
   if (!CONDITIONS.includes(condition)) throw new HttpError(400, 'Choose a condition: ' + CONDITIONS.join(', '));
   if (!conditionNotes) throw new HttpError(400, 'Condition notes are required. Describe wear, flaws or the absence of visible flaws.');
   if (conditionNotes.length > 600) throw new HttpError(400, 'Condition notes must be 600 characters or fewer');
-  const measurements = {};
-  if (input.measurements !== undefined && !isObj(input.measurements)) throw new HttpError(400, 'Measurements must be an object');
-  for (const key of ['chest', 'shoulder', 'sleeveLength', 'length', 'hem']) {
-    const value = input.measurements?.[key];
-    if (value === undefined || value === null || value === '') continue;
-    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0.1 || value > 1000) {
-      throw new HttpError(400, key + ' must be a measurement in centimeters between 0.1 and 1000');
+  const topKeys = ['chest', 'shoulder', 'sleeveLength', 'length', 'hem'];
+  const bottomKeys = ['waist', 'hip', 'inseam', 'outseam', 'frontRise', 'backRise', 'thigh', 'legOpening'];
+  const cleanMeasurements = (values, keys, prefix = '') => {
+    if (values !== undefined && !isObj(values)) throw new HttpError(400, prefix + 'Measurements must be an object');
+    const result = {};
+    for (const key of keys) {
+      const value = values?.[key];
+      if (value === undefined || value === null || value === '') continue;
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0.1 || value > 1000) {
+        throw new HttpError(400, prefix + key + ' must be a measurement in centimeters between 0.1 and 1000');
+      }
+      result[key] = value;
     }
-    measurements[key] = value;
+    return result;
+  };
+  const measurements = cleanMeasurements(input.measurements, [...topKeys, ...bottomKeys]);
+  if (input.measurements?.bottom !== undefined) {
+    measurements.bottom = cleanMeasurements(input.measurements.bottom, bottomKeys, 'Bottoms: ');
   }
   return {
     slug,

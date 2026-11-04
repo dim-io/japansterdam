@@ -11,3 +11,6 @@
 .measurements__list dt{color:var(--muted)}
 .measurements__list dd{margin:0;font-variant-numeric:tabular-nums;white-space:nowrap}
 .measurements__note{margin-top:12px;font-size:11px;line-height:1.6;color:var(--muted)}
+
+.measurements .measurements__subtitle{margin:24px 0 8px;font:500 11px/1.4 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.measurements .measurements__subtitle:first-child{margin-top:0}

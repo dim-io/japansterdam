@@ -1,6 +1,6 @@
 import { API_BASE } from '../js/config.js';
 import { createProductRoutes } from '../js/product-urls.js';
-import { MEASUREMENT_FIELDS, formatMeasurement, measurementsBlock } from '../js/measurements.js';
+import { TOP_MEASUREMENT_FIELDS, BOTTOM_MEASUREMENT_FIELDS, measurementGroups, formatMeasurement, measurementsBlock } from '../js/measurements.js?v=garment-types';
 
 const TOKEN_KEY = 'jp_admin_token';
 const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Accessories'];
@@ -368,19 +368,31 @@ async function viewEditor(slugParam) {
 
   const mark = () => { setDirty(true); refreshPreview(); };
   const previewHost = h('div', {});
-  function refreshPreview() { previewHost.replaceChildren(previewCard(d, noText()), measurementsBlock(d.measurements)); }
+  function refreshPreview() { previewHost.replaceChildren(previewCard(d, noText()), measurementsBlock(d.measurements, d.category)); }
 
-  const measurementInputs = MEASUREMENT_FIELDS.map(([key, label]) => {
-    const input = h('input', { type: 'number', min: '0.1', max: '1000', step: 'any', inputmode: 'decimal', value: d.measurements[key] ?? '', 'aria-label': label + ' in centimeters' });
-    const inches = h('output', { class: 'measurement-inches' }, formatMeasurement(d.measurements[key], 'in'));
-    input.addEventListener('input', () => {
-      if (input.value === '') delete d.measurements[key];
-      else d.measurements[key] = Number(input.value);
-      inches.textContent = formatMeasurement(d.measurements[key], 'in');
-      mark();
-    });
-    return { input, element: h('label', { class: 'field' }, h('span', {}, label + ' (cm)'), h('span', { class: 'measurement-input' }, input, inches)) };
-  });
+  let measurementInputs = [];
+  const measurementEditor = h('div', { class: 'measurement-editor' });
+  function drawMeasurementInputs() {
+    if (d.category === 'Sets') d.measurements.bottom ||= {};
+    measurementInputs = [];
+    measurementEditor.replaceChildren(...measurementGroups(d.measurements, d.category).map((group) => {
+      const fields = group.fields.map(([key, label]) => {
+        const prefix = d.category === 'Sets' ? group.title + ' ' : '';
+        const input = h('input', { type: 'number', min: '0.1', max: '1000', step: 'any', inputmode: 'decimal', value: group.values[key] ?? '', 'aria-label': prefix + label + ' in centimeters' });
+        const inches = h('output', { class: 'measurement-inches' }, formatMeasurement(group.values[key], 'in'));
+        input.addEventListener('input', () => {
+          if (input.value === '') delete group.values[key];
+          else group.values[key] = Number(input.value);
+          inches.textContent = formatMeasurement(group.values[key], 'in');
+          mark();
+        });
+        measurementInputs.push(input);
+        return h('label', { class: 'field' }, h('span', {}, label + ' (cm)'), h('span', { class: 'measurement-input' }, input, inches));
+      });
+      return h('fieldset', { class: 'measurement-group' }, h('legend', {}, group.title), h('div', { class: 'grid2' }, fields));
+    }));
+  }
+  drawMeasurementInputs();
 
   const bind = (key, attrs = {}, type) => {
     const i = h('input', { ...attrs, value: d[key] ?? '' });
@@ -399,8 +411,20 @@ async function viewEditor(slugParam) {
   conditionNotes.value = d.conditionNotes || '';
   conditionNotes.addEventListener('input', () => { d.conditionNotes = conditionNotes.value; conditionNotes.setCustomValidity(''); mark(); });
   const price = bind('price', { type: 'number', min: '0', step: '1', inputmode: 'decimal' }, 'number');
-  const cat = h('select', {}, CATEGORIES.map((c) => h('option', { value: c, selected: c === d.category }, c)));
-  cat.addEventListener('change', () => { d.category = cat.value; mark(); });
+  const cat = h('select', { 'aria-label': 'Category' }, CATEGORIES.map((c) => h('option', { value: c, selected: c === d.category }, c)));
+  cat.addEventListener('change', () => {
+    // Preserve entered trouser measurements when changing between a separate
+    // pair and a set; top measurements keep their existing flat storage.
+    if (d.category === 'Bottoms' && cat.value === 'Sets') {
+      d.measurements.bottom = Object.fromEntries(BOTTOM_MEASUREMENT_FIELDS.filter(([key]) => d.measurements[key] !== undefined).map(([key]) => [key, d.measurements[key]]));
+    } else if (d.category === 'Sets' && cat.value === 'Bottoms') {
+      BOTTOM_MEASUREMENT_FIELDS.forEach(([key]) => { delete d.measurements[key]; });
+      Object.assign(d.measurements, d.measurements.bottom || {});
+    }
+    d.category = cat.value;
+    drawMeasurementInputs();
+    mark();
+  });
   const sold = h('input', { type: 'checkbox', checked: d.sold });
   sold.addEventListener('change', () => { d.sold = sold.checked; mark(); });
 
@@ -493,7 +517,7 @@ async function viewEditor(slugParam) {
     if (!condition.reportValidity()) return;
     conditionNotes.setCustomValidity(conditionNotes.value.trim() ? '' : 'Please describe the condition of this garment.');
     if (!conditionNotes.reportValidity()) return;
-    for (const { input } of measurementInputs) {
+    for (const input of measurementInputs) {
       if (!input.reportValidity()) return;
     }
     if (htmlMode) d.description = src.value;
@@ -508,7 +532,8 @@ async function viewEditor(slugParam) {
         throw new Error('Condition was not saved. The backend needs the latest update.');
       }
       // An older Worker drops unknown fields. Never report those measurements as saved.
-      if (MEASUREMENT_FIELDS.some(([key]) => d.measurements[key] !== undefined && saved.measurements?.[key] !== d.measurements[key])) {
+      const measurementSources = [[d.measurements, saved.measurements], [d.measurements.bottom, saved.measurements?.bottom]];
+      if (measurementSources.some(([expected, actual]) => [...TOP_MEASUREMENT_FIELDS, ...BOTTOM_MEASUREMENT_FIELDS].some(([key]) => expected?.[key] !== actual?.[key]))) {
         if (isNew) slug = saved.slug;
         throw new Error('Measurements were not saved. The Cloudflare backend needs the latest update.');
       }
@@ -518,7 +543,7 @@ async function viewEditor(slugParam) {
       if (viewLink) viewLink.href = '../' + createProductRoutes(products).urlFor(saved.slug);
       setDirty(false); toast('Saved');
       if (isNew) { location.hash = '#/products/' + encodeURIComponent(saved.slug); return; }
-      Object.assign(d, saved); refreshPreview();
+      Object.assign(d, saved); drawMeasurementInputs(); refreshPreview();
     } catch (e) { toast(e.message, true); }
     saveBtn.disabled = false;
   }
@@ -549,8 +574,8 @@ async function viewEditor(slugParam) {
           h('label', { class: 'switch' }, sold, 'Sold')),
         h('section', { class: 'panel' }, h('h2', {}, 'Description'), bar, rte, src),
         h('section', { class: 'panel' }, h('h2', {}, 'Measurements'),
-          h('p', { class: 'measurement-help' }, 'Enter centimeters only. Inches are calculated automatically. Measure the garment flat; leave unavailable measurements blank.'),
-          h('div', { class: 'grid2' }, measurementInputs.map(({ element }) => element))),
+          h('p', { class: 'measurement-help' }, 'Fields follow the selected category. Enter centimeters only; inches are calculated automatically. Measure widths flat, not doubled. For sets, enter the top and bottoms separately. Leave unavailable measurements blank.'),
+          measurementEditor),
         h('section', { class: 'panel' }, h('h2', {}, 'Photos'), grid, drop)),
       h('div', { class: 'preview-wrap' }, h('div', { class: 'preview' }, h('p', { class: 'label' }, 'Preview in shop'), previewHost))),
     h('div', { class: 'savebar' }, saveBtn, h('span', { class: 'dirty' }, 'Unsaved changes'), h('span', { class: 'grow' }), viewLink, delBtn));
