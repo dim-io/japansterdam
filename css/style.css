@@ -426,7 +426,7 @@ img[data-fade].is-loaded{opacity:1}
 .about__headline{font-size:clamp(28px,2.8vw,42px);line-height:1.06;letter-spacing:-.02em;max-width:26ch}
 .about__img{grid-area:portrait;align-self:start;overflow:hidden}
 .about__img img{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:center 40%}
-.about__body{grid-area:body;min-width:0;max-width:48ch}
+.about__body{grid-area:body;min-width:0;max-width:62ch}
 .about__body>p:not(.about__sig){margin-bottom:24px;font-size:17px;line-height:1.75}
 .about__sig{display:flex;align-items:center;gap:12px;margin-top:24px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;line-height:1.6}
 .about__sig::before{content:"";width:24px;height:2px;background:var(--red);flex:none}
@@ -440,14 +440,29 @@ img[data-fade].is-loaded{opacity:1}
 .about-close{background:var(--cream);margin-top:96px;padding:80px 0}
 .about-close .insta{margin-top:0;padding-top:0;border-top:0}
 @media(min-width:900px){
-  .page--about{padding-top:56px}
-  .about{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"portrait intro" "portrait body";grid-template-rows:auto 1fr;gap:36px clamp(40px,6vw,80px);align-items:start}
+  .page--about{padding-top:clamp(24px,4svh,40px)}
+  .about{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"portrait intro" "portrait body";grid-template-rows:auto 1fr;gap:24px clamp(40px,6vw,80px);align-items:start}
+  .about__intro .eyebrow{margin-bottom:18px}
+  .about__headline{font-size:clamp(26px,2.5vw,36px);line-height:1.08;max-width:28ch}
+  .about__body>p:not(.about__sig){font-size:15px;line-height:1.65;margin-bottom:18px}
+  .about__body>p:nth-last-child(2){margin-bottom:0}
+  .about__sig{margin-top:22px}
   .about__img{position:sticky;top:calc(var(--header-h) + 24px)}
   .about__img img{aspect-ratio:3/4;max-height:calc(100svh - var(--header-h) - 48px)}
   .about-pair{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(40px,6vw,80px);margin-top:120px}
   .about-pair__label{width:100%;margin-top:72px}
   .about-pair__atelier{width:100%}
   .insta{flex-direction:row;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:28px}
+}
+
+/* Keep the complete introduction and signature comfortable on shorter laptops. */
+@media(min-width:900px) and (max-height:760px){
+  .about{row-gap:18px}
+  .about__intro .eyebrow{margin-bottom:14px}
+  .about__headline{font-size:clamp(24px,2.2vw,30px)}
+  .about__body>p:not(.about__sig){font-size:14px;line-height:1.6;margin-bottom:14px}
+  .about__body>p:nth-last-child(2){margin-bottom:0}
+  .about__sig{margin-top:18px}
 }
 
 /* contact */
