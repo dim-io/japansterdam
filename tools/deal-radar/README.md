@@ -62,6 +62,17 @@ Onderstaand voorbeeld is fictieve testdata, geen echte advertentie of marktwaard
 
 De bron wordt via HTTPS opgehaald, met optioneel `Authorization: Bearer <RADAR_FEED_TOKEN>`. Redirects worden geweigerd. Verkeerde feeddata of een onbereikbare bron laat de controle mislukken; er wordt dan geen leeg succesrapport of valse vondst verstuurd.
 
+## Eerste Apify-proef zonder uurschema
+
+Er is een beperkte koppeling voorbereid voor `omkar-cloud/vinted-scraper`. Deze is nog niet met het account van de eigenaar uitgevoerd; bronkwaliteit en actuele bereikbaarheid zijn dus nog onbevestigd.
+
+1. Maak in Apify onder **API & Integrations** een apart API-token voor Japansterdam. Bewaar het als GitHub Actions-secret `APIFY_TOKEN`; deel het niet in de chat.
+2. Start [Vinted proefscan](https://github.com/dim-io/japansterdam/actions/workflows/vinted-probe.yml) handmatig op `main`.
+3. De proef vraagt drie Needles-advertenties tot €40 aan, op Vinted Nederland, met detailgegevens. Apify krijgt een timeout van 90 seconden en een kostenlimiet van **$0,02** mee. Een mislukte start wordt niet automatisch opnieuw geprobeerd.
+4. Bekijk de samenvatting van de run. Die toont de ontvangen links, prijs, merk, staat en of beschikbaarheid expliciet bevestigd is. Ontbrekende velden blijven onbekend.
+
+De test gebruikt het gratis Apify-tegoed als dat beschikbaar is. Hij sluit geen abonnement af. Er is nog geen bewezen dekking voor alle merken ieder uur; vergelijkingsprijzen en koppeling aan de beoordelaar zijn vervolgwerk. Deze proef activeert geen schema en verstuurt geen koopjesmeldingen. Bronnen: [scraperdocumentatie](https://apify.com/omkar-cloud/vinted-scraper), [Apify API-limieten](https://docs.apify.com/api/v2/actors-runs-post).
+
 ## Lokaal
 
 Node 22+, geen npm-afhankelijkheden:
