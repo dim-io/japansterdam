@@ -19,11 +19,11 @@ const views = {
     <div class="about__intro">
       <p class="eyebrow">${esc(a.title)}</p>
       <h1 class="display about__headline">${esc(statement)}</h1>
+      <p class="about__sig">${esc(a.signature)}</p>
     </div>
     <figure class="about__img"><img src="assets/img/site/about-sam.jpg" alt="Sam, founder and curator of Japansterdam" width="1538" height="2000" fetchpriority="high"></figure>
     <div class="about__body">
       ${body.map((p) => `<p>${esc(p)}</p>`).join('')}
-      <p class="about__sig">${esc(a.signature)}</p>
     </div>
   </div>
   <div class="about-pair">
