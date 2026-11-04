@@ -24,7 +24,6 @@ const views = {
     <div class="about__body">
       ${body.map((p) => `<p>${esc(p)}</p>`).join('')}
       <div class="about__signature">
-        <img src="assets/img/site/sam-signature.webp" alt="" width="496" height="218" class="about__autograph">
         <p class="about__sig">${esc(a.signature)}</p>
       </div>
     </div>
