@@ -110,7 +110,7 @@ export async function fetchJson(url, { token, fetcher = fetch } = {}) {
   try { u = new URL(url); } catch { throw new Error('De feed-URL is ongeldig'); }
   if (u.protocol !== 'https:' || u.username || u.password) throw new Error('Gebruik een HTTPS-feed; geef de token apart op');
   const response = await fetcher(u, { headers: { Accept: 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
-    signal: AbortSignal.timeout(30_000), redirect: 'error' });
+    signal: AbortSignal.timeout(30_000), redirect: 'manual' });
   if (!response.ok) throw new Error('Gegevensbron onbereikbaar (HTTP ' + response.status + ')');
   return response.json();
 }
@@ -120,7 +120,7 @@ export async function sendTelegram(text, token, chatId, fetcher = fetch) {
   let response;
   try {
     response = await fetcher('https://api.telegram.org/bot' + token + '/sendMessage', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'error', signal: AbortSignal.timeout(20_000),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, redirect: 'manual', signal: AbortSignal.timeout(20_000),
       body: JSON.stringify({ chat_id: chatId, text: text.slice(0, 4000), link_preview_options: { is_disabled: true } }),
     });
   } catch { throw new Error('Telegram kon niet worden bereikt; controleer de bezorgstatus vóór opnieuw verzenden'); }

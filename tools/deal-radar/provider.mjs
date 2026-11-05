@@ -31,7 +31,7 @@ export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep
     let response;
     try {
       response = await fetcher(API + endpoint, { method, headers: { Authorization: 'Bearer ' + token, Accept: 'application/json', 'Content-Type': 'application/json' },
-        ...(body ? { body: JSON.stringify(body) } : {}), redirect: 'error', signal: AbortSignal.timeout(30_000) });
+        ...(body ? { body: JSON.stringify(body) } : {}), redirect: 'manual', signal: AbortSignal.timeout(30_000) });
     } catch { throw new Error('Apify is niet bereikbaar; de proefscan is niet bevestigd. Controleer Runs in Apify vóór opnieuw starten.'); }
     if (!response.ok) throw new Error('Apify gaf HTTP ' + response.status + '. Controleer je token, toegang tot de scraper en gratis tegoed.');
     return response.json();

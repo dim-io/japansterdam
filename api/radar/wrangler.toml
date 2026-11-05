@@ -1,7 +1,7 @@
 name = "japansterdam-radar"
 account_id = "0e3359947b78095a7afd9ce36f5cac6f"
 main = "worker.mjs"
-compatibility_date = "2026-11-01"
+compatibility_date = "2026-10-30"
 workers_dev = true
 
 [triggers]

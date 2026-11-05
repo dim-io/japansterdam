@@ -22,7 +22,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   const previous = await sql(env, 'SELECT * FROM radar_control WHERE id = ?', PILOT_ID).first();
   if (!previous) throw new Error('Radarstatus niet overgezet; scanner blijft gestopt');
   await sql(env, 'UPDATE radar_control SET last_wake_at = ? WHERE id = ?', now, PILOT_ID).run();
-  if (previous.last_slot >= slot || previous.attempts >= Math.min(policy.maxAttempts, 25)) return { skipped: true };
+  if ((previous.last_slot >= slot && !previous.transport_retry) || previous.attempts >= Math.min(policy.maxAttempts, 25)) return { skipped: true };
   // Validate the source before reserving/spending a scan. Retrying a failed inventory read is free of Apify calls.
   // Read only the public catalog fields already used by the storefront.
   // This avoids Worker-to-Worker fetch restrictions and parsing image-heavy descriptions.
@@ -32,7 +32,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   if (!inWindow(clock(), policy)) return { inactive: true };
   // Atomic database reservation: overlapping events and redeployments cannot spend twice in one hour.
   const reservation = await sql(env,
-    'UPDATE radar_control SET attempts = attempts + 1, last_slot = ?, last_attempt_at = ?, last_error=NULL, error_at=NULL WHERE id = ? AND last_slot < ? AND attempts < ? RETURNING attempts',
+    'UPDATE radar_control SET attempts = attempts + 1, last_slot = ?, last_attempt_at = ?, transport_retry=0, last_error=NULL, error_at=NULL WHERE id = ? AND (last_slot < ? OR transport_retry=1) AND attempts < ? RETURNING attempts',
     slot, now, PILOT_ID, slot, Math.min(policy.maxAttempts, 25)).first();
   if (!reservation) return { skipped: true };
   const brands = Object.entries(policy.brands);

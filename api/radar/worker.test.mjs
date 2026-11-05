@@ -8,6 +8,7 @@ const policy = { enabled: true, startsAt: new Date(now - 1000).toISOString(), en
 function setup(attempts = 0) {
   const db = new DatabaseSync(':memory:');
   db.exec(fs.readFileSync(new URL('../migrations/0002_radar.sql', import.meta.url), 'utf8'));
+  db.exec(fs.readFileSync(new URL('../migrations/0003_radar_transport_retry.sql', import.meta.url), 'utf8'));
   db.exec('CREATE TABLE products (data TEXT NOT NULL)');
   db.prepare('INSERT INTO products (data) VALUES (?)').run(JSON.stringify({ name: 'Needles Painter Trousers', brand: 'Needles', price: 210 }));
   db.prepare('INSERT INTO radar_control (id,attempts) VALUES (?,?)').run(PILOT_ID,attempts);
@@ -74,4 +75,15 @@ test('valuation reads only public catalog fields from D1 without an outbound inv
   const {db,env}=setup();
   const report=await scan(env,{...options,fetcher:async()=>{throw Error('Inventory HTTP fetch must not be used');},probeFn:async()=>({runId:'internal',items:[]})});
   assert.equal(report.attempts,1);db.close();
+});
+
+
+test('one-time pre-network transport recovery is consumed atomically without resetting the budget',async()=>{
+  const {db,env}=setup(4);let calls=0;
+  db.prepare('UPDATE radar_control SET last_slot=?,transport_retry=1').run(Math.floor(now/3600000));
+  const opts={...options,probeFn:async()=>{calls++;return {runId:'recovery',items:[]};}};
+  await Promise.all([scan(env,opts),scan(env,opts)]);
+  assert.equal(calls,1);
+  const row=db.prepare('SELECT attempts,transport_retry FROM radar_control').get();
+  assert.equal(row.attempts,5);assert.equal(row.transport_retry,0);db.close();
 });
