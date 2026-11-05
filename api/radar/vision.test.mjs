@@ -52,3 +52,20 @@ test('blank-image readiness must not accept hallucinated labels and model terms 
  const denied=await screenPhotos(env,{...item,url:'https://www.vinted.nl/items/999-other'},config,policy,opts);
  assert.equal(denied.reason,'model_terms_required');db.close();
 });
+
+
+test('Cloudflare structured JSON objects and complete JSON fences are decoded without accepting malformed output',()=>{
+ const value=JSON.parse(raw().response);
+ assert.equal(parseScreening({response:value},item,config,2).state,'visually_consistent');
+ assert.equal(parseScreening({response:'```json\n'+JSON.stringify(value)+'\n```'},item,config,2).state,'visually_consistent');
+ assert.equal(parseScreening({response:[]},item,config,2).state,'inconclusive');
+ assert.equal(parseScreening({response:{brand_text:'Kapital'}},item,config,2).state,'inconclusive');
+});
+
+test('blank-image readiness accepts structured conservative output while preserving the total attempt cap',async()=>{
+ const {db,env,calls}=setup();
+ env.AI.run=async()=>({response:{garment_visible:false,brand_text:'',brand_photo:-1,care_text:'',care_photo:-1,contradiction:false,reason:'not_clothing'}});
+ const result=await screenPhotos(env,item,config,policy,{...opts,smoke:true});assert.equal(result.state,'ready');
+ assert.equal(db.prepare('SELECT attempts FROM radar_vision_control').get().attempts,1);
+ assert.equal(db.prepare('SELECT smoke_ok FROM radar_vision_control').get().smoke_ok,1);db.close();
+});

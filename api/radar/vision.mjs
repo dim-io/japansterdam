@@ -22,10 +22,15 @@ const q = (env,s,...args) => env.RADAR_DB.prepare(s).bind(...args);
 const currentWindow = (now,policy) => policy.enabled && now >= Date.parse(policy.startsAt) && now < Date.parse(policy.endsAt);
 const imageHost = (raw) => { try { const u=new URL(raw);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&/^images\d*\.vinted\.net$/.test(u.hostname); }catch{return false;} };
 
+export function modelObject(raw) {
+  const content=raw?.response;
+  if(content&&typeof content==='object'&&!Array.isArray(content))return content;
+  if(typeof content!=='string')return null;
+  const text=content.trim().replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/,'$1');
+  try{return JSON.parse(text);}catch{return null;}
+}
 export function parseScreening(raw, item, config, count) {
-  const text = typeof raw?.response === 'string' ? raw.response : null;
-  let value;
-  try { value=JSON.parse(text); } catch { return {state:'inconclusive',reason:'invalid_model_output'}; }
+  const value=modelObject(raw);
   if (!value || typeof value.garment_visible!=='boolean' || typeof value.contradiction!=='boolean'
     || typeof value.brand_text!=='string' || typeof value.care_text!=='string'
     || !Number.isInteger(value.brand_photo) || !Number.isInteger(value.care_photo)
@@ -65,7 +70,8 @@ async function infer(env,item,data,config,smoke=false) {
     ...data.map(url=>({type:'image_url',image_url:{url}})),
   ]}],temperature:0,max_tokens:400,guided_json:schema});
   if(smoke) {
-    let value;try{value=JSON.parse(result.response);}catch{return {state:'unavailable',reason:'invalid_model_output'};}
+    const value=modelObject(result);
+    if(!value||typeof value.garment_visible!=='boolean'||typeof value.contradiction!=='boolean'||typeof value.brand_text!=='string'||typeof value.care_text!=='string')return {state:'unavailable',reason:'invalid_model_output'};
     return !value.garment_visible && value.brand_text==='' && value.care_text==='' && !value.contradiction
       && ['labels_missing','unreadable','not_clothing','uncertain'].includes(value.reason)
       ? {state:'ready',reason:'empty_image_correctly_inconclusive'} : {state:'unavailable',reason:'empty_image_hallucinated'};
@@ -77,9 +83,9 @@ export async function screenPhotos(env,item,config,policy,{now=Date.now(),fetche
   if(!currentWindow(now,policy)||!currentWindow(clock(),policy))return {state:'inactive'};
   if(env.VISION_FREE_CONFIRMED!=='true')return {state:'disabled',reason:'free_plan_not_confirmed'};
   if(!env.AI?.run)return {state:'disabled',reason:'ai_binding_missing'};
-  const id=smoke?'smoke-v1':/\/items\/(\d+)/.exec(item.url)?.[1];
+  const id=smoke?'smoke-v2':/\/items\/(\d+)/.exec(item.url)?.[1];
   if(!id)return {state:'inconclusive',reason:'invalid_item'};
-  const key=smoke?'empty-pixel-regression-v1':listingEvidenceKey(item);
+  const key=smoke?'empty-pixel-regression-v2':listingEvidenceKey(item);
   const old=await q(env,'SELECT state,result FROM radar_photo_checks WHERE pilot_id=? AND item_id=? AND evidence_key=?','pilot-2026-11-04',id,key).first();
   if(old)return old.result?JSON.parse(old.result):{state:'inconclusive',reason:'previous_attempt_pending_or_failed'};
   let data;
