@@ -8,6 +8,13 @@ const MAX_COST = .02;
 const INPUT = { searchQueries: ['https://www.vinted.nl/catalog?brand_ids%5B%5D=360271&price_to=40&currency=EUR&order=newest_first'], brandIds: '360271', country: 'nl', sortBy: 'newest_first', maxPrice: 40, maxResults: 3, includeDetails: true, language: 'en' };
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'TIMED-OUT', 'ABORTED']);
 
+export function listingPhotos(row) {
+  const raw = [row.image, ...(Array.isArray(row.photos) ? row.photos : []), ...(Array.isArray(row.images) ? row.images : [])];
+  return [...new Set(raw.map((p) => typeof p === 'string' ? p : p?.url || p?.full_size_url).filter((p) => {
+    try { const u = new URL(p); return u.protocol === 'https:' && !u.username && !u.password && !u.port && /^images\d*\.vinted\.net$/.test(u.hostname); } catch { return false; }
+  }))].slice(0, 12);
+}
+
 // Keep missing fields unknown. A successful search is not evidence that a
 // returned listing is still available or that it is a profitable deal.
 export function normalizeRow(row, observedAt) {
@@ -19,6 +26,7 @@ export function normalizeRow(row, observedAt) {
   const item = { url, title: String(row.title || '').slice(0, 200), brand: String(row.brand || row.brand_title || ''), price, currency,
     size: String(row.size || row.size_title || ''), condition: conditions[row.condition || row.status] || null,
     available: row.availability === 'available' ? true : row.availability ? false : null,
+    photoUrls: listingPhotos(row),
     description: String(row.description || '').slice(0, 5000), sourceUploadAge: String(row.uploaded_ago || '').slice(0, 80) || null, observedAt, comparables: [] };
   if (typeof row.shipping_price === 'number' && row.shipping_price >= 0) item.shippingCost = row.shipping_price;
   if (typeof row.buyer_protection_fee === 'number' && row.buyer_protection_fee >= 0) item.buyerFee = row.buyer_protection_fee;

@@ -10,18 +10,109 @@
   "buyingCostReserve": 10,
   "packingReserve": 2,
   "inventoryUrl": "https://japansterdam-api.japansterdam-api.workers.dev/public/products",
-  "coreBrands": ["Kapital", "Needles", "Engineered Garments", "Ts(s)", "Sage de Cret", "Nonnative", "Remi Relief", "Ordinary Fits", "Uniform Experiment", "Fragment Design", "Fumito Ganryu", "BEAMS Plus", "Nulabel", "Portvel", "Wislom", "Wacko Maria", "SOPHNET.", "Neighborhood", "The Changes"],
-  "peripheralBrands": ["Visvim", "Auralee", "Kaptain Sunshine", "orSlow", "Fullcount", "Resolute", "Iron Heart", "Momotaro", "Warehouse", "TCB", "Sugar Cane", "Studio D'Artisan", "Denime", "A Vontade", "Nanamica", "White Mountaineering", "Porter Yoshida", "Head Porter", "Yohji Yamamoto", "Junya Watanabe", "Undercover", "South2 West8", "Haversack", "Anatomica", "Blue Blue Japan"],
+  "coreBrands": [
+    "Kapital",
+    "Needles",
+    "Engineered Garments",
+    "Ts(s)",
+    "Sage de Cret",
+    "Nonnative",
+    "Remi Relief",
+    "Ordinary Fits",
+    "Uniform Experiment",
+    "Fragment Design",
+    "Fumito Ganryu",
+    "BEAMS Plus",
+    "Nulabel",
+    "Portvel",
+    "Wislom",
+    "Wacko Maria",
+    "SOPHNET.",
+    "Neighborhood",
+    "The Changes"
+  ],
+  "peripheralBrands": [
+    "Visvim",
+    "Auralee",
+    "Kaptain Sunshine",
+    "orSlow",
+    "Fullcount",
+    "Resolute",
+    "Iron Heart",
+    "Momotaro",
+    "Warehouse",
+    "TCB",
+    "Sugar Cane",
+    "Studio D'Artisan",
+    "Denime",
+    "A Vontade",
+    "Nanamica",
+    "White Mountaineering",
+    "Porter Yoshida",
+    "Head Porter",
+    "Yohji Yamamoto",
+    "Junya Watanabe",
+    "Undercover",
+    "South2 West8",
+    "Haversack",
+    "Anatomica",
+    "Blue Blue Japan"
+  ],
   "aliases": {
-    "Kapital": ["KAPITAL Kountry", "Kountry", "Kiro Hirata", "Winday"],
-    "Ts(s)": ["Ts(S)", "ts s", "tss"],
-    "Wacko Maria": ["Wacko Maria Guilty Parties", "Guilty Parties"],
-    "Nulabel": ["Nulabel CM1Y0K42"],
-    "Fragment Design": ["Nike x Fragment Design", "Nike × Fragment Design", "Fragment x Resonate", "Fragment Design x Resonate", "Resonate"],
-    "Fumito Ganryu": ["Comme de Garçons (Ganryu)", "Ganryu"],
-    "SOPHNET.": ["SOPHNET", "Sophnet x Visvim"],
-    "Porter Yoshida": ["Yoshida Porter"],
-    "Fullcount": ["Full Count"],
-    "orSlow": ["Or Slow"]
+    "Kapital": [
+      "KAPITAL Kountry",
+      "Kountry",
+      "Kiro Hirata",
+      "Winday"
+    ],
+    "Ts(s)": [
+      "Ts(S)",
+      "ts s",
+      "tss"
+    ],
+    "Wacko Maria": [
+      "Wacko Maria Guilty Parties",
+      "Guilty Parties"
+    ],
+    "Nulabel": [
+      "Nulabel CM1Y0K42"
+    ],
+    "Fragment Design": [
+      "Nike x Fragment Design",
+      "Nike × Fragment Design",
+      "Fragment x Resonate",
+      "Fragment Design x Resonate",
+      "Resonate"
+    ],
+    "Fumito Ganryu": [
+      "Comme de Garçons (Ganryu)",
+      "Ganryu"
+    ],
+    "SOPHNET.": [
+      "SOPHNET",
+      "Sophnet x Visvim"
+    ],
+    "Porter Yoshida": [
+      "Yoshida Porter"
+    ],
+    "Fullcount": [
+      "Full Count"
+    ],
+    "orSlow": [
+      "Or Slow"
+    ]
+  },
+  "authenticityRequiredBrands": [
+    "Kapital",
+    "Needles",
+    "Visvim"
+  ],
+  "authenticityReviews": {
+    "1069814625": {
+      "brand": "Kapital",
+      "verdict": "brand_mismatch",
+      "source": "user_feedback",
+      "note": "Generieke werkkleding; door Sam afgewezen als foutief onder Kapital geplaatst."
+    }
   }
 }

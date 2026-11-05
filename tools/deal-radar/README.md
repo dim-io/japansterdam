@@ -12,7 +12,7 @@ Rechtstreekse toegang tot Vinted gaf tijdens de controle HTTP 403. Deze versie o
 - Alert vanaf **8,2/10**, minimaal **€50 geraamde marge**, minimaal **120% rendement op inkoopkosten**, minimaal goede staat, maximaal vijf meldingen per ronde.
 - Elke melding bevat scores, reden, maat, inkoopprijs, verkoopindicatie, kostenreserves, bronlinks en directe Vinted-link. Beoordeling is op aangeleverde gegevens; de code doet geen AI-fotoanalyse of authenticiteitsgarantie.
 - Alleen EUR-prijzen tot €40; geen bundels. Beschikbaarheid/prijs moet in de laatste 90 minuten gecontroleerd zijn. Ook oude, weggezakte advertenties kunnen kwalificeren zolang ze nu nog beschikbaar zijn; een leeftijdslimiet is optioneel instelbaar.
-- Verkochte vergelijkingen hebben voorrang: minimaal twee recente verkochte exemplaren van hetzelfde model, met bronlinks. Daarnaast accepteert de beoordelaar een expliciet gemarkeerde schatting op basis van eigen Japansterdam-vraagprijzen. De volledige proef zoekt daarvoor hetzelfde merk én kledingtype in de actuele product-API en rekent met 45–65% van de mediaan. Dit is een grove regel, geen gemeten marktwaarde; uitvoering, maat, materiaal en verkoopbaarheid kunnen sterk verschillen. Zonder passende referentie blijft de flipwaarde onbekend. Vraagprijzen worden nooit als gerealiseerde verkopen gepresenteerd.
+- Verkochte vergelijkingen hebben voorrang: minimaal twee recente verkochte exemplaren van hetzelfde model, met bronlinks. Daarnaast accepteert de beoordelaar een expliciet gemarkeerde schatting op basis van eigen Japansterdam-vraagprijzen. De volledige proef zoekt daarvoor hetzelfde merk, kledingtype en overeenkomstige modelkenmerken in de actuele product-API en rekent met 45–65% van de mediaan. Dit is een grove regel, geen gemeten marktwaarde; uitvoering, maat, materiaal en verkoopbaarheid kunnen sterk verschillen. Zonder passende referentie blijft de flipwaarde onbekend. Vraagprijzen worden nooit als gerealiseerde verkopen gepresenteerd.
 - Conservatieve indicatie bij verkochte vergelijkingen: mediaan minus 10%. Bij een shopschatting wordt de onderkant van de genoemde bandbreedte gebruikt. Verder 15% verkoopkosten, €2 verpakking en bij ontbrekende exacte inkoopkosten €10 reserve voor verzending/koperskosten. Marge is vóór belasting en eigen tijd, geen winstgarantie. De reserves zijn aanpasbaar in `config.json`.
 - Dubbele ID’s binnen een ronde worden samengevoegd. Een eerdere alert wordt alleen herhaald bij minstens 20% prijsdaling. Status wordt direct na bevestigde Telegrambezorging opgeslagen.
 
@@ -98,6 +98,20 @@ De bestaande workflow **Backend live zetten** test alle radarcode, past uitsluit
 De oude GitHub-pilotworkflow kan geen scans meer starten en heeft geen cron. De generieke feedworkflow blijft apart uit via `RADAR_ENABLED`. De radar kan stoppen via `enabled:false` in `pilot.json` plus publicatie. Voor een volgende proef moet het venster bewust opnieuw worden vastgesteld; een nieuw status-ID/budget mag de bestaande limiet niet stilzwijgend resetten.
 
 Bron: [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/).
+
+## Authenticiteit en bruikbaarheid van prijsreferenties
+
+De werkjas `1069814625` was een vals-positieve melding: de ingevulde merknaam werd als identiteit gebruikt en een algemene jas werd met een bandana-archivejack vergeleken. Het item staat nu als `brand_mismatch` in het vertrouwde reviewregister van `config.json`. De scanner wijst die merkclaim af; dit zegt niet dat het kledingstuk een nagemaakt Kapital-product is.
+
+Voor Kapital, Needles en Visvim is een voorafgaande review vereist vóór een koopjesmelding of numerieke dealscore. Een verkopersclaim, merkveld, `authenticity:verified` uit de feed of aanwezige foto-URL's telt niet als review. De status blijft `unreviewed` en wordt niet door een lage prijs gecompenseerd. Er is **geen automatische fotoanalyse aangesloten**. De huidige twee proefmerken leveren dus geen nieuwe koopjesmeldingen op zolang hun items niet afzonderlijk zijn beoordeeld.
+
+Een positieve review komt uitsluitend uit het repository-register, niet uit de scraperdata. Het register bindt de beoordeling aan item-ID, merk, titel en foto-URL's, bevat een beoordelaar en referentie en benoemt het kledingstuk, merklabel en waslabel als bekeken bewijs. Een review verloopt na zeven dagen of na een gewijzigde momentopname. De status `reviewed_supported` is een onderbouwde eerste controle, geen authenticiteitscertificaat; gewijzigde inhoud achter dezelfde foto-URL kan hiermee niet worden gedetecteerd. Voor een bruikbare toekomstige workflow zijn beeldanalyse/labelherkenning plus een menselijke beoordelingsroute nog vervolgwerk.
+
+De provider normaliseert maximaal twaalf unieke HTTPS-foto-URL's van de Vinted-imagehosts, zonder fotoaanwezigheid als echtheidsbewijs te behandelen. Fotoanalyse kan later eerst op een beperkte voorselectie worden uitgevoerd. Daar is nu geen nieuwe betaalde dienst voor aangesloten.
+
+Shopprijzen worden alleen gebruikt bij hetzelfde merk en kledingtype én overeenkomstige modelkenmerken of een overeenkomstige modelcode. Een algemene `Veste de travail`/`Work jacket` matcht niet meer met een bijzonder bandana-/patchworkmodel. Ook zo blijft een shopschatting een grove indicatie, geen verkochte vergelijkingsprijs. Dit is geen visuele modelherkenning.
+
+Spelfout- en merkloos-zoekroutes zijn nog niet toegevoegd. Die vragen een aparte ontdekkingsroute en dezelfde of strengere bewijscontrole. Er wordt momenteel niet op maat gefilterd; fout ingevulde maten worden dus niet uitsluitend daardoor gemist. Werkelijke maten en labelfoto's moeten worden gecontroleerd voordat een maatfout als kans wordt aangemerkt.
 
 ## Lokaal
 

@@ -6,12 +6,15 @@ import path from 'node:path';
 import { pilot } from './pilot.mjs';
 import { estimateFromShop } from './trial.mjs';
 
+import { fixtureReviews, photoFixture } from './auth-fixture.mjs';
+
 const config = JSON.parse(await fs.readFile(new URL('./config.json', import.meta.url), 'utf8'));
 const now = Date.now();
 const settings = { enabled: true, startsAt: new Date(now - 1000).toISOString(), endsAt: new Date(now + 23 * 3600000).toISOString(), maxAttempts: 25, brands: { Needles: '360271', Kapital: '576107' } };
 const products = [{ name: 'Needles Painter Trousers', brand: 'Needles', price: 210 }];
 const env = { APIFY_TOKEN: 'key', TELEGRAM_BOT_TOKEN: '123:token', TELEGRAM_CHAT_ID: '42' };
-const item = { title: 'Needles Painter Trousers', brand: 'Needles', price: 10, currency: 'EUR', condition: 'very_good', available: true, observedAt: new Date(now).toISOString(), url: 'https://www.vinted.nl/items/123456-test', comparables: [] };
+const item = { title: 'Needles Painter Trousers', brand: 'Needles', price: 10, currency: 'EUR', condition: 'very_good', available: true, observedAt: new Date(now).toISOString(), url: 'https://www.vinted.nl/items/123456-test', comparables: [], photoUrls: photoFixture };
+config.authenticityReviews = fixtureReviews(item, now);
 
 test('mainline prices are never used for Uniqlo collaborations', () => {
   assert.equal(estimateFromShop({ ...item, description: 'Uniqlo collaboration' }, products, config), null);
@@ -20,7 +23,7 @@ test('mainline prices are never used for Uniqlo collaborations', () => {
 
 test('pilot stops outside its fixed window before network access or credentials', async () => {
   let calls = 0;
-  const opts = { settings, fetcher: async () => { calls++; }, env: {}, log: () => {} };
+  const opts = { authenticityReviews: fixtureReviews(item, now), settings, fetcher: async () => { calls++; }, env: {}, log: () => {} };
   assert((await pilot({ ...opts, now: Date.parse(settings.endsAt) })).inactive);
   assert((await pilot({ ...opts, now: Date.parse(settings.startsAt) - 1 })).inactive);
   assert((await pilot({ ...opts, settings: { ...settings, enabled: false }, now })).inactive);
@@ -31,7 +34,7 @@ test('one scan per slot, duplicate alerts suppressed, high estimates clearly lab
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'radar-pilot-'));
   try {
     let scans = 0, messages = [];
-    const opts = { env, settings, stateFile: path.join(dir, 'pilot.json'), now, log: () => {},
+    const opts = { authenticityReviews: fixtureReviews(item, now), env, settings, stateFile: path.join(dir, 'pilot.json'), now, log: () => {},
       probeFn: async (args) => { scans++; assert.equal(args.brandIds, scans % 2 ? '360271' : '576107'); return { runId: 'test', items: [item, item] }; },
       fetcher: async (url, options) => {
         if (String(url).includes('workers.dev')) return Response.json(products);
@@ -56,7 +59,7 @@ test('failed provider attempt is reserved and is not retried within the same slo
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'radar-pilot-'));
   try {
     let scans = 0;
-    const opts = { env, settings, now, stateFile: path.join(dir, 'state.json'), log: () => {}, fetcher: async () => Response.json(products),
+    const opts = { authenticityReviews: fixtureReviews(item, now), env, settings, now, stateFile: path.join(dir, 'state.json'), log: () => {}, fetcher: async () => Response.json(products),
       probeFn: async () => { scans++; throw new Error('Provider unavailable'); } };
     await assert.rejects(pilot(opts), /Provider unavailable/);
     assert((await pilot(opts)).skipped);
@@ -69,7 +72,7 @@ test('rotation, repeated listing telemetry and gap reporting stay within one sca
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'radar-health-'));
   try {
     const requested = [];
-    const opts = { env: { ...env, GITHUB_STEP_SUMMARY: path.join(dir, 'summary.md') }, settings,
+    const opts = { authenticityReviews: fixtureReviews(item, now), env: { ...env, GITHUB_STEP_SUMMARY: path.join(dir, 'summary.md') }, settings,
       stateFile: path.join(dir, 'state.json'), now, log: () => {},
       fetcher: async () => Response.json(products),
       probeFn: async ({ brandIds }) => {

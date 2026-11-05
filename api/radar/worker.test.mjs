@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import worker, { scan, wake, status, inWindow, PILOT_ID } from './worker.mjs';
+import { fixtureReviews, photoFixture } from '../../tools/deal-radar/auth-fixture.mjs';
 const now = Date.now();
 const policy = { enabled: true, startsAt: new Date(now - 1000).toISOString(), endsAt: new Date(now + 23*3600000).toISOString(), maxAttempts: 25, brands: { Kapital: '576107', Needles: '360271' } };
 function setup(attempts = 0) {
@@ -18,8 +19,8 @@ function setup(attempts = 0) {
   return { db, env };
 }
 const product = { name: 'Needles Painter Trousers', brand:'Needles', price:210 };
-const item = { title: product.name, brand:'Needles', price:10, currency:'EUR', condition:'very_good', available:true, observedAt:new Date(now).toISOString(), url:'https://www.vinted.nl/items/123456-test', comparables:[] };
-const options = { now, policy, clock: () => now };
+const item = { title: product.name, brand:'Needles', price:10, currency:'EUR', condition:'very_good', available:true, observedAt:new Date(now).toISOString(), url:'https://www.vinted.nl/items/123456-test', comparables:[], photoUrls:photoFixture };
+const options = { authenticityReviews: fixtureReviews(item, now), now, policy, clock: () => now };
 
 test('hard end and malformed windows stop before credentials, database or provider access', async()=>{
   assert.equal(inWindow(Date.parse(policy.endsAt),policy),false);

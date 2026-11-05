@@ -12,8 +12,9 @@ async function saveState(filename, state) {
   await fs.rename(filename + '.tmp', filename);
 }
 
-export async function run({ env = process.env, fetcher = fetch, now = Date.now(), log = console.log } = {}) {
+export async function run({ authenticityReviews, env = process.env, fetcher = fetch, now = Date.now(), log = console.log } = {}) {
   const config = JSON.parse(await fs.readFile(path.join(here, 'config.json'), 'utf8'));
+  if (authenticityReviews) config.authenticityReviews = authenticityReviews;
   const dryRun = env.RADAR_DRY_RUN === 'true';
   if (!env.RADAR_FEED_URL) throw new Error('Niet geactiveerd: sluit eerst een toegankelijke advertentiefeed aan');
   if (!dryRun && (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID)) throw new Error('Niet geactiveerd: Telegram ontbreekt');

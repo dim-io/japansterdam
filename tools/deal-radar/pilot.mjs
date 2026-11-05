@@ -11,8 +11,9 @@ async function persist(file, value) {
   await fs.rename(file + '.tmp', file);
 }
 
-export async function pilot({ env = process.env, fetcher = fetch, probeFn = probe, now = Date.now(), settings, stateFile, log = console.log } = {}) {
+export async function pilot({ authenticityReviews, env = process.env, fetcher = fetch, probeFn = probe, now = Date.now(), settings, stateFile, log = console.log } = {}) {
   const config = JSON.parse(await fs.readFile(new URL('./config.json', import.meta.url), 'utf8'));
+  if (authenticityReviews) config.authenticityReviews = authenticityReviews;
   settings ||= JSON.parse(await fs.readFile(new URL('./pilot.json', import.meta.url), 'utf8'));
   const start = Date.parse(settings.startsAt), end = Date.parse(settings.endsAt);
   // Fixed window: re-running a workflow never extends this test automatically.

@@ -6,11 +6,14 @@ import path from 'node:path';
 import { trial, estimateFromShop, garmentType, missingReferenceReason } from './trial.mjs';
 import { assess, alertText } from './radar.mjs';
 
+import { fixtureReviews, photoFixture } from './auth-fixture.mjs';
+
 const config = JSON.parse(await fs.readFile(new URL('./config.json', import.meta.url), 'utf8'));
 const now = Date.now();
-const item = { title: 'Needles Painter Trousers', brand: 'Needles', price: 10, currency: 'EUR', condition: 'very_good',
-  available: true, observedAt: new Date(now).toISOString(), url: 'https://www.vinted.nl/items/123456-fixture', comparables: [] };
+const item = { title: 'Needles Corduroy Painter Trousers', brand: 'Needles', price: 10, currency: 'EUR', condition: 'very_good',
+  available: true, observedAt: new Date(now).toISOString(), url: 'https://www.vinted.nl/items/123456-fixture', comparables: [], photoUrls: photoFixture };
 const products = [{ brand: 'Needles', name: 'Corduroy Painter Trousers', price: 210 }, { brand: 'Needles', name: 'Basketball Shorts', price: 175 }];
+config.authenticityReviews = fixtureReviews(item, now);
 
 test('shop estimates match brand and garment type and clearly remain estimates', () => {
   assert.equal(garmentType('Needles T-shirt'), 'tee');
@@ -39,13 +42,13 @@ test('real-data trial sends one labeled message, persists delivery and skips an 
       sent.push(JSON.parse(options.body));
       return Response.json({ ok: true, result: { message_id: 123 } });
     };
-    await trial({ env, fetcher, probeFn, now, log: () => {} });
+    await trial({ authenticityReviews: fixtureReviews(item, now), env, fetcher, probeFn, now, log: () => {} });
     assert.equal(sent.length, 1);
     assert(sent[0].text.startsWith('PROEFMELDING'));
     assert(sent[0].text.includes(item.url));
     assert(sent[0].text.includes('SCHATTING'));
     assert(sent[0].text.includes('uurschema staat nog uit'));
-    assert.equal((await trial({ env, fetcher, probeFn, now, log: () => {} })).skipped, true);
+    assert.equal((await trial({ authenticityReviews: fixtureReviews(item, now), env, fetcher, probeFn, now, log: () => {} })).skipped, true);
     assert.equal(probes, 1);
   } finally { await fs.rm(dir, { recursive: true, force: true }); }
 });
@@ -54,7 +57,7 @@ test('missing price references produce an honest diagnostic, not a fabricated sc
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'radar-trial-'));
   try {
     let text;
-    await trial({ env: { APIFY_TOKEN: 'key', TELEGRAM_BOT_TOKEN: '123:private', TELEGRAM_CHAT_ID: '42', RADAR_TRIAL_STATE_FILE: path.join(dir, 'state.json') }, now,
+    await trial({ authenticityReviews: fixtureReviews(item, now), env: { APIFY_TOKEN: 'key', TELEGRAM_BOT_TOKEN: '123:private', TELEGRAM_CHAT_ID: '42', RADAR_TRIAL_STATE_FILE: path.join(dir, 'state.json') }, now,
       probeFn: async () => ({ runId: 'test', items: [item] }), log: () => {},
       fetcher: async (url, options) => {
         if (String(url).includes('workers.dev')) return Response.json([]);
@@ -68,7 +71,7 @@ test('missing price references produce an honest diagnostic, not a fabricated sc
 
 test('missing credentials stop before any paid scan', async () => {
   let calls = 0;
-  await assert.rejects(trial({ env: {}, probeFn: async () => { calls++; } }), /ontbreekt/);
+  await assert.rejects(trial({ authenticityReviews: fixtureReviews(item, now), env: {}, probeFn: async () => { calls++; } }), /ontbreekt/);
   assert.equal(calls, 0);
 });
 

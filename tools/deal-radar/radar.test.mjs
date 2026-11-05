@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { assess, alertText, identifyBrand, listingUrl, shouldAlert, run, sendTelegram, fetchJson } from './radar.mjs';
+import { assess as assessRaw, alertText, identifyBrand, listingUrl, shouldAlert, run, sendTelegram, fetchJson } from './radar.mjs';
+
+import { fixtureReviews, photoFixture } from './auth-fixture.mjs';
+const assess = (item, config, now) => assessRaw(item, {...config, authenticityReviews: fixtureReviews(item, now)}, now);
 
 const config = JSON.parse(await fs.readFile(new URL('./config.json', import.meta.url), 'utf8'));
 const now = Date.parse('2026-11-04T12:00:00Z');
 const sample = (changes = {}) => ({
   url: 'https://www.vinted.nl/items/1234567890-fixture', title: 'Fictief testjasje', brand: 'Needles',
-  price: 30, currency: 'EUR', size: 'L', available: true, condition: 'very_good', flaws: [],
+  photoUrls: photoFixture, price: 30, currency: 'EUR', size: 'L', available: true, condition: 'very_good', flaws: [],
   publishedAt: new Date(now - 30 * 60_000).toISOString(), observedAt: new Date(now - 5 * 60_000).toISOString(),
   comparables: [
     { url: 'https://www.grailed.com/listings/101-fixture', price: 180, currency: 'EUR', status: 'sold', match: 'same_model', observedAt: '2026-10-25T12:00:00Z' },
@@ -100,26 +103,26 @@ test('pipeline sends once, persists state, permits a price drop and dry-run stay
       }
       throw new Error('Unexpected request');
     };
-    const first = await run({ env, fetcher, now, log: () => {} });
+    const first = await run({ authenticityReviews: fixtureReviews(sample(), now), env, fetcher, now, log: () => {} });
     assert.equal(first.sent, 1);
     assert.equal(posted.length, 1);
     assert.equal(posted[0].chat_id, '42');
     assert.equal(posted[0].parse_mode, undefined);
-    assert.equal((await run({ env, fetcher, now, log: () => {} })).sent, 0);
+    assert.equal((await run({ authenticityReviews: fixtureReviews(sample(), now), env, fetcher, now, log: () => {} })).sent, 0);
     items = [sample({ price: 24 })];
-    assert.equal((await run({ env, fetcher, now, log: () => {} })).sent, 1);
+    assert.equal((await run({ authenticityReviews: fixtureReviews(sample(), now), env, fetcher, now, log: () => {} })).sent, 1);
     const stateBefore = await fs.readFile(stateFile, 'utf8');
     items = [sample({ price: 15 })];
-    await run({ env: { ...env, RADAR_DRY_RUN: 'true' }, fetcher, now, log: () => {} });
+    await run({ authenticityReviews: fixtureReviews(sample(), now), env: { ...env, RADAR_DRY_RUN: 'true' }, fetcher, now, log: () => {} });
     assert.equal(posted.length, 2);
     assert.equal(await fs.readFile(stateFile, 'utf8'), stateBefore);
     await fs.writeFile(stateFile, 'broken');
-    await assert.rejects(run({ env, fetcher, now, log: () => {} }), /onleesbaar/);
+    await assert.rejects(run({ authenticityReviews: fixtureReviews(sample(), now), env, fetcher, now, log: () => {} }), /onleesbaar/);
     assert.equal(posted.length, 2);
   } finally { await fs.rm(dir, { recursive: true, force: true }); }
 });
 
 test('no source or Telegram means no active scanner', async () => {
-  await assert.rejects(run({ env: {} }), /Niet geactiveerd/);
-  await assert.rejects(run({ env: { RADAR_FEED_URL: 'https://feed.example' } }), /Telegram ontbreekt/);
+  await assert.rejects(run({ authenticityReviews: fixtureReviews(sample(), now), env: {} }), /Niet geactiveerd/);
+  await assert.rejects(run({ authenticityReviews: fixtureReviews(sample(), now), env: { RADAR_FEED_URL: 'https://feed.example' } }), /Telegram ontbreekt/);
 });

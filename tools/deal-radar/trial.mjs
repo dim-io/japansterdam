@@ -7,8 +7,9 @@ import { assess, alertText, fetchJson, identifyBrand, normalize, sendTelegram } 
 export { garmentType, estimateFromShop, missingReferenceReason } from './valuation.mjs';
 import { estimateFromShop } from './valuation.mjs';
 
-export async function trial({ env = process.env, fetcher = fetch, probeFn = probe, now = Date.now(), log = console.log } = {}) {
+export async function trial({ authenticityReviews, env = process.env, fetcher = fetch, probeFn = probe, now = Date.now(), log = console.log } = {}) {
   const config = JSON.parse(await fs.readFile(new URL('./config.json', import.meta.url), 'utf8'));
+  if (authenticityReviews) config.authenticityReviews = authenticityReviews;
   const request = JSON.parse(await fs.readFile(new URL('./trial-request.json', import.meta.url), 'utf8'));
   // Check all credentials before consuming any Apify credits.
   if (!env.APIFY_TOKEN || !/^\d+:[A-Za-z0-9_-]+$/.test(env.TELEGRAM_BOT_TOKEN || '') || !/^\d+$/.test(env.TELEGRAM_CHAT_ID || '')) {

@@ -24,6 +24,32 @@ export function identifyBrand(raw, config) {
   return null;
 }
 
+// Only the trusted repository review catalog can support a high-risk brand claim.
+// Seller/feed "authentic", a brand field and photo presence cannot approve it.
+export function listingEvidenceKey(item) {
+  return JSON.stringify([normalize(item.brand), normalize(item.title), item.photoUrls || []]);
+}
+export function authenticityAssessment(item, config, now = Date.now()) {
+  const id = /\/items\/(\d+)/.exec(listingUrl(item.url) || '')?.[1];
+  const brand = identifyBrand(item.brand, config);
+  const required = (config.authenticityRequiredBrands || []).some((b) => identifyBrand(b, config) === brand);
+  const review = config.authenticityReviews?.[id];
+  const sameBrand = review && identifyBrand(review.brand, config) === brand;
+  if (sameBrand && ['brand_mismatch','suspect'].includes(review.verdict)) return { state: review.verdict, required, allowed: false,
+    reason: review.verdict === 'brand_mismatch' ? 'Merkclaim afgewezen na beoordeling; geen passende merkidentiteit' : 'Authenticiteit verdacht na beoordeling' };
+  const age = now - Date.parse(review?.reviewedAt);
+  const photos = Array.isArray(item.photoUrls) ? item.photoUrls : [];
+  const views = review?.evidence || [];
+  const supported = sameBrand && review.verdict === 'supported' && typeof review.reviewedBy === 'string' && review.reviewedBy.trim()
+    && Number.isFinite(age) && age >= -300000 && age <= 7 * 86400000
+    && review.evidenceKey === listingEvidenceKey(item) && photos.length >= 2
+    && ['garment','brand_label','care_label'].every((view) => views.some((e) => e.view === view && photos.includes(e.url)))
+    && typeof review.reference === 'string' && review.reference.trim();
+  if (supported) return { state: 'reviewed_supported', required, allowed: true, reason: 'Merk, kledingstuk en labels beoordeeld; geen echtheidsgarantie', reviewedAt: review.reviewedAt };
+  return { state: 'unreviewed', required, allowed: !required,
+    reason: 'Authenticiteit niet gecontroleerd; kledingstuk, merklabel en waslabel eerst beoordelen' };
+}
+
 // Evidence is supplied by the connected feed. "Sold" must mean an observed
 // completed sale, never the seller's asking price. This is not image authentication.
 export function assess(item, config, now = Date.now()) {
@@ -43,6 +69,8 @@ export function assess(item, config, now = Date.now()) {
   if (/\b(replica|fake|counterfeit|dupe|inspired|style of|namaak|nep)\b/.test(text)) return reject('Mogelijke imitatie of style-vermelding');
   if (/\b(sewing pattern|naaipatroon|magazine|poster|boek|empty box|lege doos)\b/.test(text)) return reject('Geen passend kledingstuk of accessoire');
   if (item.authenticity === 'suspect') return reject('Authenticiteit expliciet verdacht');
+  const authenticity = authenticityAssessment(item, config, now);
+  if (!authenticity.allowed) return { ...reject(authenticity.reason), authenticity };
   const conditionScores = { new_with_tags: 10, new_without_tags: 9.5, very_good: 8.5, good: 7, satisfactory: 3 };
   let condition = conditionScores[item.condition] || 0;
   if (item.flaws?.length) condition = Math.min(condition, 5);
@@ -74,7 +102,7 @@ export function assess(item, config, now = Date.now()) {
   const eligible = score >= config.alertScore && margin >= config.minimumMargin && roi >= config.minimumRoi && condition >= 7;
   return { eligible, reason: eligible ? 'Sterke deal' : 'Onder de ingestelde drempel', url, id: /\/items\/(\d+)/.exec(url)[1],
     title: String(item.title || brand).slice(0, 180), brand, price: item.price, size: String(item.size || 'Onbekend'),
-    score, scores: { flip: +flip.toFixed(1), price: +price.toFixed(1), condition, fit }, resale, margin, totalCost, roi,
+    authenticity, score, scores: { flip: +flip.toFixed(1), price: +price.toFixed(1), condition, fit }, resale, margin, totalCost, roi,
     resaleFeeReserve: config.resaleFeeReserve, packingReserve: config.packingReserve,
     costNote: exactCosts ? 'Kosten uit feed' : `Inclusief ${euro(config.buyingCostReserve)} kostenreserve; exacte koperskosten/verzending controleren`,
     conditionNote: 'Staat volgens verkoper/feed; labels, slijtage en foto’s zelf controleren. Geen automatische foto-authenticatie.',
@@ -94,7 +122,8 @@ export function alertText(deal) {
       : `Conservatieve verkoopindicatie: ${euro(deal.resale)} (schatting, geen garantie)`,
     `Inkoop incl. kosten/reserve: ${euro(deal.totalCost)} · Ruimte na ${Math.round(deal.resaleFeeReserve * 100)}% verkoopkosten en ${euro(deal.packingReserve)} verpakking: ${euro(deal.margin)} vóór belasting en eigen tijd`,
     deal.costNote, deal.conditionNote,
-    deal.valuationKind === 'estimate' ? 'Referentie: 45–65% van eigen vraagprijzen voor hetzelfde merk en kledingtype; uitvoering kan sterk verschillen:' : 'Gebaseerd op recente verkochte exemplaren van hetzelfde model:',
+    'Authenticiteit: ' + (deal.authenticity?.reason || 'Niet gecontroleerd') + '.',
+    deal.valuationKind === 'estimate' ? 'Referentie: 45–65% van eigen vraagprijzen voor hetzelfde merk en kledingtype met overeenkomstige modelkenmerken; uitvoering kan verschillen:' : 'Gebaseerd op recente verkochte exemplaren van hetzelfde model:',
     ...(deal.valuationKind === 'estimate' ? deal.valuationReferences.map((c) => `${euro(c.price)} · ${c.title}`) : deal.comparables.map((c) => `${euro(c.price)} · ${c.url}`)),
     'Bekijk het item:', deal.url,
   ].join('\n');

@@ -12,7 +12,7 @@ export function inWindow(now, policy = settings) {
 }
 const sql = (env, query, ...args) => env.RADAR_DB.prepare(query).bind(...args);
 
-export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = probe, policy = settings, clock = Date.now } = {}) {
+export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = probe, authenticityReviews = config.authenticityReviews, policy = settings, clock = Date.now } = {}) {
   // No credentials, database writes or provider requests outside the existing window.
   if (!inWindow(now, policy)) return { inactive: true };
   if (!env.APIFY_TOKEN || !/^\d+:[A-Za-z0-9_-]+$/.test(env.TELEGRAM_BOT_TOKEN || '') || !/^\d+$/.test(env.TELEGRAM_CHAT_ID || '')) {
@@ -50,9 +50,9 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     if (!seen) newListings++;
     await sql(env, 'INSERT INTO radar_seen (pilot_id, item_id, price, observed_at) VALUES (?, ?, ?, ?) ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, observed_at=excluded.observed_at', PILOT_ID, id, item.price, now).run();
     const valuation = estimateFromShop(item, products, config);
-    const deal = assess({ ...item, ...(valuation ? { valuation } : {}) }, config, now);
+    const deal = assess({ ...item, ...(valuation ? { valuation } : {}) }, { ...config, authenticityReviews }, now);
     if (deal.reason === 'Geen passende prijsreferentie: flipwaarde blijft onbekend') deal.reason = missingReferenceReason(item, products, config);
-    decisions.push({ title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
+    decisions.push({ authenticity: deal.authenticity?.state || 'not_assessed', photoCount: item.photoUrls?.length || 0, title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
     if (!deal.eligible || !inWindow(clock(), policy)) continue;
     // Reserve delivery before sending. An ambiguous failure is not retried automatically.
     const delivery = await sql(env,
@@ -88,7 +88,7 @@ export async function wake(env, options = {}) {
 export async function status(env, now = Date.now()) {
   const row = await sql(env, 'SELECT * FROM radar_control WHERE id=?', PILOT_ID).first();
   const report = row?.last_report ? JSON.parse(row.last_report) : null;
-  return { scheduler: 'cloudflare', active: inWindow(now), endsAt: settings.endsAt,
+  return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: false, active: inWindow(now), endsAt: settings.endsAt,
     lastWakeAt: row?.last_wake_at ? new Date(row.last_wake_at).toISOString() : null,
     lastScanAt: row?.last_scan_at ? new Date(row.last_scan_at).toISOString() : null,
     attempts: row?.attempts ?? null, limit: Math.min(settings.maxAttempts, 25),
