@@ -1,70 +1,13 @@
 name: Radar 24-uurs proef
 
+# Scheduling and execution moved to the Cloudflare radar worker.
+# No GitHub schedule or manual execution remains, preventing two active scanners.
 on:
-  schedule:
-    - cron: '11,41 * * * *'
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['tools/deal-radar/pilot.json']
-
 permissions:
   contents: read
-  actions: write
-
-concurrency:
-  group: japansterdam-radar-24h-pilot
-  cancel-in-progress: false
-
 jobs:
-  scan:
+  moved:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Controleer het vaste proefvenster
-        id: window
-        run: |
-          node --input-type=module <<'JS'
-          import fs from 'node:fs';
-          const p = JSON.parse(fs.readFileSync('tools/deal-radar/pilot.json', 'utf8'));
-          const now = Date.now(), start = Date.parse(p.startsAt), end = Date.parse(p.endsAt);
-          const valid = Number.isFinite(start) && Number.isFinite(end) && end > start && end - start <= 86400000;
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `active=${valid && p.enabled && now >= start && now < end}\nexpired=${valid && now >= end}\n`);
-          JS
-      - name: Schakel deze proef na afloop automatisch uit
-        if: steps.window.outputs.expired == 'true'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          node --input-type=module <<'JS'
-          const r = await fetch('https://api.github.com/repos/dim-io/japansterdam/actions/workflows/deal-radar-pilot.yml/disable', {
-            method: 'PUT', headers: { Authorization: 'Bearer ' + process.env.GITHUB_TOKEN, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }
-          });
-          if (!r.ok) throw new Error('Automatisch uitschakelen van de workflow niet bevestigd; de scanner zelf is al door het eindtijdstip gestopt. HTTP ' + r.status);
-          console.log('24-uurs proef beëindigd; deze workflow is uitgeschakeld.');
-          JS
-      - name: Controleer beoordelaar en proefbegrenzing
-        if: steps.window.outputs.active == 'true'
-        run: node --test tools/deal-radar/radar.test.mjs tools/deal-radar/apify-probe.test.mjs tools/deal-radar/trial.test.mjs tools/deal-radar/pilot.test.mjs
-      - uses: actions/cache/restore@v4
-        if: steps.window.outputs.active == 'true'
-        with:
-          path: tools/deal-radar/.state/pilot.json
-          key: radar-pilot-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: radar-pilot-
-      - name: Controleer maximaal drie advertenties en meld alleen sterke kandidaten
-        if: steps.window.outputs.active == 'true'
-        env:
-          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: node tools/deal-radar/pilot.mjs
-      - uses: actions/cache/save@v4
-        if: always() && steps.window.outputs.active == 'true' && hashFiles('tools/deal-radar/.state/pilot.json') != ''
-        with:
-          path: tools/deal-radar/.state/pilot.json
-          key: radar-pilot-${{ github.run_id }}-${{ github.run_attempt }}
+      - run: echo "Deze proef draait rechtstreeks op Cloudflare; deze workflow voert geen scan uit."

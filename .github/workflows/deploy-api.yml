@@ -5,7 +5,7 @@ name: Backend live zetten
 on:
   push:
     branches: [main]
-    paths: ['api/**']
+    paths: ['api/**', 'tools/deal-radar/**']
   workflow_dispatch:
 
 concurrency: deploy-api
@@ -26,7 +26,24 @@ jobs:
       - name: Controleer of het Cloudflare-token is ingesteld
         run: test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Secret CLOUDFLARE_API_TOKEN ontbreekt (zie README)"; exit 1; }
       - run: npm ci || npm install
+      - name: Controleer scanner en databasevergrendeling
+        run: node --test ../tools/deal-radar/*.test.mjs radar/*.test.mjs
+      - uses: actions/cache/restore@v4
+        with:
+          path: tools/deal-radar/.state/pilot.json
+          key: radar-transfer-${{ github.run_id }}
+          restore-keys: radar-pilot-
       - name: Databasemigraties uitvoeren
         run: npx wrangler d1 migrations apply japansterdam --remote
       - name: Worker live zetten
         run: npx wrangler deploy
+      - name: Bestaande scan- en meldingsstatus overzetten
+        run: node radar/import-state.mjs
+      - name: Afzonderlijke radarworker publiceren
+        run: npx wrangler deploy --config radar/wrangler.toml
+      - name: Radar-secrets veilig beschikbaar maken
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node radar/deploy-secrets.mjs

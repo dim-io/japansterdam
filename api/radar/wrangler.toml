@@ -1,0 +1,14 @@
+name = "japansterdam-radar"
+account_id = "0e3359947b78095a7afd9ce36f5cac6f"
+main = "worker.mjs"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[triggers]
+# Wake frequently; the database reserves at most one actual scan per UTC hour.
+crons = ["*/5 * * * *"]
+
+[[d1_databases]]
+binding = "RADAR_DB"
+database_name = "japansterdam"
+database_id = "4e52cd67-a370-400b-b79b-ca1527cc03de"
