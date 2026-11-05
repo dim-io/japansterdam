@@ -1,0 +1,21 @@
+name: Gratis tegoed voor tweede radarproef controleren
+on:
+  push:
+    branches: [main]
+    paths: ['.github/scripts/radar-preflight.mjs', '.github/workflows/radar-preflight.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Controleer gratis plan en ruimte, publiceer uitsluitend ja of nee
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        run: node .github/scripts/radar-preflight.mjs
