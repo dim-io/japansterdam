@@ -4,7 +4,7 @@ main = "src/index.js"
 compatibility_date = "2025-01-01"
 
 [vars]
-ALLOWED_ORIGINS = "https://dim-io.github.io,http://localhost:8080,http://127.0.0.1:8080"
+ALLOWED_ORIGINS = "https://japansterdam.com,https://www.japansterdam.com,https://dim-io.github.io,http://localhost:8080,http://127.0.0.1:8080"
 
 [[d1_databases]]
 binding = "DB"
