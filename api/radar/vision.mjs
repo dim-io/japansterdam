@@ -83,10 +83,16 @@ export async function screenPhotos(env,item,config,policy,{now=Date.now(),fetche
   if(!currentWindow(now,policy)||!currentWindow(clock(),policy))return {state:'inactive'};
   if(env.VISION_FREE_CONFIRMED!=='true')return {state:'disabled',reason:'free_plan_not_confirmed'};
   if(!env.AI?.run)return {state:'disabled',reason:'ai_binding_missing'};
+  const pilotId=policy.id || 'pilot-2026-11-04';
+  const photoLimit=Math.min(policy.maxPhotoChecks || MAX_VISION_CALLS,4);
   const id=smoke?'smoke-v2':/\/items\/(\d+)/.exec(item.url)?.[1];
   if(!id)return {state:'inconclusive',reason:'invalid_item'};
   const key=smoke?'empty-pixel-regression-v2':listingEvidenceKey(item);
-  const old=await q(env,'SELECT state,result FROM radar_photo_checks WHERE pilot_id=? AND item_id=? AND evidence_key=?','pilot-2026-11-04',id,key).first();
+  if(policy.dailyVisionLimit) {
+    const daily=await q(env,'SELECT attempts FROM radar_vision_daily WHERE day=?',new Date(clock()).toISOString().slice(0,10)).first();
+    if(daily?.attempts>=Math.min(policy.dailyVisionLimit,3))return {state:'disabled',reason:'daily_photo_budget_reached'};
+  }
+  const old=await q(env,'SELECT state,result FROM radar_photo_checks WHERE pilot_id=? AND item_id=? AND evidence_key=?',pilotId,id,key).first();
   if(old)return old.result?JSON.parse(old.result):{state:'inconclusive',reason:'previous_attempt_pending_or_failed'};
   let data;
   if(smoke)data=[PNG];
@@ -97,18 +103,28 @@ export async function screenPhotos(env,item,config,policy,{now=Date.now(),fetche
   }
   if(!currentWindow(clock(),policy))return {state:'inactive'};
   // Claim before inference and count failures. Never retry an uncertain GPU request.
-  const claim=await q(env,"INSERT OR IGNORE INTO radar_photo_checks (pilot_id,item_id,evidence_key,state,created_at) VALUES (?,?,?,'pending',?) RETURNING item_id",'pilot-2026-11-04',id,key,now).first();
+  const claim=await q(env,"INSERT OR IGNORE INTO radar_photo_checks (pilot_id,item_id,evidence_key,state,created_at) VALUES (?,?,?,'pending',?) RETURNING item_id",pilotId,id,key,now).first();
   if(!claim)return {state:'inconclusive',reason:'already_reserved'};
-  const budget=await q(env,'UPDATE radar_vision_control SET attempts=attempts+1 WHERE id=? AND attempts<? RETURNING attempts','pilot-2026-11-04',MAX_VISION_CALLS).first();
+  const budget=await q(env,'UPDATE radar_vision_control SET attempts=attempts+1 WHERE id=? AND attempts<? RETURNING attempts',pilotId,photoLimit).first();
   let result;
   if(!budget)result={state:'disabled',reason:'pilot_photo_budget_reached'};
   else {
+    if (policy.dailyVisionLimit) {
+      const day=new Date(clock()).toISOString().slice(0,10);
+      const daily=await q(env,'INSERT INTO radar_vision_daily (day,attempts) VALUES (?,1) ON CONFLICT(day) DO UPDATE SET attempts=attempts+1 WHERE attempts<? RETURNING attempts',day,Math.min(policy.dailyVisionLimit,3)).first();
+      if(!daily) {
+        result={state:'disabled',reason:'daily_photo_budget_reached'};
+        await q(env,'DELETE FROM radar_photo_checks WHERE pilot_id=? AND item_id=? AND evidence_key=? AND state=?',pilotId,id,key,'pending').run();
+        await q(env,'UPDATE radar_vision_control SET attempts=attempts-1 WHERE id=?',pilotId).run();
+        return result;
+      }
+    }
     try{result=await infer(env,item,data,config,smoke);}
     catch(error){const text=String(error?.message||'');result={state:'unavailable',reason:/5016|agreement|terms/i.test(text)?'model_terms_required':/3036|quota|daily.*limit/i.test(text)?'free_quota_exhausted':'model_unavailable'};}
   }
 
-  await q(env,'UPDATE radar_photo_checks SET state=?,result=? WHERE pilot_id=? AND item_id=? AND evidence_key=?',result.state,JSON.stringify(result),'pilot-2026-11-04',id,key).run();
-  await q(env,'UPDATE radar_vision_control SET smoke_ok=CASE WHEN ? THEN 1 ELSE smoke_ok END,last_outcome=?,last_check_at=? WHERE id=?',smoke&&result.state==='ready'?1:0,result.reason,now,'pilot-2026-11-04').run();
+  await q(env,'UPDATE radar_photo_checks SET state=?,result=? WHERE pilot_id=? AND item_id=? AND evidence_key=?',result.state,JSON.stringify(result),pilotId,id,key).run();
+  await q(env,'UPDATE radar_vision_control SET smoke_ok=CASE WHEN ? THEN 1 ELSE smoke_ok END,last_outcome=?,last_check_at=? WHERE id=?',smoke&&result.state==='ready'?1:0,result.reason,now,pilotId).run();
   return result;
 }
 

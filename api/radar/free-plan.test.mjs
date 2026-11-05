@@ -14,3 +14,12 @@ test('a detected paid Workers plan overrides an owner confirmation',()=>{
  assert.equal(freePlanDecision({ok:true,data:{success:true,result:[{rate_plan:{id:'WORKERS_PAID'}}]}},policy,now).allowed,false);
  assert.equal(freePlanDecision({ok:true,data:{success:true,result:[]}},null,now).allowed,true);
 });
+
+
+test('a separately authorized second 24-hour trial retains the original Free confirmation and rejects stale or unrelated confirmations',()=>{
+ const issued=new Date(now-3*3600000).toISOString(),authorized=new Date(now-1000).toISOString(),expires=new Date(now+23*3600000).toISOString();
+ const p={endsAt:expires,visionAccountConfirmation:{accountId:ACCOUNT_ID,plan:'free',source:'owner_confirmation',confirmedAt:issued,authorizedAt:authorized,validUntil:expires}};
+ assert.equal(validOwnerConfirmation(p,now),true);
+ assert.equal(validOwnerConfirmation({...p,visionAccountConfirmation:{...p.visionAccountConfirmation,confirmedAt:new Date(now-48*3600000).toISOString()}},now),false);
+ assert.equal(validOwnerConfirmation({...p,endsAt:new Date(now+72*3600000).toISOString()},now),false);
+});

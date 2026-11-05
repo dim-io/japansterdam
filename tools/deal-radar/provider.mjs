@@ -33,7 +33,7 @@ export function normalizeRow(row, observedAt) {
   return item;
 }
 
-export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now() }) {
+export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now(), maxResults = 3, maxCostUsd = MAX_COST }) {
   if (!token || /\s/.test(token)) throw new Error('Sla eerst je Apify API-token op als GitHub-secret APIFY_TOKEN.');
   const api = async (endpoint, { method = 'GET', body } = {}) => {
     let response;
@@ -45,13 +45,14 @@ export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep
     return response.json();
   };
   if (!/^\d+(?:,\d+){0,9}$/.test(brandIds)) throw new Error('Ongeldige merkselectie.');
+  if (![3,10].includes(maxResults) || !Number.isFinite(maxCostUsd) || maxCostUsd < .02 || maxCostUsd > .03) throw new Error('Ongeldig scanbudget.');
   const search = new URL('https://www.vinted.nl/catalog');
   brandIds.split(',').forEach((id) => search.searchParams.append('brand_ids[]', id));
   search.searchParams.set('price_to', '40');
   search.searchParams.set('currency', 'EUR');
   search.searchParams.set('order', 'newest_first');
-  const input = { ...INPUT, brandIds, searchQueries: [search.href] };
-  const started = await api('/actors/' + ACTOR + '/runs?timeout=90&maxItems=3&maxTotalChargeUsd=' + MAX_COST + '&restartOnError=false', { method: 'POST', body: input });
+  const input = { ...INPUT, brandIds, maxResults, searchQueries: [search.href] };
+  const started = await api('/actors/' + ACTOR + '/runs?timeout=90&maxItems=' + maxResults + '&maxTotalChargeUsd=' + maxCostUsd + '&restartOnError=false', { method: 'POST', body: input });
   let run = started.data;
   if (!run || !/^[A-Za-z0-9]+$/.test(run.id || '')) throw new Error('Apify gaf geen geldig runnummer terug.');
   const deadline = now() + 120_000;
@@ -67,11 +68,11 @@ export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep
   }
   if (run.status !== 'SUCCEEDED') throw new Error('De Apify-proefscan eindigde met status ' + run.status + '. Bekijk de run in Apify.');
   if (!/^[A-Za-z0-9]+$/.test(run.defaultDatasetId || '')) throw new Error('Apify gaf geen geldige resultatenset terug.');
-  const rows = await api('/datasets/' + run.defaultDatasetId + '/items?clean=true&limit=3&format=json');
+  const rows = await api('/datasets/' + run.defaultDatasetId + '/items?clean=true&limit=' + maxResults + '&format=json');
   if (!Array.isArray(rows)) throw new Error('Apify gaf geen advertentielijst terug.');
   const observedAt = run.finishedAt || new Date(now()).toISOString();
-  const items = rows.slice(0, 3).filter((r) => r && typeof r === 'object').map((r) => normalizeRow(r, observedAt)).filter(Boolean);
-  return { runId: run.id, maxCostUsd: MAX_COST, returned: rows.length, items, confirmedAvailable: items.filter((i) => i.available === true).length,
+  const items = rows.slice(0, maxResults).filter((r) => r && typeof r === 'object').map((r) => normalizeRow(r, observedAt)).filter(Boolean);
+  return { runId: run.id, maxCostUsd, returned: rows.length, items, confirmedAvailable: items.filter((i) => i.available === true).length,
     usageTotalUsd: typeof run.usageTotalUsd === 'number' ? run.usageTotalUsd : null };
 }
 

@@ -48,3 +48,17 @@ test('missing tokens and provider failures stop without leaking credentials or r
   assert.equal(requests, 1);
   await assert.rejects(probe({ token: 'private-token', fetcher: async () => new Response('', { status: 401 }) }), /HTTP 401/);
 });
+
+
+test('second trial increases only the bounded result count and retains brand, sort, price and charge limits',async()=>{
+ const result=await probe({token:'fixture',brandIds:'576107',maxResults:10,maxCostUsd:.03,fetcher:async(url,opts)=>{
+  if(opts.method==='POST'){
+   const u=new URL(url);assert.equal(u.searchParams.get('maxItems'),'10');assert.equal(u.searchParams.get('maxTotalChargeUsd'),'0.03');
+   const input=JSON.parse(opts.body);assert.equal(input.maxResults,10);assert.equal(input.sortBy,'newest_first');assert.equal(input.brandIds,'576107');assert.equal(input.maxPrice,40);
+   return Response.json({data:{id:'Fixture',status:'SUCCEEDED',defaultDatasetId:'Dataset'}});
+  }
+  return Response.json(Array.from({length:12},()=>row));
+ }});
+ assert.equal(result.items.length,10);
+ await assert.rejects(probe({token:'fixture',maxResults:100}),/scanbudget/);
+});

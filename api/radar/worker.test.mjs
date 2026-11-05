@@ -43,7 +43,7 @@ test('failed provider leaves the hour reserved and public status exposes no cred
   const opts={...options,fetcher:async()=>Response.json([product]),probeFn:async()=>{scans++;throw Error('test-key');}};
   await assert.rejects(wake(env,opts),/Radarcontrole niet voltooid/);
   assert((await scan(env,opts)).skipped);assert.equal(scans,1);
-  const output=JSON.stringify(await status(env));assert(!output.includes('test-key'));assert(!output.includes('123:token'));
+  const output=JSON.stringify(await status(env,now,policy));assert(!output.includes('test-key'));assert(!output.includes('123:token'));
   assert(output.includes('Scan niet voltooid'));db.close();
 });
 test('real SQL preserves delivery history and suppresses repeats, including ambiguous Telegram failures',async()=>{

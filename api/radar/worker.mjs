@@ -1,5 +1,7 @@
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
-import settings from '../../tools/deal-radar/pilot.json' with { type: 'json' };
+import settings from '../../tools/deal-radar/pilot-v2.json' with { type: 'json' };
+import { preflight } from '../../tools/deal-radar/budget.mjs';
+import { compareCatalog } from './freshness.mjs';
 import { probe } from '../../tools/deal-radar/provider.mjs';
 import { assess, alertText, identifyBrand, sendTelegram } from '../../tools/deal-radar/scoring.mjs';
 import { screenPhotos, reviewMessage, MAX_VISION_CALLS } from './vision.mjs';
@@ -19,10 +21,11 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   if (!env.APIFY_TOKEN || !/^\d+:[A-Za-z0-9_-]+$/.test(env.TELEGRAM_BOT_TOKEN || '') || !/^\d+$/.test(env.TELEGRAM_CHAT_ID || '')) {
     throw new Error('Radarconfiguratie ontbreekt');
   }
-  const slot = Math.floor(now / 3600000);
-  const previous = await sql(env, 'SELECT * FROM radar_control WHERE id = ?', PILOT_ID).first();
+  const pilotId = policy.id || PILOT_ID;
+  const slot = Math.floor((now - (policy.mode === 'both-brands' ? Date.parse(policy.startsAt) : 0)) / 3600000);
+  const previous = await sql(env, 'SELECT * FROM radar_control WHERE id = ?', pilotId).first();
   if (!previous) throw new Error('Radarstatus niet overgezet; scanner blijft gestopt');
-  await sql(env, 'UPDATE radar_control SET last_wake_at = ? WHERE id = ?', now, PILOT_ID).run();
+  await sql(env, 'UPDATE radar_control SET last_wake_at = ? WHERE id = ?', now, pilotId).run();
   if ((previous.last_slot >= slot && !previous.transport_retry) || previous.attempts >= Math.min(policy.maxAttempts, 25)) return { skipped: true };
   // Validate the source before reserving/spending a scan. Retrying a failed inventory read is free of Apify calls.
   // Read only the public catalog fields already used by the storefront.
@@ -31,25 +34,40 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   const products = catalog.results;
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
+  if (policy.mode === 'both-brands') {
+    const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? 1.69 : .31);
+    if (!budget.enoughCredit) throw new Error('RADAR_BUDGET_BLOCKED');
+  }
   // Atomic database reservation: overlapping events and redeployments cannot spend twice in one hour.
   const reservation = await sql(env,
     'UPDATE radar_control SET attempts = attempts + 1, last_slot = ?, last_attempt_at = ?, transport_retry=0, last_error=NULL, error_at=NULL WHERE id = ? AND (last_slot < ? OR transport_retry=1) AND attempts < ? RETURNING attempts',
-    slot, now, PILOT_ID, slot, Math.min(policy.maxAttempts, 25)).first();
+    slot, now, pilotId, slot, Math.min(policy.maxAttempts, 25)).first();
   if (!reservation) return { skipped: true };
   const brands = Object.entries(policy.brands);
-  const [selectedBrand, brandId] = brands[(reservation.attempts - 1) % brands.length];
-  let result;
-  try { result = await probeFn({ token: env.APIFY_TOKEN, brandIds: brandId, fetcher }); }
-  catch { throw new Error('RADAR_PROVIDER_FAILED'); }
-  const items = [...new Map(result.items.filter((item) => identifyBrand(item.brand, config) === identifyBrand(selectedBrand, config)).map((item) => [item.url, item])).values()];
+  const selection = policy.mode === 'both-brands' ? brands : [brands[(reservation.attempts - 1) % brands.length]];
+  const selectedBrand = selection.map(([brand]) => brand).join(' + ');
+  const results = [];
+  for (const [brand, brandId] of selection) {
+    if (!inWindow(clock(), policy)) break;
+    try {
+      const source = await probeFn({ token: env.APIFY_TOKEN, brandIds: brandId, fetcher,
+        ...(policy.mode === 'both-brands' ? {maxResults:10,maxCostUsd:.03} : {}) });
+      const items = source.items.filter((item) => identifyBrand(item.brand,config) === identifyBrand(brand,config));
+      const freshness = policy.mode === 'both-brands' && reservation.attempts === 1
+        ? await compareCatalog(brandId,items,fetcher) : null;
+      results.push({...source,items,brand,freshness});
+    } catch { throw new Error('RADAR_PROVIDER_FAILED'); }
+  }
+  const result = {runId:results.map((r)=>r.runId).join(',')};
+  const items = [...new Map(results.flatMap((r)=>r.items).map((item)=>[item.url,item])).values()];
   let newListings = 0, sent = 0, photoReviewSent = 0;
   const decisions = [];
   for (const item of items) {
     const id = /\/items\/(\d+)/.exec(item.url)?.[1];
     if (!id) continue;
-    const seen = await sql(env, 'SELECT price FROM radar_seen WHERE pilot_id = ? AND item_id = ?', PILOT_ID, id).first();
+    const seen = await sql(env, 'SELECT price FROM radar_seen WHERE pilot_id = ? AND item_id = ?', pilotId, id).first();
     if (!seen) newListings++;
-    await sql(env, 'INSERT INTO radar_seen (pilot_id, item_id, price, observed_at) VALUES (?, ?, ?, ?) ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, observed_at=excluded.observed_at', PILOT_ID, id, item.price, now).run();
+    await sql(env, 'INSERT INTO radar_seen (pilot_id, item_id, price, observed_at) VALUES (?, ?, ?, ?) ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, observed_at=excluded.observed_at', pilotId, id, item.price, now).run();
     const valuation = estimateFromShop(item, products, config);
     let deal = assess({ ...item, ...(valuation ? { valuation } : {}) }, { ...config, authenticityReviews }, now);
     let photoScreen = null;
@@ -58,14 +76,14 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     if (deal.authenticity?.state === 'unreviewed' && valuation && env.VISION_FREE_CONFIRMED === 'true') {
       const preliminary = assess({ ...item, valuation }, { ...config, authenticityRequiredBrands: [], authenticityReviews }, now);
       if (preliminary.eligible) {
-        const ready = await sql(env, 'SELECT smoke_ok FROM radar_vision_control WHERE id=?', PILOT_ID).first();
+        const ready = await sql(env, 'SELECT smoke_ok FROM radar_vision_control WHERE id=?', pilotId).first();
         if (ready?.smoke_ok === 1) photoScreen = await screenPhotos(env, item, config, policy, {now,fetcher,clock});
         if (photoScreen?.state === 'visually_consistent' && inWindow(clock(), policy)) {
           const reviewId = 'photo-review:' + id;
-          const reserve = await sql(env, "INSERT OR IGNORE INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,'pending',?) RETURNING item_id", PILOT_ID, reviewId, item.price, now).first();
+          const reserve = await sql(env, "INSERT OR IGNORE INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,'pending',?) RETURNING item_id", pilotId, reviewId, item.price, now).first();
           if (reserve) {
             const messageId = await sendTelegram(reviewMessage(item,photoScreen),env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher);
-            await sql(env,"UPDATE radar_alerts SET delivery='sent',message_id=? WHERE pilot_id=? AND item_id=?",messageId,PILOT_ID,reviewId).run();
+            await sql(env,"UPDATE radar_alerts SET delivery='sent',message_id=? WHERE pilot_id=? AND item_id=?",messageId,pilotId,reviewId).run();
             photoReviewSent++;
           }
         }
@@ -77,18 +95,18 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     // Reserve delivery before sending. An ambiguous failure is not retried automatically.
     const delivery = await sql(env,
       "INSERT INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,'pending',?) ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, delivery='pending', message_id=NULL, attempted_at=excluded.attempted_at WHERE excluded.price <= radar_alerts.price * 0.8 RETURNING item_id",
-      PILOT_ID, id, item.price, now).first();
+      pilotId, id, item.price, now).first();
     if (!delivery) continue;
     const messageId = await sendTelegram('RADARPROEF — KANDIDAAT OP BASIS VAN SCHATTING\n\n' + alertText(deal), env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, fetcher);
-    await sql(env, "UPDATE radar_alerts SET delivery='sent', message_id=? WHERE pilot_id=? AND item_id=?", messageId, PILOT_ID, id).run();
+    await sql(env, "UPDATE radar_alerts SET delivery='sent', message_id=? WHERE pilot_id=? AND item_id=?", messageId, pilotId, id).run();
     sent++;
   }
   const report = { scheduler: 'cloudflare', scannedAt: new Date(now).toISOString(), attempts: reservation.attempts,
-    selectedBrand, checked: items.length, newListings, repeatedListings: items.length - newListings,
+    selectedBrand, byBrand:results.map((r)=>({brand:r.brand,checked:r.items.length,freshness:r.freshness})), checked: items.length, newListings, repeatedListings: items.length - newListings,
     sent, photoReviewSent, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
   await sql(env, 'UPDATE radar_control SET last_scan_at=?, last_report=?, last_error=NULL, error_at=NULL WHERE id=?',
-    now, JSON.stringify(report), PILOT_ID).run();
-  console.log(JSON.stringify(report));
+    now, JSON.stringify(report), pilotId).run();
+  console.log(JSON.stringify({scheduler:report.scheduler,attempts:report.attempts,checked:report.checked,newListings,sent,photoReviewSent}));
   return report;
 }
 
@@ -96,36 +114,40 @@ export async function wake(env, options = {}) {
   try {
     const checkTime = options.now ?? Date.now(), policy = options.policy ?? settings;
     if (inWindow(checkTime,policy) && env.VISION_FREE_CONFIRMED === 'true') {
-      await screenPhotos(env,{brand:'Kapital'},config,policy,{now:checkTime,smoke:true});
+      const ready=await sql(env,'SELECT smoke_ok FROM radar_vision_control WHERE id=?',policy.id || PILOT_ID).first();
+      if(ready?.smoke_ok!==1)await screenPhotos(env,{brand:'Kapital'},config,policy,{now:checkTime,smoke:true});
     }
     return await scan(env, options);
   }
   catch (error) {
-    const code = ['RADAR_INVENTORY_FAILED', 'RADAR_PROVIDER_FAILED'].includes(error.message) ? error.message : 'RADAR_RUNTIME_FAILED';
+    const code = ['RADAR_INVENTORY_FAILED', 'RADAR_PROVIDER_FAILED', 'RADAR_BUDGET_BLOCKED'].includes(error.message) ? error.message : 'RADAR_RUNTIME_FAILED';
     // Never persist arbitrary provider exceptions: their text may contain credentials.
     if (inWindow(options.now ?? Date.now(), options.policy)) {
-      await sql(env, "UPDATE radar_control SET last_error=?, error_at=? WHERE id=?", 'Scan niet voltooid: ' + code, options.now ?? Date.now(), PILOT_ID).run();
+      await sql(env, "UPDATE radar_control SET last_error=?, error_at=? WHERE id=?", 'Scan niet voltooid: ' + code, options.now ?? Date.now(), (options.policy ? options.policy.id || PILOT_ID : settings.id || PILOT_ID)).run();
     }
     console.error(code);
     throw new Error('Radarcontrole niet voltooid');
   }
 }
 
-export async function status(env, now = Date.now()) {
-  const row = await sql(env, 'SELECT * FROM radar_control WHERE id=?', PILOT_ID).first();
-  const vision = await sql(env,'SELECT attempts,smoke_ok,last_outcome FROM radar_vision_control WHERE id=?',PILOT_ID).first();
+export async function status(env, now = Date.now(), policy = settings) {
+  const pilotId = policy.id || PILOT_ID;
+  const row = await sql(env, 'SELECT * FROM radar_control WHERE id=?', pilotId).first();
+  const vision = await sql(env,'SELECT attempts,smoke_ok,last_outcome FROM radar_vision_control WHERE id=?',pilotId).first();
   const report = row?.last_report ? JSON.parse(row.last_report) : null;
   return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
     photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? 'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
-    photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: MAX_VISION_CALLS,
-    bundleCheck: 'planned_not_active', active: inWindow(now), endsAt: settings.endsAt,
+    photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
+    trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:policy.mode === 'both-brands' ? 2 : 1,
+    byBrand:report?.byBrand || [],
+    bundleCheck: 'planned_not_active', active: inWindow(now,policy), endsAt: policy.endsAt,
     lastWakeAt: row?.last_wake_at ? new Date(row.last_wake_at).toISOString() : null,
     lastScanAt: row?.last_scan_at ? new Date(row.last_scan_at).toISOString() : null,
-    attempts: row?.attempts ?? null, limit: Math.min(settings.maxAttempts, 25),
+    attempts: row?.attempts ?? null, limit: Math.min(policy.maxAttempts, 25),
     selectedBrand: report?.selectedBrand ?? null, checked: report?.checked ?? null,
-    newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null,
+    newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null, photoReviewSentLastScan:report?.photoReviewSent ?? null,
     error: row?.last_error ?? null, errorAt: row?.error_at ? new Date(row.error_at).toISOString() : null,
-    overdue: inWindow(now) && (!row?.last_scan_at || now - row.last_scan_at > 90 * 60000),
+    overdue: inWindow(now,policy) && (!row?.last_scan_at || now - row.last_scan_at > 90 * 60000),
     note: 'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
 }
 

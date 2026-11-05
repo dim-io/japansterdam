@@ -1,0 +1,25 @@
+{
+  "enabled": true,
+  "startsAt": "2026-11-05T22:55:00Z",
+  "endsAt": "2026-11-06T22:55:00Z",
+  "maxAttempts": 24,
+  "brands": {
+    "Kapital": "576107",
+    "Needles": "360271"
+  },
+  "revision": "both-brands-free-budget-v2",
+  "visionAccountConfirmation": {
+    "accountId": "0e3359947b78095a7afd9ce36f5cac6f",
+    "plan": "free",
+    "source": "owner_confirmation",
+    "confirmedAt": "2026-11-05T19:30:08.939561+00:00",
+    "validUntil": "2026-11-06T22:55:00Z",
+    "authorizedAt": "2026-11-05T22:44:00Z"
+  },
+  "id": "pilot-2026-11-06",
+  "mode": "both-brands",
+  "maxResultsPerBrand": 10,
+  "maxCostPerRunUsd": 0.03,
+  "maxPhotoChecks": 4,
+  "dailyVisionLimit": 3
+}

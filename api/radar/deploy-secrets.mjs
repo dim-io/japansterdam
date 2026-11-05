@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import policy from '../../tools/deal-radar/pilot.json' with { type:'json' };
+import policy from '../../tools/deal-radar/pilot-v2.json' with { type:'json' };
 import { freePlanDecision } from './free-plan.mjs';
 const keys = ['APIFY_TOKEN', 'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID'];
 if (keys.some((key) => !process.env[key])) throw new Error('Vereiste radar-secrets ontbreken; geen lege waarden gepubliceerd');

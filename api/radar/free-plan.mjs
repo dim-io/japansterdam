@@ -1,10 +1,10 @@
 export const ACCOUNT_ID = '0e3359947b78095a7afd9ce36f5cac6f';
 export function validOwnerConfirmation(policy, now=Date.now()) {
   const c=policy?.visionAccountConfirmation;
-  const issued=Date.parse(c?.confirmedAt),expires=Date.parse(c?.validUntil),end=Date.parse(policy?.endsAt);
+  const issued=Date.parse(c?.confirmedAt),authorized=Date.parse(c?.authorizedAt || c?.confirmedAt),expires=Date.parse(c?.validUntil),end=Date.parse(policy?.endsAt);
   return c?.accountId===ACCOUNT_ID&&c.plan==='free'&&c.source==='owner_confirmation'
     &&Number.isFinite(issued)&&Number.isFinite(expires)&&issued<=now+300000&&now>=issued&&now<expires
-    &&expires===end&&expires-issued<=86400000;
+    &&expires===end&&expires>authorized&&authorized>=issued&&authorized<=now+300000&&expires-authorized<=86400000+3600000&&authorized-issued<=86400000;
 }
 export function freePlanDecision({ok=false,data=null,status=0}={},policy,now=Date.now()) {
   if(ok&&data?.success===true&&Array.isArray(data.result)) {
