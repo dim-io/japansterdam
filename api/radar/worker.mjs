@@ -2,6 +2,7 @@ import config from '../../tools/deal-radar/config.json' with { type: 'json' };
 import settings from '../../tools/deal-radar/pilot.json' with { type: 'json' };
 import { probe } from '../../tools/deal-radar/provider.mjs';
 import { assess, alertText, identifyBrand, sendTelegram } from '../../tools/deal-radar/scoring.mjs';
+import { screenPhotos, reviewMessage, MAX_VISION_CALLS } from './vision.mjs';
 import { estimateFromShop, missingReferenceReason } from '../../tools/deal-radar/valuation.mjs';
 
 export const PILOT_ID = 'pilot-2026-11-04';
@@ -41,7 +42,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   try { result = await probeFn({ token: env.APIFY_TOKEN, brandIds: brandId, fetcher }); }
   catch { throw new Error('RADAR_PROVIDER_FAILED'); }
   const items = [...new Map(result.items.filter((item) => identifyBrand(item.brand, config) === identifyBrand(selectedBrand, config)).map((item) => [item.url, item])).values()];
-  let newListings = 0, sent = 0;
+  let newListings = 0, sent = 0, photoReviewSent = 0;
   const decisions = [];
   for (const item of items) {
     const id = /\/items\/(\d+)/.exec(item.url)?.[1];
@@ -50,9 +51,28 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     if (!seen) newListings++;
     await sql(env, 'INSERT INTO radar_seen (pilot_id, item_id, price, observed_at) VALUES (?, ?, ?, ?) ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, observed_at=excluded.observed_at', PILOT_ID, id, item.price, now).run();
     const valuation = estimateFromShop(item, products, config);
-    const deal = assess({ ...item, ...(valuation ? { valuation } : {}) }, { ...config, authenticityReviews }, now);
+    let deal = assess({ ...item, ...(valuation ? { valuation } : {}) }, { ...config, authenticityReviews }, now);
+    let photoScreen = null;
+    // Only spend GPU quota on financially interesting, otherwise valid candidates.
+    // AI screening never writes a trusted authentication approval.
+    if (deal.authenticity?.state === 'unreviewed' && valuation && env.VISION_FREE_CONFIRMED === 'true') {
+      const preliminary = assess({ ...item, valuation }, { ...config, authenticityRequiredBrands: [], authenticityReviews }, now);
+      if (preliminary.eligible) {
+        const ready = await sql(env, 'SELECT smoke_ok FROM radar_vision_control WHERE id=?', PILOT_ID).first();
+        if (ready?.smoke_ok === 1) photoScreen = await screenPhotos(env, item, config, policy, {now,fetcher,clock});
+        if (photoScreen?.state === 'visually_consistent' && inWindow(clock(), policy)) {
+          const reviewId = 'photo-review:' + id;
+          const reserve = await sql(env, "INSERT OR IGNORE INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,'pending',?) RETURNING item_id", PILOT_ID, reviewId, item.price, now).first();
+          if (reserve) {
+            const messageId = await sendTelegram(reviewMessage(item,photoScreen),env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher);
+            await sql(env,"UPDATE radar_alerts SET delivery='sent',message_id=? WHERE pilot_id=? AND item_id=?",messageId,PILOT_ID,reviewId).run();
+            photoReviewSent++;
+          }
+        }
+      }
+    }
     if (deal.reason === 'Geen passende prijsreferentie: flipwaarde blijft onbekend') deal.reason = missingReferenceReason(item, products, config);
-    decisions.push({ authenticity: deal.authenticity?.state || 'not_assessed', photoCount: item.photoUrls?.length || 0, title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
+    decisions.push({ photoScreening: photoScreen?.state || null, authenticity: deal.authenticity?.state || 'not_assessed', photoCount: item.photoUrls?.length || 0, title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
     if (!deal.eligible || !inWindow(clock(), policy)) continue;
     // Reserve delivery before sending. An ambiguous failure is not retried automatically.
     const delivery = await sql(env,
@@ -65,7 +85,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   }
   const report = { scheduler: 'cloudflare', scannedAt: new Date(now).toISOString(), attempts: reservation.attempts,
     selectedBrand, checked: items.length, newListings, repeatedListings: items.length - newListings,
-    sent, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
+    sent, photoReviewSent, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
   await sql(env, 'UPDATE radar_control SET last_scan_at=?, last_report=?, last_error=NULL, error_at=NULL WHERE id=?',
     now, JSON.stringify(report), PILOT_ID).run();
   console.log(JSON.stringify(report));
@@ -73,7 +93,13 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
 }
 
 export async function wake(env, options = {}) {
-  try { return await scan(env, options); }
+  try {
+    const checkTime = options.now ?? Date.now(), policy = options.policy ?? settings;
+    if (inWindow(checkTime,policy) && env.VISION_FREE_CONFIRMED === 'true') {
+      await screenPhotos(env,{brand:'Kapital'},config,policy,{now:checkTime,smoke:true});
+    }
+    return await scan(env, options);
+  }
   catch (error) {
     const code = ['RADAR_INVENTORY_FAILED', 'RADAR_PROVIDER_FAILED'].includes(error.message) ? error.message : 'RADAR_RUNTIME_FAILED';
     // Never persist arbitrary provider exceptions: their text may contain credentials.
@@ -87,8 +113,12 @@ export async function wake(env, options = {}) {
 
 export async function status(env, now = Date.now()) {
   const row = await sql(env, 'SELECT * FROM radar_control WHERE id=?', PILOT_ID).first();
+  const vision = await sql(env,'SELECT attempts,smoke_ok,last_outcome FROM radar_vision_control WHERE id=?',PILOT_ID).first();
   const report = row?.last_report ? JSON.parse(row.last_report) : null;
-  return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: false, active: inWindow(now), endsAt: settings.endsAt,
+  return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
+    photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? 'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
+    photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: MAX_VISION_CALLS,
+    bundleCheck: 'planned_not_active', active: inWindow(now), endsAt: settings.endsAt,
     lastWakeAt: row?.last_wake_at ? new Date(row.last_wake_at).toISOString() : null,
     lastScanAt: row?.last_scan_at ? new Date(row.last_scan_at).toISOString() : null,
     attempts: row?.attempts ?? null, limit: Math.min(settings.maxAttempts, 25),

@@ -10,6 +10,7 @@ function setup(attempts = 0) {
   const db = new DatabaseSync(':memory:');
   db.exec(fs.readFileSync(new URL('../migrations/0002_radar.sql', import.meta.url), 'utf8'));
   db.exec(fs.readFileSync(new URL('../migrations/0003_radar_transport_retry.sql', import.meta.url), 'utf8'));
+  db.exec(fs.readFileSync(new URL('../migrations/0004_radar_vision.sql', import.meta.url), 'utf8'));
   db.exec('CREATE TABLE products (data TEXT NOT NULL)');
   db.prepare('INSERT INTO products (data) VALUES (?)').run(JSON.stringify({ name: 'Needles Painter Trousers', brand: 'Needles', price: 210 }));
   db.prepare('INSERT INTO radar_control (id,attempts) VALUES (?,?)').run(PILOT_ID,attempts);
@@ -87,4 +88,19 @@ test('one-time pre-network transport recovery is consumed atomically without res
   assert.equal(calls,1);
   const row=db.prepare('SELECT attempts,transport_retry FROM radar_control').get();
   assert.equal(row.attempts,5);assert.equal(row.transport_retry,0);db.close();
+});
+
+test('visual triage sends only a human-review notice and never grants authentication or a deal score',async()=>{
+  const {db,env}=setup(1);let gpu=0,messages=[];
+  env.VISION_FREE_CONFIRMED='true';
+  env.AI={async run(){gpu++;return {response:JSON.stringify({garment_visible:true,brand_text:'Needles',brand_photo:0,care_text:'100% cotton. Made in Japan.',care_photo:1,contradiction:false,reason:'consistent_visuals'})};}};
+  db.prepare('UPDATE radar_vision_control SET smoke_ok=1').run();
+  const report=await scan(env,{...options,authenticityReviews:{},probeFn:async()=>({runId:'photo-test',items:[item]}),fetcher:async(url,init)=>{
+    if(String(url).includes('vinted.net'))return new Response(new Uint8Array([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]));
+    messages.push(JSON.parse(init.body).text);return Response.json({ok:true,result:{message_id:1}});
+  }});
+  assert.equal(gpu,1);assert.equal(report.sent,0);assert.equal(report.photoReviewSent,1);
+  assert.equal(report.decisions[0].score,null);assert.equal(report.decisions[0].authenticity,'unreviewed');
+  assert(messages[0].startsWith('FOTOCHECK'));assert(messages[0].includes('MENSELIJKE BEOORDELING'));assert(!messages[0].includes('/10'));
+  db.close();
 });

@@ -12,3 +12,6 @@ crons = ["*/5 * * * *"]
 binding = "RADAR_DB"
 database_name = "japansterdam"
 database_id = "4e52cd67-a370-400b-b79b-ca1527cc03de"
+
+[ai]
+binding = "AI"
