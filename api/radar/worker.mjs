@@ -24,17 +24,23 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   await sql(env, 'UPDATE radar_control SET last_wake_at = ? WHERE id = ?', now, PILOT_ID).run();
   if (previous.last_slot >= slot || previous.attempts >= Math.min(policy.maxAttempts, 25)) return { skipped: true };
   // Validate the source before reserving/spending a scan. Retrying a failed inventory read is free of Apify calls.
-  const products = await fetchJson(config.inventoryUrl, { fetcher });
+  // Same-account workers.dev requests must use the internal service binding.
+  const inventoryFetcher = env.SHOP_API ? (url, init) => env.SHOP_API.fetch(new Request(url, init)) : fetcher;
+  let products;
+  try { products = await fetchJson(config.inventoryUrl, { fetcher: inventoryFetcher }); }
+  catch { throw new Error('RADAR_INVENTORY_FAILED'); }
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
   // Atomic database reservation: overlapping events and redeployments cannot spend twice in one hour.
   const reservation = await sql(env,
-    'UPDATE radar_control SET attempts = attempts + 1, last_slot = ?, last_attempt_at = ? WHERE id = ? AND last_slot < ? AND attempts < ? RETURNING attempts',
+    'UPDATE radar_control SET attempts = attempts + 1, last_slot = ?, last_attempt_at = ?, last_error=NULL, error_at=NULL WHERE id = ? AND last_slot < ? AND attempts < ? RETURNING attempts',
     slot, now, PILOT_ID, slot, Math.min(policy.maxAttempts, 25)).first();
   if (!reservation) return { skipped: true };
   const brands = Object.entries(policy.brands);
   const [selectedBrand, brandId] = brands[(reservation.attempts - 1) % brands.length];
-  const result = await probeFn({ token: env.APIFY_TOKEN, brandIds: brandId, fetcher });
+  let result;
+  try { result = await probeFn({ token: env.APIFY_TOKEN, brandIds: brandId, fetcher }); }
+  catch { throw new Error('RADAR_PROVIDER_FAILED'); }
   const items = [...new Map(result.items.filter((item) => identifyBrand(item.brand, config) === identifyBrand(selectedBrand, config)).map((item) => [item.url, item])).values()];
   let newListings = 0, sent = 0;
   const decisions = [];
@@ -69,12 +75,13 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
 
 export async function wake(env, options = {}) {
   try { return await scan(env, options); }
-  catch {
+  catch (error) {
+    const code = ['RADAR_INVENTORY_FAILED', 'RADAR_PROVIDER_FAILED'].includes(error.message) ? error.message : 'RADAR_RUNTIME_FAILED';
     // Never persist arbitrary provider exceptions: their text may contain credentials.
     if (inWindow(options.now ?? Date.now(), options.policy)) {
-      await sql(env, "UPDATE radar_control SET last_error='Scan niet voltooid; controleer Worker-logboeken', error_at=? WHERE id=?", options.now ?? Date.now(), PILOT_ID).run();
+      await sql(env, "UPDATE radar_control SET last_error=?, error_at=? WHERE id=?", 'Scan niet voltooid: ' + code, options.now ?? Date.now(), PILOT_ID).run();
     }
-    console.error('RADAR_SCAN_FAILED');
+    console.error(code);
     throw new Error('Radarcontrole niet voltooid');
   }
 }
@@ -88,7 +95,7 @@ export async function status(env, now = Date.now()) {
     attempts: row?.attempts ?? null, limit: Math.min(settings.maxAttempts, 25),
     selectedBrand: report?.selectedBrand ?? null, checked: report?.checked ?? null,
     newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null,
-    error: row?.last_error ?? null,
+    error: row?.last_error ?? null, errorAt: row?.error_at ? new Date(row.error_at).toISOString() : null,
     overdue: inWindow(now) && (!row?.last_scan_at || now - row.last_scan_at > 90 * 60000),
     note: 'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
 }

@@ -66,3 +66,11 @@ test('HTTP interface is read-only and cannot start or reconfigure a scan',async(
   assert.equal((await worker.fetch(new Request('https://radar/run'),env)).status,404);
   assert.equal((await worker.fetch(new Request('https://radar/status'),env)).status,200);db.close();
 });
+
+
+test('shop inventory uses the internal service binding instead of a workers.dev subrequest',async()=>{
+  const {db,env}=setup();let internal=0;
+  env.SHOP_API={async fetch(request){internal++;assert.equal(new URL(request.url).pathname,'/public/products');return Response.json([product]);}};
+  const report=await scan(env,{...options,fetcher:async()=>{throw Error('Public worker-to-worker fetch must not be used');},probeFn:async()=>({runId:'internal',items:[]})});
+  assert.equal(internal,1);assert.equal(report.attempts,1);db.close();
+});
