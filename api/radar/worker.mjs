@@ -1,7 +1,7 @@
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
 import settings from '../../tools/deal-radar/pilot.json' with { type: 'json' };
 import { probe } from '../../tools/deal-radar/provider.mjs';
-import { assess, alertText, fetchJson, identifyBrand, sendTelegram } from '../../tools/deal-radar/scoring.mjs';
+import { assess, alertText, identifyBrand, sendTelegram } from '../../tools/deal-radar/scoring.mjs';
 import { estimateFromShop, missingReferenceReason } from '../../tools/deal-radar/valuation.mjs';
 
 export const PILOT_ID = 'pilot-2026-11-04';
@@ -24,11 +24,10 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   await sql(env, 'UPDATE radar_control SET last_wake_at = ? WHERE id = ?', now, PILOT_ID).run();
   if (previous.last_slot >= slot || previous.attempts >= Math.min(policy.maxAttempts, 25)) return { skipped: true };
   // Validate the source before reserving/spending a scan. Retrying a failed inventory read is free of Apify calls.
-  // Same-account workers.dev requests must use the internal service binding.
-  const inventoryFetcher = env.SHOP_API ? (url, init) => env.SHOP_API.fetch(new Request(url, init)) : fetcher;
-  let products;
-  try { products = await fetchJson(config.inventoryUrl, { fetcher: inventoryFetcher }); }
-  catch { throw new Error('RADAR_INVENTORY_FAILED'); }
+  // Read only the public catalog fields already used by the storefront.
+  // This avoids Worker-to-Worker fetch restrictions and parsing image-heavy descriptions.
+  const catalog = await env.RADAR_DB.prepare("SELECT json_extract(data,'$.name') AS name, json_extract(data,'$.brand') AS brand, json_extract(data,'$.price') AS price FROM products").all();
+  const products = catalog.results;
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
   // Atomic database reservation: overlapping events and redeployments cannot spend twice in one hour.

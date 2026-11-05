@@ -8,9 +8,11 @@ const policy = { enabled: true, startsAt: new Date(now - 1000).toISOString(), en
 function setup(attempts = 0) {
   const db = new DatabaseSync(':memory:');
   db.exec(fs.readFileSync(new URL('../migrations/0002_radar.sql', import.meta.url), 'utf8'));
+  db.exec('CREATE TABLE products (data TEXT NOT NULL)');
+  db.prepare('INSERT INTO products (data) VALUES (?)').run(JSON.stringify({ name: 'Needles Painter Trousers', brand: 'Needles', price: 210 }));
   db.prepare('INSERT INTO radar_control (id,attempts) VALUES (?,?)').run(PILOT_ID,attempts);
   const env = { APIFY_TOKEN: 'test-key', TELEGRAM_BOT_TOKEN: '123:token', TELEGRAM_CHAT_ID: '42', RADAR_DB: {
-    prepare(query) { return { bind(...args) { const s=db.prepare(query); return { async first(){ return s.get(...args)||null; }, async run(){ return s.run(...args); } }; } }; },
+    prepare(query) { return { async all(){return {results:db.prepare(query).all()};}, bind(...args) { const s=db.prepare(query); return { async first(){ return s.get(...args)||null; }, async run(){ return s.run(...args); }, async all(){ return {results:s.all(...args)}; } }; } }; },
   } };
   return { db, env };
 }
@@ -68,9 +70,8 @@ test('HTTP interface is read-only and cannot start or reconfigure a scan',async(
 });
 
 
-test('shop inventory uses the internal service binding instead of a workers.dev subrequest',async()=>{
-  const {db,env}=setup();let internal=0;
-  env.SHOP_API={async fetch(request){internal++;assert.equal(new URL(request.url).pathname,'/public/products');return Response.json([product]);}};
-  const report=await scan(env,{...options,fetcher:async()=>{throw Error('Public worker-to-worker fetch must not be used');},probeFn:async()=>({runId:'internal',items:[]})});
-  assert.equal(internal,1);assert.equal(report.attempts,1);db.close();
+test('valuation reads only public catalog fields from D1 without an outbound inventory fetch',async()=>{
+  const {db,env}=setup();
+  const report=await scan(env,{...options,fetcher:async()=>{throw Error('Inventory HTTP fetch must not be used');},probeFn:async()=>({runId:'internal',items:[]})});
+  assert.equal(report.attempts,1);db.close();
 });
