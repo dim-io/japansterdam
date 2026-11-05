@@ -32,7 +32,7 @@ test('one scan per slot, duplicate alerts suppressed, high estimates clearly lab
   try {
     let scans = 0, messages = [];
     const opts = { env, settings, stateFile: path.join(dir, 'pilot.json'), now, log: () => {},
-      probeFn: async (args) => { scans++; assert.equal(args.brandIds, '360271,576107'); return { runId: 'test', items: [item, item] }; },
+      probeFn: async (args) => { scans++; assert.equal(args.brandIds, scans % 2 ? '360271' : '576107'); return { runId: 'test', items: [item, item] }; },
       fetcher: async (url, options) => {
         if (String(url).includes('workers.dev')) return Response.json(products);
         messages.push(JSON.parse(options.body));
@@ -61,5 +61,38 @@ test('failed provider attempt is reserved and is not retried within the same slo
     await assert.rejects(pilot(opts), /Provider unavailable/);
     assert((await pilot(opts)).skipped);
     assert.equal(scans, 1);
+  } finally { await fs.rm(dir, { recursive: true, force: true }); }
+});
+
+
+test('rotation, repeated listing telemetry and gap reporting stay within one scan per hour', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'radar-health-'));
+  try {
+    const requested = [];
+    const opts = { env: { ...env, GITHUB_STEP_SUMMARY: path.join(dir, 'summary.md') }, settings,
+      stateFile: path.join(dir, 'state.json'), now, log: () => {},
+      fetcher: async () => Response.json(products),
+      probeFn: async ({ brandIds }) => {
+        requested.push(brandIds);
+        return { runId: 'test', items: [{ ...item, price: 40, observedAt: new Date(now + (requested.length - 1) * 3600000).toISOString() }] };
+      } };
+    const first = await pilot(opts);
+    assert.equal(first.noveltyBaseline, true);
+    assert.equal(first.newListings, null);
+    assert((await pilot(opts)).skipped);
+    const second = await pilot({ ...opts, now: now + 3600000 });
+    assert.equal(second.selectedBrand, 'Kapital');
+    assert.equal(second.outsideBrandFilter, 1);
+    assert.equal(second.checked, 0);
+    const third = await pilot({ ...opts, now: now + 4 * 3600000 });
+    assert.equal(third.selectedBrand, 'Needles');
+    assert.equal(third.scanGapHours, 3);
+    assert.equal(third.repeatedListings, 1);
+    assert.equal(third.newListings, 0);
+    assert.deepEqual(requested, ['360271', '576107', '360271']);
+    const summary = await fs.readFile(opts.env.GITHUB_STEP_SUMMARY, 'utf8');
+    assert(summary.includes('Planningsgat'));
+    assert(summary.includes('nulmeting'));
+    assert(summary.includes('buiten het gevraagde merk'));
   } finally { await fs.rm(dir, { recursive: true, force: true }); }
 });

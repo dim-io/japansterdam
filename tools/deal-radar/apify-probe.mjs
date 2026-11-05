@@ -21,7 +21,7 @@ export function normalizeRow(row, observedAt) {
   const item = { url, title: String(row.title || '').slice(0, 200), brand: String(row.brand || row.brand_title || ''), price, currency,
     size: String(row.size || row.size_title || ''), condition: conditions[row.condition || row.status] || null,
     available: row.availability === 'available' ? true : row.availability ? false : null,
-    description: String(row.description || '').slice(0, 5000), observedAt, comparables: [] };
+    description: String(row.description || '').slice(0, 5000), sourceUploadAge: String(row.uploaded_ago || '').slice(0, 80) || null, observedAt, comparables: [] };
   if (typeof row.shipping_price === 'number' && row.shipping_price >= 0) item.shippingCost = row.shipping_price;
   if (typeof row.buyer_protection_fee === 'number' && row.buyer_protection_fee >= 0) item.buyerFee = row.buyer_protection_fee;
   return item;

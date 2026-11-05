@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { trial, estimateFromShop, garmentType } from './trial.mjs';
+import { trial, estimateFromShop, garmentType, missingReferenceReason } from './trial.mjs';
 import { assess, alertText } from './radar.mjs';
 
 const config = JSON.parse(await fs.readFile(new URL('./config.json', import.meta.url), 'utf8'));
@@ -70,4 +70,14 @@ test('missing credentials stop before any paid scan', async () => {
   let calls = 0;
   await assert.rejects(trial({ env: {}, probeFn: async () => { calls++; } }), /ontbreekt/);
   assert.equal(calls, 0);
+});
+
+
+test('missing collaboration references stay unknown, while German garment names can match real references', () => {
+  assert.equal(garmentType('Needles Fleece Jacke'), 'outerwear');
+  assert.equal(garmentType('Kapital Pullover'), 'knit');
+  const collaboration = { ...item, title: 'Uniqlo x Needles Fleece Jacke' };
+  assert.equal(estimateFromShop(collaboration, products, config), null);
+  assert(missingReferenceReason(collaboration, products, config).includes('UNIQLO-samenwerking'));
+  assert(missingReferenceReason({ ...item, title: 'Needles socks' }, products, config).includes('Kledingtype niet herkend'));
 });

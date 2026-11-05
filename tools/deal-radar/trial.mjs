@@ -11,8 +11,8 @@ export function garmentType(name) {
   if (/\b(pants|trousers|pantalon|pantalone|broek|jeans|hose|jogging|joggers)\b/.test(text)) return 'trousers';
   if (/\b(t shirt|tshirt|tee)\b/.test(text)) return 'tee';
   if (/\b(shirt|chemise|overhemd|hemd)\b/.test(text)) return 'shirt';
-  if (/\b(hoodie|sweatshirt|sweater|knit|cardigan|trui)\b/.test(text)) return 'knit';
-  if (/\b(jacket|coat|parka|blazer|jas|veste|manteau)\b/.test(text)) return 'outerwear';
+  if (/\b(hoodie|sweatshirt|sweater|knit|cardigan|trui|pullover|strickjacke)\b/.test(text)) return 'knit';
+  if (/\b(jacket|coat|parka|blazer|jas|veste|manteau|jacke|mantel)\b/.test(text)) return 'outerwear';
   return null;
 }
 
@@ -30,6 +30,15 @@ export function estimateFromShop(item, products, config) {
   const reference = prices.length % 2 ? prices[middle] : (prices[middle - 1] + prices[middle]) / 2;
   return { basis: 'japansterdam_asking', low: Math.round(reference * .45), high: Math.round(reference * .65),
     references: references.slice(0, 3).map((p) => ({ title: p.name, price: p.price })) };
+}
+
+export function missingReferenceReason(item, products, config) {
+  const brand = identifyBrand(item.brand, config), type = garmentType(item.title);
+  if (!brand) return 'Merk wordt niet herkend';
+  if (!type) return 'Kledingtype niet herkend; geen onderbouwde flipwaarde';
+  const collab = /\b(uniqlo|gu)\b/.exec(normalize(item.title + ' ' + (item.description || '')))?.[1];
+  if (collab) return `${collab.toUpperCase()}-samenwerking: geen passende shopreferentie; hoofdcollectieprijzen niet gebruikt`;
+  return `Geen shopreferentie voor ${brand} / ${type}; flipwaarde onbekend`;
 }
 
 export async function trial({ env = process.env, fetcher = fetch, probeFn = probe, now = Date.now(), log = console.log } = {}) {
