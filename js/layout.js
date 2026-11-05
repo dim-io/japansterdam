@@ -1,3 +1,4 @@
+import { imageFrameStyle } from './image-frames.js';
 // Header, footer, mobile menu and bag drawer: the single source for shared chrome.
 import { getContent, getProducts, formatPrice, esc, productUrl } from './data.js';
 import { getBag, bagCount, removeFromBag, setBag, onBagChange } from './bag.js';
@@ -184,7 +185,7 @@ async function renderDrawer() {
   if (items.length !== slugs.length && all.length) { setBag(items.map((p) => p.slug)); return; }
   const total = items.reduce((n, p) => n + p.price, 0);
   body.innerHTML = items.map((p) => `<div class="line-item">
-    <a class="line-item__img" href="${productUrl(p.slug)}" tabindex="-1" aria-hidden="true"><img src="${esc(p.images[0])}" alt="" width="144" height="180"></a>
+    <a class="line-item__img" href="${productUrl(p.slug)}" tabindex="-1" aria-hidden="true"><img style="${imageFrameStyle(p, p.images[0])}" src="${esc(p.images[0])}" alt="" width="144" height="180"></a>
     <div><p class="line-item__brand">${esc(p.brand)}</p>
     <a class="line-item__name" href="${productUrl(p.slug)}">${esc(p.name)}</a>
     <p class="line-item__meta">Size ${esc(p.size)} · ${formatPrice(p.price)}</p>

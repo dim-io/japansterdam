@@ -158,12 +158,20 @@ function cleanProduct(input, slug, addedOn) {
   if (!Array.isArray(images) || images.length > 40 || images.some((i) => typeof i !== 'string' || !i.trim() || i.length > 600)) {
     throw new HttpError(400, 'Images must be a list of up to 40 URLs');
   }
+  if (input.active !== undefined && typeof input.active !== 'boolean') throw new HttpError(400, 'Active must be true or false');
+  const active = input.active !== false;
+  if (input.imageFrames !== undefined && (!Array.isArray(input.imageFrames) || input.imageFrames.length > 40)) throw new HttpError(400, 'Invalid photo frames');
+  const imageFrames = (input.imageFrames || []).map((frame) => {
+    if (!isObj(frame) || !images.includes(frame.url) || !['cover', 'contain'].includes(frame.fit) ||
+      ![frame.x, frame.y].every((v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100)) throw new HttpError(400, 'Invalid photo frame');
+    return { url: frame.url.trim(), fit: frame.fit, x: frame.x, y: frame.y };
+  });
   const brand = str(input.brand);
   const size = str(input.size);
   const condition = str(input.condition);
   const conditionNotes = str(input.conditionNotes);
-  if (!CONDITIONS.includes(condition)) throw new HttpError(400, 'Choose a condition: ' + CONDITIONS.join(', '));
-  if (!conditionNotes) throw new HttpError(400, 'Condition notes are required. Describe wear, flaws or the absence of visible flaws.');
+  if ((active || condition) && !CONDITIONS.includes(condition)) throw new HttpError(400, 'Choose a condition: ' + CONDITIONS.join(', '));
+  if (active && !conditionNotes) throw new HttpError(400, 'Condition notes are required. Describe wear, flaws or the absence of visible flaws.');
   if (conditionNotes.length > 600) throw new HttpError(400, 'Condition notes must be 600 characters or fewer');
   const topKeys = ['chest', 'shoulder', 'sleeveLength', 'length', 'hem'];
   const bottomKeys = ['waist', 'hip', 'inseam', 'outseam', 'frontRise', 'backRise', 'thigh', 'legOpening'];
@@ -198,6 +206,8 @@ function cleanProduct(input, slug, addedOn) {
     price,
     currency: 'EUR',
     sold: input.sold === true,
+    active,
+    imageFrames,
     addedOn,
     description: sanitizeHtml(input.description || ''),
     images: images.map((i) => i.trim()),
@@ -277,7 +287,7 @@ async function handle(request, env, ctx) {
 
   // public
   if (method === 'GET' && path === '/public/products') {
-    return json(await listProducts(env), 200, { 'Cache-Control': 'public, max-age=30' });
+    return json((await listProducts(env)).filter((p) => p.active !== false), 200, { 'Cache-Control': 'no-store' });
   }
   if (method === 'GET' && path === '/public/content') {
     const row = await env.DB.prepare("SELECT data FROM content WHERE id = 'main'").first();
@@ -376,6 +386,8 @@ async function handle(request, env, ctx) {
           if (isObj(input) && input.measurements === undefined) input.measurements = old.measurements;
           if (isObj(input) && input.condition === undefined) input.condition = old.condition;
           if (isObj(input) && input.conditionNotes === undefined) input.conditionNotes = old.conditionNotes;
+          if (isObj(input) && input.active === undefined) input.active = old.active;
+          if (isObj(input) && input.imageFrames === undefined) input.imageFrames = (old.imageFrames || []).filter((f) => (input.images || []).includes(f.url));
           const product = cleanProduct(input, slug, old.addedOn || Date.now());
           await env.DB.prepare('UPDATE products SET data = ?, updated_at = ? WHERE slug = ?').bind(JSON.stringify(product), Date.now(), slug).run();
           await audit(env, user.id, 'product.update', slug);

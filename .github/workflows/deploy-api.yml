@@ -26,6 +26,8 @@ jobs:
       - name: Controleer of het Cloudflare-token is ingesteld
         run: test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Secret CLOUDFLARE_API_TOKEN ontbreekt (zie README)"; exit 1; }
       - run: npm ci || npm install
+      - name: Controleer productinstellingen
+        run: node --test scripts/test-*.mjs
       - name: Controleer scanner en databasevergrendeling
         run: node --test ../tools/deal-radar/*.test.mjs radar/*.test.mjs
       - uses: actions/cache/restore@v4

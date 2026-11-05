@@ -1,3 +1,4 @@
+import { imageFrameStyle } from './image-frames.js';
 import './layout.js?v=grailed-links';
 import { getContent, getProducts, formatPrice, esc, productUrl } from './data.js';
 import { getBag, removeFromBag, clearBag, onBagChange } from './bag.js';
@@ -23,7 +24,7 @@ function render() {
   <section class="co__summary" aria-labelledby="sum-h">
     <h2 id="sum-h">Your bag</h2>
     ${items.map((p) => `<div class="co-item">
-      <a class="line-item__img" href="${productUrl(p.slug)}" tabindex="-1" aria-hidden="true"><img src="${esc(p.images[0])}" alt="" width="144" height="180"></a>
+      <a class="line-item__img" href="${productUrl(p.slug)}" tabindex="-1" aria-hidden="true"><img style="${imageFrameStyle(p, p.images[0])}" src="${esc(p.images[0])}" alt="" width="144" height="180"></a>
       <div><p class="line-item__brand">${esc(p.brand)}</p><a class="line-item__name" href="${productUrl(p.slug)}">${esc(p.name)}</a>
       <p class="line-item__meta">Size ${esc(p.size)}</p>
       <button class="line-item__remove" type="button" data-remove="${esc(p.slug)}" aria-label="Remove ${esc(p.name)}">Remove</button></div>

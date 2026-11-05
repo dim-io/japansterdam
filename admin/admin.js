@@ -1,3 +1,4 @@
+import { imageFrameStyle } from '../js/image-frames.js';
 import { API_BASE } from '../js/config.js';
 import { createProductRoutes } from '../js/product-urls.js';
 import { TOP_MEASUREMENT_FIELDS, BOTTOM_MEASUREMENT_FIELDS, measurementGroups, formatMeasurement, measurementsBlock } from '../js/measurements.js?v=unit-note';
@@ -235,7 +236,7 @@ async function viewProducts() {
   const list = h('div', { class: 'plist' });
   const search = h('input', { type: 'search', class: 'grow', placeholder: 'Search name or brand', 'aria-label': 'Search', value: listState.q });
   const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Filter' },
-    ['all', 'available', 'sold'].map((f) => h('button', { type: 'button', 'data-f': f, onclick: () => { listState.filter = f; draw(); } }, f === 'all' ? 'All' : f === 'available' ? 'Available' : 'Sold')));
+    ['all', 'active', 'inactive', 'available', 'sold'].map((f) => h('button', { type: 'button', 'data-f': f, onclick: () => { listState.filter = f; draw(); } }, ({ all: 'All', active: 'Active', inactive: 'Inactive', available: 'Available', sold: 'Sold' })[f])));
   search.addEventListener('input', () => { listState.q = search.value; draw(); });
   root.replaceChildren(
     h('p', { class: 'hint', style: 'margin:0 0 16px' }, 'Shop order: put your strongest pieces first. This is the default “Curated selection” in the shop. Use ⇡ to move a piece straight to the top, drag to arrange the rest, or use the arrows. Changes save automatically; sold pieces appear last in the shop.'),
@@ -274,7 +275,7 @@ async function viewProducts() {
     const filtering = !!q || listState.filter !== 'all';
     const canReorder = !filtering && !savingOrder;
     seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.f === listState.filter));
-    const rows = products.filter((p) => (listState.filter === 'all' || (listState.filter === 'sold') === !!p.sold) && (!q || (p.name + ' ' + p.brand).toLowerCase().includes(q)));
+    const rows = products.filter((p) => (listState.filter === 'all' || (listState.filter === 'active' ? p.active !== false : listState.filter === 'inactive' ? p.active === false : p.active !== false && (listState.filter === 'sold') === !!p.sold)) && (!q || (p.name + ' ' + p.brand).toLowerCase().includes(q)));
     count.textContent = `${rows.length} of ${products.length}`;
     $('#reorder-hint').textContent = savingOrder ? 'Saving shop order…' : filtering ? 'Clear the search and filter to change the order.' : 'Drag the ⋮⋮ handle, use ⇡ to move to the top, or use the arrows. This order is the default in the shop.';
     list.replaceChildren(
@@ -290,7 +291,7 @@ async function viewProducts() {
                 h('button', { type: 'button', 'aria-label': 'Move down', disabled: !canReorder || idx === products.length - 1, onclick: () => move(p.slug, idx + 1) }, '▼'))]),
           p.images?.[0] ? h('img', { class: 'prow__thumb', src: imgSrc(p.images[0]), alt: '', loading: 'lazy' }) : h('span', { class: 'prow__thumb' }),
           h('span', { class: 'prow__no' }, noLabel(nums.get(p.slug))),
-          h('span', { class: 'prow__name', title: p.name }, p.name),
+          h('span', { class: 'prow__name', title: p.name }, p.name, p.active === false ? h('small', { class: 'inactive-label' }, 'Inactive · hidden') : ''),
           h('span', { class: 'prow__brand' }, p.brand),
           h('span', { class: 'prow__size' }, p.size),
           h('span', { class: 'prow__price' }, formatPrice(p.price)),
@@ -312,11 +313,11 @@ async function viewProducts() {
 }
 
 /* ---------- product editor ---------- */
-const blankProduct = () => ({ name: '', brand: '', category: 'Tops', size: '', price: 0, sold: false, description: '', images: [] });
+const blankProduct = () => ({ name: '', brand: '', category: 'Tops', size: '', price: 0, sold: false, active: false, imageFrames: [], description: '', images: [] });
 
 function previewCard(p, no) {
   return h('div', { class: 'pcard' + (p.sold ? ' pcard--sold' : '') },
-    h('div', { class: 'pcard__media' }, p.sold ? h('span', { class: 'pcard__tag' }, 'Sold') : '', p.images[0] ? h('img', { src: imgSrc(p.images[0]), alt: '' }) : ''),
+    h('div', { class: 'pcard__media' }, p.sold ? h('span', { class: 'pcard__tag' }, 'Sold') : '', p.images[0] ? h('img', { src: imgSrc(p.images[0]), alt: '', style: imageFrameStyle(p, p.images[0]) }) : ''),
     h('div', { class: 'pcard__top' }, h('p', { class: 'pcard__brand' }, p.brand || 'Brand'), h('p', { class: 'pcard__no' }, no)),
     h('h3', { class: 'pcard__name', style: 'font-family:var(--body);font-stretch:100%;text-transform:none;letter-spacing:0;font-weight:400;font-size:14px' }, p.name || 'Product name'),
     h('p', { class: 'pcard__meta' }, `Size ${p.size || '–'} · ${formatPrice(p.price)}`));
@@ -360,6 +361,10 @@ async function viewEditor(slugParam) {
   if (!isNew && !orig) { $('#view').replaceChildren(h('p', { class: 'loading' }, 'This product does not exist (anymore). '), h('a', { class: 'btn', href: '#/products' }, 'Back to products')); return; }
   const d = JSON.parse(JSON.stringify(orig || blankProduct()));
   d.measurements = d.measurements || {};
+  d.active = d.active !== false;
+  d.imageFrames ||= [];
+  d.condition ||= "";
+  d.conditionNotes ||= "";
   let slug = orig?.slug;
   const removedOurs = [];
   const nums = numberMap();
@@ -451,6 +456,37 @@ async function viewEditor(slugParam) {
     h('button', { type: 'button', 'data-fmt': '1', title: 'Bullet list', 'aria-label': 'Bullet list', onmousedown: cmd('insertUnorderedList') }, '• List'),
     h('span', { class: 'sp' }), htmlBtn);
 
+  const active = h('input', { type: 'checkbox', checked: d.active });
+  active.addEventListener('change', () => { d.active = active.checked; mark(); });
+
+  function frameEditor(url) {
+    const existing = d.imageFrames.find((f) => f.url === url);
+    const frame = { url, fit: 'cover', x: 50, y: 50, ...existing };
+    const photo = h('img', { src: imgSrc(url), alt: 'Photo framing preview' });
+    const preview = h('div', { class: 'frame-preview' }, photo);
+    const dialog = h('dialog', { class: 'dlg frame-dialog', 'aria-label': 'Adjust photo frame' });
+    const fit = h('select', { 'aria-label': 'Photo display' },
+      h('option', { value: 'cover', selected: frame.fit === 'cover' }, 'Fill frame (crop)'),
+      h('option', { value: 'contain', selected: frame.fit === 'contain' }, 'Show entire photo'));
+    const controls = ['x', 'y'].map((axis) => {
+      const output = h('output', {}, frame[axis] + '%');
+      const slider = h('input', { type: 'range', min: '0', max: '100', step: '1', value: frame[axis], 'aria-label': axis === 'x' ? 'Horizontal position' : 'Vertical position' });
+      slider.addEventListener('input', () => { frame[axis] = Number(slider.value); output.textContent = slider.value + '%'; update(); });
+      return h('label', { class: 'frame-control' }, axis === 'x' ? 'Left / right' : 'Top / bottom', slider, output);
+    });
+    function update() { photo.style.cssText = imageFrameStyle({ imageFrames: [frame] }, url); }
+    fit.addEventListener('change', () => { frame.fit = fit.value; update(); });
+    dialog.append(h('h2', {}, 'Photo frame'), h('p', { class: 'hint', style: 'margin:10px 0' }, 'Preview of the shop and product frame. Move the crop or show the whole photo. Your original is preserved.'), preview, fit, ...controls,
+      h('div', { class: 'dlg__actions' },
+        h('button', { type: 'button', class: 'btn', onclick: () => dialog.close() }, 'Cancel'),
+        h('button', { type: 'button', class: 'btn btn--primary', onclick: () => {
+          d.imageFrames = d.imageFrames.filter((f) => f.url !== url); d.imageFrames.push(frame);
+          drawImages(); mark(); dialog.close();
+        } }, 'Apply frame')));
+    dialog.addEventListener('close', () => dialog.remove());
+    document.body.append(dialog); update(); dialog.showModal();
+  }
+
   /* images */
   const grid = h('div', { class: 'imgs' });
   const fileInput = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', multiple: true, hidden: true });
@@ -460,10 +496,12 @@ async function viewEditor(slugParam) {
     grid.replaceChildren(
       ...d.images.map((u, i) => {
         const t = h('div', { class: 'img', draggable: 'true' },
-          h('img', { src: imgSrc(u), alt: `Photo ${i + 1}` }),
+          h('img', { src: imgSrc(u), alt: `Photo ${i + 1}`, style: imageFrameStyle(d, u) }),
+          h('button', { type: 'button', class: 'btn btn--sm img__frame', onclick: () => frameEditor(u) }, 'Frame'),
           h('span', { class: 'img__n' }, i === 0 ? 'Cover' : String(i + 1)),
           h('button', { type: 'button', class: 'icon-btn icon-btn--danger img__x', 'aria-label': `Remove photo ${i + 1}`, onclick: () => {
             const [gone] = d.images.splice(i, 1);
+            d.imageFrames = d.imageFrames.filter((f) => f.url !== gone);
             if (base() && gone.startsWith(base() + '/img/products/')) removedOurs.push(gone);
             drawImages(); mark();
           } }, '×'));
@@ -514,8 +552,10 @@ async function viewEditor(slugParam) {
   async function save() {
     if (!d.name.trim()) { toast('Give the product a name first.', true); name.focus(); return; }
     if (uploading) { toast('Wait for the uploads to finish.', true); return; }
+    condition.required = d.active;
+    conditionNotes.required = d.active;
     if (!condition.reportValidity()) return;
-    conditionNotes.setCustomValidity(conditionNotes.value.trim() ? '' : 'Please describe the condition of this garment.');
+    conditionNotes.setCustomValidity((!d.active || conditionNotes.value.trim()) ? '' : 'Please describe the condition of this garment.');
     if (!conditionNotes.reportValidity()) return;
     for (const input of measurementInputs) {
       if (!input.reportValidity()) return;
@@ -527,9 +567,13 @@ async function viewEditor(slugParam) {
       const saved = isNew && !slug
         ? await api('/admin/products', { method: 'POST', body })
         : await api('/admin/products/' + encodeURIComponent(slug), { method: 'PUT', body });
-      if (saved.condition !== d.condition || saved.conditionNotes !== d.conditionNotes.trim()) {
+      if (saved.condition !== d.condition || saved.conditionNotes !== (d.conditionNotes || '').trim()) {
         if (isNew) slug = saved.slug;
         throw new Error('Condition was not saved. The backend needs the latest update.');
+      }
+      if (saved.active !== d.active || JSON.stringify(saved.imageFrames) !== JSON.stringify(d.imageFrames)) {
+        if (isNew) slug = saved.slug;
+        throw new Error('Visibility or photo frame was not saved. Please wait for the backend update.');
       }
       // An older Worker drops unknown fields. Never report those measurements as saved.
       const measurementSources = [[d.measurements, saved.measurements], [d.measurements.bottom, saved.measurements?.bottom]];
@@ -540,7 +584,7 @@ async function viewEditor(slugParam) {
       for (const u of removedOurs.splice(0)) api('/admin/images', { method: 'DELETE', body: { url: u } }).catch(() => {});
       const i = products.findIndex((p) => p.slug === saved.slug);
       if (i >= 0) products[i] = saved; else products.push(saved);
-      if (viewLink) viewLink.href = '../' + createProductRoutes(products).urlFor(saved.slug);
+      if (viewLink) { viewLink.href = '../' + createProductRoutes(products.filter((p) => p.active !== false)).urlFor(saved.slug); viewLink.hidden = saved.active === false; }
       setDirty(false); toast('Saved');
       if (isNew) { location.hash = '#/products/' + encodeURIComponent(saved.slug); return; }
       Object.assign(d, saved); drawMeasurementInputs(); refreshPreview();
@@ -556,7 +600,7 @@ async function viewEditor(slugParam) {
       products = products.filter((p) => p.slug !== slug); setDirty(false); toast('Product deleted'); location.hash = '#/products';
     } catch (e) { toast(e.message, true); }
   } }, 'Delete');
-  const viewLink = isNew ? '' : h('a', { class: 'btn', href: '../' + createProductRoutes(products).urlFor(slug), target: '_blank', rel: 'noopener' }, 'View on site ↗');
+  const viewLink = isNew ? '' : h('a', { class: 'btn', href: '../' + createProductRoutes(products.filter((p) => p.active !== false)).urlFor(slug), target: '_blank', rel: 'noopener', hidden: !d.active }, 'View on site ↗');
 
   const field = (label, ctrl, cls) => h('label', { class: 'field' + (cls ? ' ' + cls : '') }, h('span', {}, label), ctrl);
   $('#view').replaceChildren(
@@ -565,18 +609,20 @@ async function viewEditor(slugParam) {
       h('div', {},
         h('datalist', { id: 'brand-list' }, brands.map((b) => h('option', { value: b }))),
         h('section', { class: 'panel' }, h('h2', {}, 'Details'),
+          h('label', { class: 'switch' }, active, 'Active — visible on the website'),
+          h('p', { class: 'hint' }, 'Turn off to keep this product in standby. Inactive products can be saved without condition details and are only visible here.'),
           field('Name', name),
           h('div', { class: 'grid2' }, field('Brand', brand), field('Category', cat)),
           h('div', { class: 'grid2' }, field('Size', size), field('Price', h('span', { class: 'price-wrap', style: 'display:block' }, price))),
-          field('Condition (required)', condition),
-          field('Condition notes (required)', conditionNotes),
+          field('Condition (required when active)', condition),
+          field('Condition notes (required when active)', conditionNotes),
           h('p', { class: 'hint' }, 'Describe the actual garment. Distinguish intentional distressing from wear. Add a clear real detail photo for every flaw; check photo numbers after reordering.'),
           h('label', { class: 'switch' }, sold, 'Sold')),
         h('section', { class: 'panel' }, h('h2', {}, 'Description'), bar, rte, src),
         h('section', { class: 'panel' }, h('h2', {}, 'Measurements'),
           h('p', { class: 'measurement-help' }, 'Fields follow the selected category. Enter centimeters only; inches are calculated automatically. Measure widths flat, not doubled. For sets, enter the top and bottoms separately. Leave unavailable measurements blank.'),
           measurementEditor),
-        h('section', { class: 'panel' }, h('h2', {}, 'Photos'), grid, drop)),
+        h('section', { class: 'panel' }, h('h2', {}, 'Photos'), h('p', { class: 'hint', style: 'margin:10px 0' }, 'Choose Frame on any photo to adjust its crop. Remember to save the product.'), grid, drop)),
       h('div', { class: 'preview-wrap' }, h('div', { class: 'preview' }, h('p', { class: 'label' }, 'Preview in shop'), previewHost))),
     h('div', { class: 'savebar' }, saveBtn, h('span', { class: 'dirty' }, 'Unsaved changes'), h('span', { class: 'grow' }), viewLink, delBtn));
   refreshPreview(); drawImages();

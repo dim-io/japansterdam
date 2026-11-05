@@ -1,3 +1,4 @@
+import { imageFrameStyle } from './image-frames.js';
 import './layout.js?v=grailed-links';
 import { initHomeMotion } from './home-motion.js';
 import { getContent, getProducts, byNewest, cardHTML, esc, catNo, productUrl, brandUrl, formatPrice } from './data.js';
@@ -70,7 +71,7 @@ document.getElementById('brands-title').textContent = h.brandsTitle || 'Brands';
 const byBrand = new Map();
 for (const p of newest) {
   const e = byBrand.get(p.brand);
-  if (e) e.n++; else byBrand.set(p.brand, { brand: p.brand, n: 1, img: p.images[0] }); // newest piece comes first
+  if (e) e.n++; else byBrand.set(p.brand, { brand: p.brand, n: 1, img: p.images[0], frame: imageFrameStyle(p, p.images[0]) }); // newest piece comes first
 }
 // The owner's curated shop order also selects the featured brands. Available
 // pieces take priority; retain all other brands in the expandable index.
@@ -79,7 +80,7 @@ const allBrands = [...byBrand.values()].sort((a, b) => a.brand.localeCompare(b.b
 const rows = [...featured.map((brand) => byBrand.get(brand)), ...allBrands.filter((r) => !featured.includes(r.brand))];
 const visibleCount = Math.min(10, rows.length);
 const list = document.getElementById('brand-index');
-list.innerHTML = rows.map((r, i) => `<li${i >= visibleCount ? ' class="brand-index__extra" hidden' : ''}><a class="brand-row" href="${brandUrl(r.brand)}" data-img="${esc(r.img)}"><span class="brand-row__name">${esc(r.brand)}<sup class="brand-row__n" aria-label="${r.n} ${r.n === 1 ? 'piece' : 'pieces'}">${r.n}</sup></span></a></li>`).join('');
+list.innerHTML = rows.map((r, i) => `<li${i >= visibleCount ? ' class="brand-index__extra" hidden' : ''}><a class="brand-row" href="${brandUrl(r.brand)}" data-img="${esc(r.img)}" data-frame="${esc(r.frame)}"><span class="brand-row__name">${esc(r.brand)}<sup class="brand-row__n" aria-label="${r.n} ${r.n === 1 ? 'piece' : 'pieces'}">${r.n}</sup></span></a></li>`).join('');
 
 let clearBrandPreview = () => {};
 const brandsToggle = document.getElementById('brands-toggle');
@@ -127,6 +128,7 @@ if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
     a.classList.add('is-active');
     list.classList.add('is-hover');
     if (fimg.getAttribute('src') !== a.dataset.img) fimg.src = a.dataset.img;
+    fimg.style.cssText = a.dataset.frame;
     move(e);
     shown = true;
     float.classList.add('is-on');

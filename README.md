@@ -25,11 +25,11 @@ Then open http://localhost:8080/. (Opening the files directly from disk does not
 The shop owner edits products and page texts at `/admin/` (login with name and password). Architecture:
 
 - `api/` is a Cloudflare Worker (`japansterdam-api`, plain JS, no dependencies besides `wrangler`) with a D1 database (`DB`: users, sessions, products, content, audit log) and a KV namespace (`IMAGES`: uploaded product photos; R2 is not enabled on this account).
-- The public site (GitHub Pages) reads `GET /public/products` and `GET /public/content` from the Worker when `API_BASE` in `js/config.js` is set. If the request fails or takes longer than 4 seconds it falls back to `data/*.json`. With `API_BASE = ""` the site is fully static as before.
+- The public site (GitHub Pages) reads `GET /public/products` and `GET /public/content` from the Worker when `API_BASE` in `js/config.js` is set. If content fails or takes longer than 4 seconds it falls back to `data/content.json`. Products do not fall back to an outdated static catalogue when the API is configured, so hidden items cannot reappear during an outage. With `API_BASE = ""` the site is fully static as before.
 - The admin (`admin/index.html`, `admin.js`, `admin.css`) runs on GitHub Pages and talks to the Worker with `Authorization: Bearer <token>` (no cookies, because the admin is on a different site than the Worker). The token is kept in localStorage (`jp_admin_token`); only its SHA-256 hash is stored on the server, sessions last 30 days.
 - Passwords: PBKDF2-SHA256, 100000 iterations (the Workers maximum), random salt. Login is rate limited to 8 failed attempts per IP per 15 minutes. Changing the password needs only 4 characters, but a longer one is advised.
 - Product descriptions are sanitized on the server to `p, ul, ol, li, strong, em, br, a[href]`.
-- The static `data/*.json` files remain the fallback and the seed source. Changes made in the admin live in D1, not in these files.
+- The static `data/*.json` files remain the seed source and support fully static operation; only page content has a runtime fallback when the API is configured. Changes made in the admin live in D1, not in these files.
 
 ### Run locally
 
@@ -48,9 +48,15 @@ Then set `API_BASE = "http://localhost:8787"` in `js/config.js` and run `python3
 
 The shop defaults to **Curated selection**, following the order saved in `/admin/` → Products. Use **⇡** (Move to top), drag a product, or use the up/down arrows; changes save automatically. Clear searches and filters before reordering. Sold pieces appear after available pieces. New products are appended so the owner's opening selection stays in place. Visitors can switch to Newest or price sorting, including while filtering by brand, size or category; `?sort=newest` links keep that choice on refresh.
 
+### Visibility and photo frames
+
+In `/admin/` → Products, use **Active** and **Inactive** filters. New products start **inactive**: enter a name and save while preparing the remaining details. Switch **Active — visible on the website** on and save to publish; switch it off and save to hide a piece. Existing products remain active. Sold status is separate. Hidden products are omitted from the public API, shop, homepage, related pieces and product routes; admin retains all products and their order. Previously downloaded pages and known image URLs are not revoked.
+
+Under Photos, choose **Frame** on an image. Adjust **Left / right** and **Top / bottom**, or choose **Show entire photo** to avoid cropping. **Apply frame**, then **Save** the product. The original stays intact. Frames are stored by URL and follow photos when reordered; display is shared across shop cards, product galleries, brand previews and basket thumbnails. The enlarged lightbox shows the original. Status and frames live in product JSON (`active`, `imageFrames`); no migration is needed.
+
 ### Product condition
 
-Product saves require **Condition** (New / unworn, Excellent, Very good, Good or Fair) and **Condition notes** (up to 600 characters). Describe wear, fading, repairs and flaws, or explicitly state the absence of visible flaws. Distinguish intentional distressing from wear and add real detail photos for flaws. Photo-number references must be checked after reordering photos.
+Active product saves require **Condition** (New / unworn, Excellent, Very good, Good or Fair) and **Condition notes** (up to 600 characters). Describe wear, fading, repairs and flaws, or explicitly state the absence of visible flaws. Distinguish intentional distressing from wear and add real detail photos for flaws. Photo-number references must be checked after reordering photos.
 
 Condition and its plain-text notes appear directly below Size, above the buy button, with no accordion or badge. Existing products are not automatically graded: until assessed in the admin they display “Not yet assessed”. Opening the editor does not change any saved data. Condition is required the next time a product is saved (including changing its sold status).
 
