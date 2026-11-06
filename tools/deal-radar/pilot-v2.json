@@ -21,5 +21,6 @@
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
   "maxPhotoChecks": 4,
-  "dailyVisionLimit": 3
+  "dailyVisionLimit": 3,
+  "researchEnabled": true
 }

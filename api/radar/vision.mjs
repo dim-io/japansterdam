@@ -79,6 +79,11 @@ async function infer(env,item,data,config,smoke=false) {
   return parseScreening(result,item,config,data.length);
 }
 
+export function selectPhotoUrls(photos) {
+  const all=(photos||[]).filter(imageHost);
+  return all.length>MAX_PHOTOS?[all[0],...all.slice(-(MAX_PHOTOS-1))]:all;
+}
+
 export async function screenPhotos(env,item,config,policy,{now=Date.now(),fetcher=fetch,clock=Date.now,smoke=false}={}) {
   if(!currentWindow(now,policy)||!currentWindow(clock(),policy))return {state:'inactive'};
   if(env.VISION_FREE_CONFIRMED!=='true')return {state:'disabled',reason:'free_plan_not_confirmed'};
@@ -97,7 +102,8 @@ export async function screenPhotos(env,item,config,policy,{now=Date.now(),fetche
   let data;
   if(smoke)data=[PNG];
   else {
-    const urls=(item.photoUrls||[]).filter(imageHost).slice(0,MAX_PHOTOS);
+    // Listing covers tend to be first; label/detail photos are often at the end.
+    const urls=selectPhotoUrls(item.photoUrls);
     if(urls.length<2)return {state:'inconclusive',reason:'not_enough_photos'};
     try{data=await Promise.all(urls.map(url=>photoData(url,fetcher)));}catch{return {state:'inconclusive',reason:'photos_unavailable_or_too_large'};}
   }

@@ -1,3 +1,4 @@
+import {researchCandidate,processResearch,MAX_RESEARCH_NOTICES} from './research.mjs';
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
 import settings from '../../tools/deal-radar/pilot-v2.json' with { type: 'json' };
 import { preflight } from '../../tools/deal-radar/budget.mjs';
@@ -60,7 +61,24 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   }
   const result = {runId:results.map((r)=>r.runId).join(',')};
   const items = [...new Map(results.flatMap((r)=>r.items).map((item)=>[item.url,item])).values()];
-  let newListings = 0, sent = 0, photoReviewSent = 0;
+  let newListings = 0, sent = 0, photoReviewSent = 0, researchQueued = 0, researchSent = 0;
+  const researchConfig={...config,authenticityReviews};
+  const research=new Map();
+  if(policy.researchEnabled) {
+    for(const item of items) {
+      if(!estimateFromShop(item,products,config)) {
+        const candidate=researchCandidate(item,researchConfig,now);
+        if(candidate)research.set(item.url,candidate);
+      }
+    }
+    // Priced strong candidates retain first use of the shared photo budget.
+    const priority=(item)=>{
+      const valuation=estimateFromShop(item,products,config);
+      if(valuation&&assess({...item,valuation},{...researchConfig,authenticityRequiredBrands:[]},now).eligible)return 100;
+      return research.get(item.url)?.priority||0;
+    };
+    items.sort((a,b)=>priority(b)-priority(a));
+  }
   const decisions = [];
   for (const item of items) {
     const id = /\/items\/(\d+)/.exec(item.url)?.[1];
@@ -89,6 +107,16 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
         }
       }
     }
+    const candidate=research.get(item.url);
+    if(candidate) {
+      const outcome=await processResearch(env,item,candidate,policy,{now,clock,fetcher,
+        screen:async()=>{
+          const ready=await sql(env,'SELECT smoke_ok FROM radar_vision_control WHERE id=?',pilotId).first();
+          return ready?.smoke_ok===1?screenPhotos(env,item,researchConfig,policy,{now,fetcher,clock}):{state:'disabled',reason:'smoke_pending'};
+        }});
+      researchQueued+=Number(outcome.queued);researchSent+=Number(outcome.sent);
+      if(outcome.photo)photoScreen=outcome.photo;
+    }
     if (deal.reason === 'Geen passende prijsreferentie: flipwaarde blijft onbekend') deal.reason = missingReferenceReason(item, products, config);
     decisions.push({ photoScreening: photoScreen?.state || null, authenticity: deal.authenticity?.state || 'not_assessed', photoCount: item.photoUrls?.length || 0, title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
     if (!deal.eligible || !inWindow(clock(), policy)) continue;
@@ -103,10 +131,10 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   }
   const report = { scheduler: 'cloudflare', scannedAt: new Date(now).toISOString(), attempts: reservation.attempts,
     selectedBrand, byBrand:results.map((r)=>({brand:r.brand,checked:r.items.length,freshness:r.freshness})), checked: items.length, newListings, repeatedListings: items.length - newListings,
-    sent, photoReviewSent, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
+    sent, photoReviewSent, researchQueued, researchSent, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
   await sql(env, 'UPDATE radar_control SET last_scan_at=?, last_report=?, last_error=NULL, error_at=NULL WHERE id=?',
     now, JSON.stringify(report), pilotId).run();
-  console.log(JSON.stringify({scheduler:report.scheduler,attempts:report.attempts,checked:report.checked,newListings,sent,photoReviewSent}));
+  console.log(JSON.stringify({scheduler:report.scheduler,attempts:report.attempts,checked:report.checked,newListings,sent,photoReviewSent,researchQueued,researchSent}));
   return report;
 }
 
@@ -135,11 +163,14 @@ export async function status(env, now = Date.now(), policy = settings) {
   const row = await sql(env, 'SELECT * FROM radar_control WHERE id=?', pilotId).first();
   const vision = await sql(env,'SELECT attempts,smoke_ok,last_outcome FROM radar_vision_control WHERE id=?',pilotId).first();
   const report = row?.last_report ? JSON.parse(row.last_report) : null;
+  const researchStates=policy.researchEnabled ? (await sql(env,'SELECT state,COUNT(*) AS count FROM radar_research WHERE pilot_id=? GROUP BY state',pilotId).all()).results : [];
+  const researchBudget=policy.researchEnabled ? await sql(env,'SELECT attempts FROM radar_research_limits WHERE pilot_id=?',pilotId).first() : null;
   return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
     photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? 'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
     trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:policy.mode === 'both-brands' ? 2 : 1,
     byBrand:report?.byBrand || [],
+    researchEnabled:policy.researchEnabled===true,researchStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
     bundleCheck: 'planned_not_active', active: inWindow(now,policy), endsAt: policy.endsAt,
     lastWakeAt: row?.last_wake_at ? new Date(row.last_wake_at).toISOString() : null,
     lastScanAt: row?.last_scan_at ? new Date(row.last_scan_at).toISOString() : null,
