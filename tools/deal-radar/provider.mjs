@@ -9,7 +9,7 @@ const INPUT = { searchQueries: ['https://www.vinted.nl/catalog?brand_ids%5B%5D=3
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'TIMED-OUT', 'ABORTED']);
 
 export function listingPhotos(row) {
-  const raw = [row.image, ...(Array.isArray(row.photos) ? row.photos : []), ...(Array.isArray(row.images) ? row.images : [])];
+  const raw = [row.image, ...(Array.isArray(row.photo_links) ? row.photo_links : []), ...(Array.isArray(row.photos) ? row.photos : []), ...(Array.isArray(row.images) ? row.images : [])];
   return [...new Set(raw.map((p) => typeof p === 'string' ? p : p?.url || p?.full_size_url).filter((p) => {
     try { const u = new URL(p); return u.protocol === 'https:' && !u.username && !u.password && !u.port && /^images\d*\.vinted\.net$/.test(u.hostname); } catch { return false; }
   }))].slice(0, 12);

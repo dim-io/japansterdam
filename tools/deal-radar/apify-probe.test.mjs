@@ -62,3 +62,11 @@ test('second trial increases only the bounded result count and retains brand, so
  assert.equal(result.items.length,10);
  await assert.rejects(probe({token:'fixture',maxResults:100}),/scanbudget/);
 });
+
+
+test('documented photo_links from full item rows reach the photo screener without accepting foreign hosts or seller pictures',()=>{
+ const image='https://images1.vinted.net/front.webp',label='https://images2.vinted.net/label.webp';
+ const item=normalizeRow({...row,image,photo_links:[image,label,'https://untrusted.example/photo.jpg','http://images1.vinted.net/photo.jpg'],seller_image:'https://images1.vinted.net/seller.jpg'},'2026-11-06T10:00:00Z');
+ assert.deepEqual(item.photoUrls,[image,label]);
+ assert.equal(normalizeRow({...row,photo_links:'not-an-array'},'').photoUrls.length,0);
+});

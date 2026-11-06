@@ -23,7 +23,7 @@ async function main(){
  if(!r.ok)throw Error('Referenties ontbreken');const products=await r.json();
  const runs=(await get('/acts/omkar-cloud~vinted-scraper/runs?desc=true&limit=50')).data.items;
  const seen=new Set(),sampleIds=[];
- const result={readOnly:true,runsChecked:0,itemsChecked:0,normalReasons:{},preliminaryReasons:{},modelReferences:0,unknownGarmentTypes:0,photoCandidates:0,enoughPhotos:0,liveCatalogCompared:0,liveCatalogMatches:0,liveOrderMatches:0,observedWithin90Minutes:true,descriptionRows:0,photoArrayRows:0,imageArrayRows:0,photoUrlsArrayRows:0,imageUrlsArrayRows:0,maxRawPhotoArrayLength:0};
+ const result={readOnly:true,runsChecked:0,itemsChecked:0,normalReasons:{},preliminaryReasons:{},modelReferences:0,unknownGarmentTypes:0,photoCandidates:0,enoughPhotos:0,liveCatalogCompared:0,liveCatalogMatches:0,liveOrderMatches:0,observedWithin90Minutes:true,descriptionRows:0,photoArrayRows:0,imageArrayRows:0,photoUrlsArrayRows:0,imageUrlsArrayRows:0,maxRawPhotoArrayLength:0,documentedPhotoLinkRows:0};
  for(const run of runs){
   if(seen.size>=2)break;
   if(run.status!=='SUCCEEDED'||Date.parse(run.startedAt)<Date.parse(policy.startsAt)||Date.parse(run.startedAt)>=Date.parse(policy.endsAt))continue;
@@ -34,10 +34,11 @@ async function main(){
   const rows=await get('/datasets/'+encodeURIComponent(run.defaultDatasetId)+'/items?clean=true&format=json&limit=10');
   for(const row of rows){
    result.descriptionRows+=Number(!!row.description);
+   result.documentedPhotoLinkRows+=Number(Array.isArray(row.photo_links));
    result.photoArrayRows+=Number(Array.isArray(row.photos));result.imageArrayRows+=Number(Array.isArray(row.images));
    result.photoUrlsArrayRows+=Number(Array.isArray(row.photo_urls)||Array.isArray(row.photoUrls));
    result.imageUrlsArrayRows+=Number(Array.isArray(row.image_urls)||Array.isArray(row.imageUrls));
-   result.maxRawPhotoArrayLength=Math.max(result.maxRawPhotoArrayLength,...['photos','images','photo_urls','photoUrls','image_urls','imageUrls'].map(k=>Array.isArray(row[k])?row[k].length:0));
+   result.maxRawPhotoArrayLength=Math.max(result.maxRawPhotoArrayLength,...['photo_links','photos','images','photo_urls','photoUrls','image_urls','imageUrls'].map(k=>Array.isArray(row[k])?row[k].length:0));
   }
   const items=rows.map(row=>normalizeRow(row,run.finishedAt)).filter(Boolean);
   const live=await publicIds(input.searchQueries[0]);

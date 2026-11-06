@@ -7,7 +7,7 @@ export async function compareCatalog(brandId,items,fetcher=fetch) {
     const r=await fetcher(url.href,{redirect:'manual',signal:AbortSignal.timeout(15000)});
     if(!r.ok || !r.headers.get('content-type')?.includes('text/html'))return {state:'unverified',reason:'catalog_unavailable'};
     const reader=r.body.getReader();let size=0,html='';const decoder=new TextDecoder();
-    try {while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>2*1024*1024)return {state:'unverified',reason:'catalog_too_large'};html+=decoder.decode(value,{stream:true});}}
+    try {while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>8*1024*1024)return {state:'unverified',reason:'catalog_too_large'};html+=decoder.decode(value,{stream:true});}}
     finally{await reader.cancel().catch(()=>{});}
     if(/captcha|cf-chl-|challenge-platform/i.test(html))return {state:'unverified',reason:'catalog_challenge'};
     const ids=[...new Set([...html.matchAll(/href=["'](?:https:\/\/www\.vinted\.nl)?\/items\/(\d+)[^"']*["']/g)].map(m=>m[1]))].slice(0,3);
