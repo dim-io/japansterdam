@@ -1,41 +1,55 @@
-// Read existing runs only; publish aggregate counts, never individual records,
-// IDs, timestamps, prices, costs, seller data, URLs, input or credentials.
-const BASE = 'https://api.apify.com/v2';
-export async function diagnose(token, fetcher = fetch) {
-  if (!token) throw new Error('Diagnoseconfiguratie ontbreekt');
-  async function get(path) {
-    let response;
-    try { response = await fetcher(BASE + path, { headers: {Authorization:'Bearer ' + token}, redirect:'manual', signal:AbortSignal.timeout(30000) }); }
-    catch { throw new Error('Diagnosebron niet bereikbaar'); }
-    if (!response.ok) throw new Error('Diagnosebron gaf geen geldig antwoord');
-    return response.json();
-  }
-  const start=Date.parse('2026-11-04T22:29:16.260330+00:00'),end=Date.parse('2026-11-05T22:29:16.260330+00:00');
-  const listing=await get('/acts/omkar-cloud~vinted-scraper/runs?desc=true&limit=50');
-  const runs=listing.data.items.filter((r)=>Date.parse(r.startedAt)>=start && Date.parse(r.startedAt)<end);
-  const seen=new Set();
-  const result={readOnly:true,runsChecked:0,failedRuns:0,searchConfigCorrect:true,maxThreeResults:true,resultsChecked:0,uniqueItems:0,repeatItems:0};
-  for(const run of runs.reverse()) {
-    if(run.status!=='SUCCEEDED') { result.failedRuns++;continue; }
-    const input=await get('/key-value-stores/'+encodeURIComponent(run.defaultKeyValueStoreId)+'/records/INPUT');
-    // Examine only the known pilot searches; exclude unrelated account work.
-    if(!['360271','576107'].includes(input.brandIds) || input.maxResults!==3)continue;
-    result.runsChecked++;
-    let correct=false;
-    try {const u=new URL(input.searchQueries?.[0]);correct=u.hostname==='www.vinted.nl' && u.searchParams.get('brand_ids[]')===input.brandIds && u.searchParams.get('order')==='newest_first' && u.searchParams.get('price_to')==='40' && input.sortBy==='newest_first';}catch{}
-    result.searchConfigCorrect &&= correct;
-    const rows=await get('/datasets/'+encodeURIComponent(run.defaultDatasetId)+'/items?clean=true&format=json&limit=4');
-    result.maxThreeResults &&= rows.length<=3;
-    for(const r of rows.slice(0,3)) {
-      const id=String(r.id || /\/items\/(\d+)/.exec(r.link || r.url)?.[1] || '');
-      if(!id)continue;
-      result.resultsChecked++;
-      if(seen.has(id)) result.repeatItems++;else {seen.add(id);result.uniqueItems++;}
-    }
-  }
-  return result;
+// Audit existing results without publishing item data. No new scraper/GPU runs.
+// Only aggregate counts, fixed rejection messages and public-catalogue match counts are logged.
+import {normalizeRow} from '../../tools/deal-radar/provider.mjs';
+import {assess} from '../../tools/deal-radar/scoring.mjs';
+import {estimateFromShop,garmentType,missingReferenceReason} from '../../tools/deal-radar/valuation.mjs';
+import config from '../../tools/deal-radar/config.json' with {type:'json'};
+import policy from '../../tools/deal-radar/pilot-v2.json' with {type:'json'};
+async function get(path){
+ const r=await fetch('https://api.apify.com/v2'+path,{headers:{Authorization:'Bearer '+process.env.APIFY_TOKEN},redirect:'manual',signal:AbortSignal.timeout(20000)});
+ if(!r.ok)throw Error('Bron niet beschikbaar');return r.json();
 }
-if(process.argv[1]?.endsWith('/radar-diagnose.mjs')) {
-  try {console.log(JSON.stringify(await diagnose(process.env.APIFY_TOKEN)));}
-  catch {console.error('Diagnose niet voltooid; er zijn geen scans gestart.');process.exitCode=1;}
+async function publicIds(url){
+ const r=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(20000)});
+ if(!r.ok)return[];
+ const reader=r.body.getReader();let html='',size=0;const decoder=new TextDecoder();
+ try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>8*1024*1024)return[];html+=decoder.decode(value,{stream:true});}}finally{await reader.cancel().catch(()=>{});}
+ if(/cf-chl-|challenge-platform/i.test(html))return[];
+ return[...new Set([...html.matchAll(/href=["'](?:https:\/\/www\.vinted\.nl)?\/items\/(\d+)[^"']*["']/g)].map(m=>m[1]))].slice(0,10);
 }
+async function main(){
+ const r=await fetch(config.inventoryUrl,{redirect:'manual',signal:AbortSignal.timeout(20000)});
+ if(!r.ok)throw Error('Referenties ontbreken');const products=await r.json();
+ const runs=(await get('/acts/omkar-cloud~vinted-scraper/runs?desc=true&limit=50')).data.items;
+ const seen=new Set();
+ const result={readOnly:true,runsChecked:0,itemsChecked:0,normalReasons:{},preliminaryReasons:{},modelReferences:0,unknownGarmentTypes:0,photoCandidates:0,enoughPhotos:0,liveCatalogCompared:0,liveCatalogMatches:0,liveOrderMatches:0,observedWithin90Minutes:true};
+ for(const run of runs){
+  if(seen.size>=2)break;
+  if(run.status!=='SUCCEEDED'||Date.parse(run.startedAt)<Date.parse(policy.startsAt)||Date.parse(run.startedAt)>=Date.parse(policy.endsAt))continue;
+  const input=await get('/key-value-stores/'+encodeURIComponent(run.defaultKeyValueStoreId)+'/records/INPUT');
+  if(!Object.values(policy.brands).includes(input.brandIds)||input.maxResults!==10||seen.has(input.brandIds))continue;
+  seen.add(input.brandIds);result.runsChecked++;
+  result.observedWithin90Minutes &&= Date.now()-Date.parse(run.finishedAt)<90*60000;
+  const rows=await get('/datasets/'+encodeURIComponent(run.defaultDatasetId)+'/items?clean=true&format=json&limit=10');
+  const items=rows.map(row=>normalizeRow(row,run.finishedAt)).filter(Boolean);
+  const live=await publicIds(input.searchQueries[0]);
+  const ids=items.map(item=>/\/items\/(\d+)/.exec(item.url)?.[1]);
+  result.liveCatalogCompared+=live.length;
+  result.liveCatalogMatches+=live.filter(id=>ids.includes(id)).length;
+  result.liveOrderMatches+=live.filter((id,i)=>id===ids[i]).length;
+  for(const item of items){
+   result.itemsChecked++;
+   const valuation=estimateFromShop(item,products,config),data={...item,...(valuation?{valuation}:{})};
+   const normal=assess(data,config,Date.parse(run.finishedAt));
+   const preliminary=assess(data,{...config,authenticityRequiredBrands:[]},Date.parse(run.finishedAt));
+   const reason=preliminary.reason==='Geen passende prijsreferentie: flipwaarde blijft onbekend'?missingReferenceReason(item,products,config):preliminary.reason;
+   result.normalReasons[normal.reason]=(result.normalReasons[normal.reason]||0)+1;
+   result.preliminaryReasons[reason]=(result.preliminaryReasons[reason]||0)+1;
+   result.modelReferences+=Number(!!valuation);result.unknownGarmentTypes+=Number(!garmentType(item.title));
+   result.photoCandidates+=Number(preliminary.eligible);result.enoughPhotos+=Number(item.photoUrls.length>=2);
+  }
+ }
+ if(result.itemsChecked!==20)throw Error('Steekproef niet compleet');
+ console.log(JSON.stringify(result));
+}
+main().catch(()=>{console.error('Controle niet voltooid; geen scans gestart.');process.exitCode=1;});
