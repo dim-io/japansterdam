@@ -42,9 +42,10 @@ export async function queueResearch(env,item,candidate,policy,now) {
   return {id,state:row.state};
 }
 
-export async function processResearch(env,item,candidate,policy,{now,clock,fetcher,screen}) {
+export async function processResearch(env,item,candidate,policy,{now,clock,fetcher,screen,mayScreen=()=>true}) {
   const queued=await queueResearch(env,item,candidate,policy,now);
   if(!queued||['notified','rejected','notification_pending'].includes(queued.state))return {queued:!!queued,sent:false};
+  if(!mayScreen())return {queued:true,sent:false};
   const photo=await screen();
   const state=photo?.state==='rejected'?'rejected':photo?.state==='visually_consistent'?'review_ready':
     photo?.state==='inconclusive'&&photo.reason==='missing_or_unreadable_evidence'?'needs_labels':'queued';

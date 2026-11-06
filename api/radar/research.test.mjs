@@ -14,15 +14,15 @@ function setup(outcome='consistent',failure=false){
  for(const name of ['0002_radar.sql','0003_radar_transport_retry.sql','0004_radar_vision.sql','0005_radar_second_trial.sql','0006_radar_research.sql'])db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8'));
  db.exec('CREATE TABLE products(data TEXT NOT NULL)');db.prepare('INSERT INTO products VALUES(?)').run(JSON.stringify({name:'Needles Painter Trousers',brand:'Needles',price:210}));
  db.prepare('UPDATE radar_vision_control SET smoke_ok=1 WHERE id=?').run(policy.id);
- const messages=[];let calls=0;
+ const messages=[];let calls=0,dbCalls=0,photoFetches=0;
  const env={APIFY_TOKEN:'fixture',TELEGRAM_BOT_TOKEN:'123:fixture',TELEGRAM_CHAT_ID:'42',VISION_FREE_CONFIRMED:'true',
   AI:{async run(){calls++;return{response:{garment_visible:true,brand_text:outcome==='rejected'?'Other brand':'Needles',brand_photo:0,care_text:outcome==='unclear'?'':'100% cotton. Made in Japan.',care_photo:outcome==='unclear'?-1:1,contradiction:outcome==='rejected',reason:outcome==='rejected'?'different_brand':outcome==='unclear'?'labels_missing':'consistent_visuals'}};}},
-  RADAR_DB:{prepare(query){return{async all(){return{results:db.prepare(query).all()};},bind(...args){const s=db.prepare(query);return{async first(){return s.get(...args)||null;},async run(){return s.run(...args);},async all(){return{results:s.all(...args)};}};}};}}};
+  RADAR_DB:{prepare(query){dbCalls++;return{async all(){return{results:db.prepare(query).all()};},bind(...args){const s=db.prepare(query);return{async first(){return s.get(...args)||null;},async run(){return s.run(...args);},async all(){return{results:s.all(...args)};}};}};}}};
  const fetcher=async(url,init)=>{
-  if(String(url).includes('vinted.net'))return new Response(new Uint8Array([0x89,0x50,0x4e,0x47]));
+  if(String(url).includes('vinted.net')){photoFetches++;return new Response(new Uint8Array([0x89,0x50,0x4e,0x47]));}
   messages.push(JSON.parse(init.body).text);return failure?Response.json({ok:false},{status:500}):Response.json({ok:true,result:{message_id:messages.length}});
  };
- return {db,env,messages,calls:()=>calls,fetcher};
+ return {db,env,messages,calls:()=>calls,dbCalls:()=>dbCalls,photoFetches:()=>photoFetches,fetcher};
 }
 const options=(ctx,changes={})=>({now,clock:()=>now,policy,fetcher:ctx.fetcher,probeFn:async()=>({runId:'fixture',items:[item]}),...changes});
 test('unpriced research keeps availability, condition, freshness, brand identity and counterfeit gates',()=>{
@@ -49,8 +49,13 @@ test('unreadable labels request manual evidence; contradictory labels never prod
 });
 test('the research route shares the existing GPU limits, caps notices at two and does not reset counters',async()=>{
  const ctx=setup();const items=[1,2,3].map(id=>({...item,url:`https://www.vinted.nl/items/${id}-test`}));
- const report=await scan(ctx.env,options(ctx,{probeFn:async()=>({runId:'fixture',items})}));
- assert.equal(ctx.calls(),3);assert.equal(report.researchSent,2);assert.equal(ctx.messages.length,2);
+ let researchSent=0;
+ for(let hour=0;hour<3;hour++){
+  const time=now+hour*3600000;
+  const report=await scan(ctx.env,options(ctx,{now:time,clock:()=>time,probeFn:async()=>({runId:'fixture',items:items.map(i=>({...i,observedAt:new Date(time).toISOString()}))})}));
+  researchSent+=report.researchSent;
+ }
+ assert.equal(ctx.calls(),3);assert.equal(researchSent,2);assert.equal(ctx.messages.length,2);
  assert.equal(ctx.db.prepare('SELECT attempts FROM radar_research_limits').get().attempts,2);
  assert.equal(ctx.db.prepare('SELECT attempts FROM radar_vision_control WHERE id=?').get(policy.id).attempts,3);ctx.db.close();
  const blocked=setup();blocked.db.prepare('UPDATE radar_vision_control SET attempts=4 WHERE id=?').run(policy.id);
@@ -65,4 +70,15 @@ test('the photo selection includes the cover and final label photos without incr
  const photos=Array.from({length:7},(_,i)=>`https://images1.vinted.net/${i}.png`);
  assert.deepEqual(selectPhotoUrls(photos),[photos[0],...photos.slice(-3)]);
  assert.deepEqual(selectPhotoUrls([...photos.slice(0,2),'https://foreign.example/x.png']),photos.slice(0,2));
+});
+
+
+test('a full twenty-item round batches seen records and bounds research work within the Free subrequest ceiling',async()=>{
+ const ctx=setup();const items=Array.from({length:20},(_,i)=>({...item,url:`https://www.vinted.nl/items/${1000+i}-test`}));
+ const report=await scan(ctx.env,options(ctx,{probeFn:async()=>({runId:'fixture',items})}));
+ assert.equal(report.checked,20);assert.equal(report.newListings,20);assert.equal(report.researchQueued,5);assert.equal(ctx.calls(),1);
+ // Include maximum two-brand start/status/dataset requests, account checks,
+ // two first-round catalogue reads and the wake readiness read (15 extras).
+ assert(ctx.dbCalls()+ctx.photoFetches()+ctx.calls()+ctx.messages.length+15<=50);
+ ctx.db.close();
 });

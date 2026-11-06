@@ -70,3 +70,16 @@ test('documented photo_links from full item rows reach the photo screener withou
  assert.deepEqual(item.photoUrls,[image,label]);
  assert.equal(normalizeRow({...row,photo_links:'not-an-array'},'').photoUrls.length,0);
 });
+
+
+test('an unfinished provider run uses bounded server waits and one abort, never unlimited status polling',async()=>{
+ let starts=0,checks=0,aborts=0;
+ await assert.rejects(probe({token:'fixture',now:()=>0,fetcher:async(raw,opts)=>{
+  const u=new URL(raw);
+  if(u.pathname.endsWith('/abort')){aborts++;return Response.json({});}
+  if(opts.method==='POST'){starts++;assert.equal(u.searchParams.get('waitForFinish'),'20');}
+  else {checks++;assert.equal(u.searchParams.get('waitForFinish'),'20');}
+  return Response.json({data:{id:'Pending',status:'RUNNING'}});
+ }}),/afgebroken/);
+ assert.equal(starts,1);assert.equal(checks,3);assert.equal(aborts,1);
+});

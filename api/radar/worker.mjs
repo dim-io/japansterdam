@@ -63,10 +63,23 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   const items = [...new Map(results.flatMap((r)=>r.items).map((item)=>[item.url,item])).values()];
   let newListings = 0, sent = 0, photoReviewSent = 0, researchQueued = 0, researchSent = 0;
   const researchConfig={...config,authenticityReviews};
+  let photoChecksLeft=1;
   const research=new Map();
+  const ids=items.map((item)=>/\/items\/(\d+)/.exec(item.url)?.[1]).filter(Boolean);
+  const seenIds=new Set();
+  if(ids.length) {
+    const placeholders=ids.map(()=>'?').join(',');
+    const seen=await sql(env,`SELECT item_id FROM radar_seen WHERE pilot_id=? AND item_id IN (${placeholders})`,pilotId,...ids).all();
+    seen.results.forEach((row)=>seenIds.add(row.item_id));
+    const values=ids.map(()=>'(?,?,?,?)').join(',');
+    const rows=items.filter((item)=>/\/items\/(\d+)/.test(item.url));
+    await sql(env,`INSERT INTO radar_seen (pilot_id,item_id,price,observed_at) VALUES ${values} ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, observed_at=excluded.observed_at`,...rows.flatMap((item)=>[pilotId,/\/items\/(\d+)/.exec(item.url)[1],item.price,now])).run();
+  }
   if(policy.researchEnabled) {
+    const previousResearch=await sql(env,'SELECT item_id,state FROM radar_research WHERE pilot_id=?',pilotId).all();
+    const finished=new Set(previousResearch.results.filter((row)=>['notified','rejected','notification_pending'].includes(row.state)).map((row)=>row.item_id));
     for(const item of items) {
-      if(!estimateFromShop(item,products,config)) {
+      if(!finished.has(/\/items\/(\d+)/.exec(item.url)?.[1])&&!estimateFromShop(item,products,config)) {
         const candidate=researchCandidate(item,researchConfig,now);
         if(candidate)research.set(item.url,candidate);
       }
@@ -78,14 +91,14 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
       return research.get(item.url)?.priority||0;
     };
     items.sort((a,b)=>priority(b)-priority(a));
+    const selected=new Set([...research].sort((a,b)=>b[1].priority-a[1].priority).slice(0,5).map(([url])=>url));
+    for(const url of research.keys())if(!selected.has(url))research.delete(url);
   }
   const decisions = [];
   for (const item of items) {
     const id = /\/items\/(\d+)/.exec(item.url)?.[1];
     if (!id) continue;
-    const seen = await sql(env, 'SELECT price FROM radar_seen WHERE pilot_id = ? AND item_id = ?', pilotId, id).first();
-    if (!seen) newListings++;
-    await sql(env, 'INSERT INTO radar_seen (pilot_id, item_id, price, observed_at) VALUES (?, ?, ?, ?) ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, observed_at=excluded.observed_at', pilotId, id, item.price, now).run();
+    if (!seenIds.has(id)) newListings++;
     const valuation = estimateFromShop(item, products, config);
     let deal = assess({ ...item, ...(valuation ? { valuation } : {}) }, { ...config, authenticityReviews }, now);
     let photoScreen = null;
@@ -93,10 +106,10 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     // AI screening never writes a trusted authentication approval.
     if (deal.authenticity?.state === 'unreviewed' && valuation && env.VISION_FREE_CONFIRMED === 'true') {
       const preliminary = assess({ ...item, valuation }, { ...config, authenticityRequiredBrands: [], authenticityReviews }, now);
-      if (preliminary.eligible) {
+      if (preliminary.eligible && photoChecksLeft>0) {
         const ready = await sql(env, 'SELECT smoke_ok FROM radar_vision_control WHERE id=?', pilotId).first();
-        if (ready?.smoke_ok === 1) photoScreen = await screenPhotos(env, item, config, policy, {now,fetcher,clock});
-        if (photoScreen?.state === 'visually_consistent' && inWindow(clock(), policy)) {
+        if (ready?.smoke_ok === 1) {photoChecksLeft--;photoScreen = await screenPhotos(env, item, config, policy, {now,fetcher,clock});}
+        if (photoScreen?.state === 'visually_consistent' && sent+photoReviewSent+researchSent<2 && inWindow(clock(), policy)) {
           const reviewId = 'photo-review:' + id;
           const reserve = await sql(env, "INSERT OR IGNORE INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,'pending',?) RETURNING item_id", pilotId, reviewId, item.price, now).first();
           if (reserve) {
@@ -109,8 +122,9 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     }
     const candidate=research.get(item.url);
     if(candidate) {
-      const outcome=await processResearch(env,item,candidate,policy,{now,clock,fetcher,
+      const outcome=await processResearch(env,item,candidate,policy,{now,clock,fetcher,mayScreen:()=>photoChecksLeft>0&&sent+photoReviewSent+researchSent<2,
         screen:async()=>{
+          photoChecksLeft--;
           const ready=await sql(env,'SELECT smoke_ok FROM radar_vision_control WHERE id=?',pilotId).first();
           return ready?.smoke_ok===1?screenPhotos(env,item,researchConfig,policy,{now,fetcher,clock}):{state:'disabled',reason:'smoke_pending'};
         }});
@@ -119,7 +133,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     }
     if (deal.reason === 'Geen passende prijsreferentie: flipwaarde blijft onbekend') deal.reason = missingReferenceReason(item, products, config);
     decisions.push({ photoScreening: photoScreen?.state || null, authenticity: deal.authenticity?.state || 'not_assessed', photoCount: item.photoUrls?.length || 0, title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
-    if (!deal.eligible || !inWindow(clock(), policy)) continue;
+    if (!deal.eligible || sent+photoReviewSent+researchSent>=2 || !inWindow(clock(), policy)) continue;
     // Reserve delivery before sending. An ambiguous failure is not retried automatically.
     const delivery = await sql(env,
       "INSERT INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,'pending',?) ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, delivery='pending', message_id=NULL, attempted_at=excluded.attempted_at WHERE excluded.price <= radar_alerts.price * 0.8 RETURNING item_id",

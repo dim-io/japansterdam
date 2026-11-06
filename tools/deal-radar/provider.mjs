@@ -52,13 +52,14 @@ export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep
   search.searchParams.set('currency', 'EUR');
   search.searchParams.set('order', 'newest_first');
   const input = { ...INPUT, brandIds, maxResults, searchQueries: [search.href] };
-  const started = await api('/actors/' + ACTOR + '/runs?timeout=90&maxItems=' + maxResults + '&maxTotalChargeUsd=' + maxCostUsd + '&restartOnError=false', { method: 'POST', body: input });
+  const started = await api('/actors/' + ACTOR + '/runs?timeout=90&waitForFinish=20&maxItems=' + maxResults + '&maxTotalChargeUsd=' + maxCostUsd + '&restartOnError=false', { method: 'POST', body: input });
   let run = started.data;
   if (!run || !/^[A-Za-z0-9]+$/.test(run.id || '')) throw new Error('Apify gaf geen geldig runnummer terug.');
   const deadline = now() + 120_000;
-  while (!terminal.has(run.status) && now() < deadline) {
-    await sleep(3000);
-    const result = await api('/actor-runs/' + run.id);
+  let statusChecks = 0;
+  while (!terminal.has(run.status) && now() < deadline && statusChecks < 3) {
+    statusChecks++;
+    const result = await api('/actor-runs/' + run.id + '?waitForFinish=20');
     run = result.data;
     if (!run || !/^[A-Za-z0-9]+$/.test(run.id || '')) throw new Error('Ongeldige Apify-runstatus.');
   }
