@@ -1,3 +1,4 @@
+import {runResearchTest} from './research-test.mjs';
 import {researchCandidate,processResearch,MAX_RESEARCH_NOTICES} from './research.mjs';
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
 import settings from '../../tools/deal-radar/pilot-v2.json' with { type: 'json' };
@@ -155,6 +156,10 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
 export async function wake(env, options = {}) {
   try {
     const checkTime = options.now ?? Date.now(), policy = options.policy ?? settings;
+    if(inWindow(checkTime,policy)&&policy.researchTestOnce) {
+      const test=await runResearchTest(env,config,policy,{now:checkTime,clock:options.clock||Date.now,fetcher:options.fetcher||fetch});
+      if(test)return test;
+    }
     if (inWindow(checkTime,policy) && env.VISION_FREE_CONFIRMED === 'true') {
       const ready=await sql(env,'SELECT smoke_ok FROM radar_vision_control WHERE id=?',policy.id || PILOT_ID).first();
       if(ready?.smoke_ok!==1)await screenPhotos(env,{brand:'Kapital'},config,policy,{now:checkTime,smoke:true});
@@ -178,12 +183,14 @@ export async function status(env, now = Date.now(), policy = settings) {
   const vision = await sql(env,'SELECT attempts,smoke_ok,last_outcome FROM radar_vision_control WHERE id=?',pilotId).first();
   const report = row?.last_report ? JSON.parse(row.last_report) : null;
   const researchStates=policy.researchEnabled ? (await sql(env,'SELECT state,COUNT(*) AS count FROM radar_research WHERE pilot_id=? GROUP BY state',pilotId).all()).results : [];
+  const researchTest=policy.researchTestOnce ? await sql(env,'SELECT state,report FROM radar_research_tests WHERE pilot_id=?',pilotId).first() : null;
   const researchBudget=policy.researchEnabled ? await sql(env,'SELECT attempts FROM radar_research_limits WHERE pilot_id=?',pilotId).first() : null;
   return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
     photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? 'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
     trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:policy.mode === 'both-brands' ? 2 : 1,
     byBrand:report?.byBrand || [],
+    researchTest:researchTest?.report?JSON.parse(researchTest.report):researchTest?{state:researchTest.state}:null,
     researchEnabled:policy.researchEnabled===true,researchStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
     bundleCheck: 'planned_not_active', active: inWindow(now,policy), endsAt: policy.endsAt,
     lastWakeAt: row?.last_wake_at ? new Date(row.last_wake_at).toISOString() : null,
