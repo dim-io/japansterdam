@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 // Audit existing results without publishing item data. No new scraper/GPU runs.
 // Only aggregate counts, fixed rejection messages and public-catalogue match counts are logged.
 import {normalizeRow} from '../../tools/deal-radar/provider.mjs';
@@ -21,8 +22,8 @@ async function main(){
  const r=await fetch(config.inventoryUrl,{redirect:'manual',signal:AbortSignal.timeout(20000)});
  if(!r.ok)throw Error('Referenties ontbreken');const products=await r.json();
  const runs=(await get('/acts/omkar-cloud~vinted-scraper/runs?desc=true&limit=50')).data.items;
- const seen=new Set();
- const result={readOnly:true,runsChecked:0,itemsChecked:0,normalReasons:{},preliminaryReasons:{},modelReferences:0,unknownGarmentTypes:0,photoCandidates:0,enoughPhotos:0,liveCatalogCompared:0,liveCatalogMatches:0,liveOrderMatches:0,observedWithin90Minutes:true};
+ const seen=new Set(),sampleIds=[];
+ const result={readOnly:true,runsChecked:0,itemsChecked:0,normalReasons:{},preliminaryReasons:{},modelReferences:0,unknownGarmentTypes:0,photoCandidates:0,enoughPhotos:0,liveCatalogCompared:0,liveCatalogMatches:0,liveOrderMatches:0,observedWithin90Minutes:true,descriptionRows:0,photoArrayRows:0,imageArrayRows:0,photoUrlsArrayRows:0,imageUrlsArrayRows:0,maxRawPhotoArrayLength:0};
  for(const run of runs){
   if(seen.size>=2)break;
   if(run.status!=='SUCCEEDED'||Date.parse(run.startedAt)<Date.parse(policy.startsAt)||Date.parse(run.startedAt)>=Date.parse(policy.endsAt))continue;
@@ -31,9 +32,17 @@ async function main(){
   seen.add(input.brandIds);result.runsChecked++;
   result.observedWithin90Minutes &&= Date.now()-Date.parse(run.finishedAt)<90*60000;
   const rows=await get('/datasets/'+encodeURIComponent(run.defaultDatasetId)+'/items?clean=true&format=json&limit=10');
+  for(const row of rows){
+   result.descriptionRows+=Number(!!row.description);
+   result.photoArrayRows+=Number(Array.isArray(row.photos));result.imageArrayRows+=Number(Array.isArray(row.images));
+   result.photoUrlsArrayRows+=Number(Array.isArray(row.photo_urls)||Array.isArray(row.photoUrls));
+   result.imageUrlsArrayRows+=Number(Array.isArray(row.image_urls)||Array.isArray(row.imageUrls));
+   result.maxRawPhotoArrayLength=Math.max(result.maxRawPhotoArrayLength,...['photos','images','photo_urls','photoUrls','image_urls','imageUrls'].map(k=>Array.isArray(row[k])?row[k].length:0));
+  }
   const items=rows.map(row=>normalizeRow(row,run.finishedAt)).filter(Boolean);
   const live=await publicIds(input.searchQueries[0]);
   const ids=items.map(item=>/\/items\/(\d+)/.exec(item.url)?.[1]);
+  sampleIds.push(...ids);
   result.liveCatalogCompared+=live.length;
   result.liveCatalogMatches+=live.filter(id=>ids.includes(id)).length;
   result.liveOrderMatches+=live.filter((id,i)=>id===ids[i]).length;
@@ -50,6 +59,7 @@ async function main(){
   }
  }
  if(result.itemsChecked!==20)throw Error('Steekproef niet compleet');
+ result.matchesPublicSnapshot=createHash('sha256').update(sampleIds.sort().join(',')).digest('hex')==='9a0cfb9ee98c0ca722deb3adbd620885b9c1a5d8f46b8ea1b6c7a936ebb45199';
  console.log(JSON.stringify(result));
 }
 main().catch(()=>{console.error('Controle niet voltooid; geen scans gestart.');process.exitCode=1;});
