@@ -46,6 +46,12 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: node radar/deploy-secrets.mjs
+      - name: Eerste proefronde gecontroleerd starten
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node radar/initial-round.mjs
       - name: Oude radarplanning stoppen na geslaagde publicatie
         if: inputs.migrate == true
         env:
