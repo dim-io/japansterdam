@@ -26,6 +26,15 @@ const product = { name: 'Needles Painter Trousers', brand:'Needles', price:210 }
 const item = { title: product.name, brand:'Needles', price:10, currency:'EUR', condition:'very_good', available:true, observedAt:new Date(now).toISOString(), url:'https://www.vinted.nl/items/123456-test', comparables:[], photoUrls:photoFixture };
 const options = { authenticityReviews: fixtureReviews(item, now), now, policy, clock: () => now };
 
+test('new trials get ninety minutes for their first scan; an actually stalled trial is overdue',async()=>{
+  const {db,env}=setup();
+  assert.equal((await status(env,now,policy)).overdue,false);
+  assert.equal((await status(env,now+91*60000,policy)).overdue,true);
+  db.prepare('UPDATE radar_control SET last_scan_at=?').run(now+90*60000);
+  assert.equal((await status(env,now+91*60000,policy)).overdue,false);
+  assert.equal((await status(env,Date.parse(policy.endsAt),policy)).overdue,false);db.close();
+});
+
 test('public readiness status exposes only the test outcome, without activating scans or revealing model payloads',async()=>{
   const {db,env}=setup(24);
   db.prepare('INSERT INTO radar_photo_checks VALUES (?,?,?,?,?,?)').run(readinessPolicy.id,'smoke-v2','empty-pixel-regression-v2','ready',JSON.stringify({state:'ready',reason:'empty_image_correctly_inconclusive',privatePayload:'do-not-publish'}),now);

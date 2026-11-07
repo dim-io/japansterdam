@@ -215,7 +215,7 @@ export async function status(env, now = Date.now(), policy = settings) {
     selectedBrand: report?.selectedBrand ?? null, checked: report?.checked ?? null,
     newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null, photoReviewSentLastScan:report?.photoReviewSent ?? null,
     error: row?.last_error ?? null, errorAt: row?.error_at ? new Date(row.error_at).toISOString() : null,
-    overdue: inWindow(now,policy) && (!row?.last_scan_at || now - row.last_scan_at > 90 * 60000),
+    overdue: inWindow(now,policy) && now - (row?.last_scan_at || Date.parse(policy.startsAt)) > 90 * 60000,
     note: 'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
 }
 
