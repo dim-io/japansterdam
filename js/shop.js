@@ -1,3 +1,4 @@
+import { FIT_SIZES, productFitsLike, matchesFit } from './sizing.js';
 import './layout.js?v=grailed-links';
 import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from './data.js';
 import { onBagChange } from './bag.js';
@@ -16,14 +17,7 @@ const grid = document.getElementById('shop-grid');
 const countEl = document.getElementById('shop-count');
 
 const brands = [...new Set(products.map((p) => p.brand))].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
-const sizeRank = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
-const sizes = [...new Set(products.map((p) => p.size))].sort((a, b) => {
-  const ra = sizeRank[a], rb = sizeRank[b];
-  if (ra && rb) return ra - rb;
-  if (ra) return -1;
-  if (rb) return 1;
-  return a.localeCompare(b, 'en', { numeric: true });
-});
+const sizes = FIT_SIZES.filter(size => products.some(p => productFitsLike(p).includes(size)));
 
 brandSel.innerHTML = '<option value="">All brands</option>' + brands.map((b) => `<option value="${esc(b)}">${esc(b)}</option>`).join('');
 sizeSel.innerHTML = '<option value="">All sizes</option>' + sizes.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
@@ -86,11 +80,11 @@ function render() {
   brandSel.value = state.brand;
   sizeSel.value = state.size;
   sortSel.value = state.sort;
-  const other = (p) => (!state.brand || p.brand === state.brand) && (!state.size || p.size === state.size);
+  const other = (p) => (!state.brand || p.brand === state.brand) && (!state.size || matchesFit(p, state.size));
   const counts = { '': products.filter(other).length };
   for (const cat of CATS) counts[cat] = products.filter((p) => other(p) && p.category === cat).length;
   chipsEl.querySelectorAll('.chip').forEach((b) => { b.querySelector('.chip__n').textContent = counts[b.dataset.cat]; });
-  let list = products.filter((p) => (!state.category || p.category === state.category) && (!state.brand || p.brand === state.brand) && (!state.size || p.size === state.size));
+  let list = products.filter((p) => (!state.category || p.category === state.category) && (!state.brand || p.brand === state.brand) && (!state.size || matchesFit(p, state.size)));
   // Filtering keeps the CMS order. Stable sorting only moves sold pieces down
   // unless the visitor explicitly chooses a date or price order.
   const cmp = state.sort === 'price-asc' ? (a, b) => a.price - b.price : state.sort === 'price-desc' ? (a, b) => b.price - a.price : state.sort === 'newest' ? byNewest : () => 0;

@@ -88,3 +88,8 @@ npx wrangler deploy
 ```
 
 Then put the Worker URL (for example `https://japansterdam-api.<account>.workers.dev`, no trailing slash) in `API_BASE` in `js/config.js` and push the site. Product photos uploaded in the admin are stored in KV and served from `<worker>/img/products/...`; existing photos in `assets/img/products/` keep working.
+
+
+### Maatfilter en labelmaat
+
+In Products → Edit staan **Label size** (de originele maat, bijvoorbeeld JP 4) en **Fits like — shop filters**. Vink meerdere passende internationale maten aan, bijvoorbeeld L en XL. De shop filtert op die vinkjes; de productpagina toont de originele maat én de toegewezen pasvorm. Alleen expliciete internationale lettermaten worden bij bestaande producten herkend. Japanse nummers, EU-nummers en taillelabels worden niet automatisch omgerekend. Via **Set fit** in het productoverzicht vind je producten zonder filtermaat; ze blijven zichtbaar onder All sizes totdat je hun pasvorm hebt beoordeeld. Het invullen vereist geen wijziging van de oorspronkelijke labelmaat.

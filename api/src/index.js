@@ -168,6 +168,14 @@ function cleanProduct(input, slug, addedOn) {
   });
   const brand = str(input.brand);
   const size = str(input.size);
+  const fitSizes = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'One size'];
+  if (input.fitsLike !== undefined && (!Array.isArray(input.fitsLike) || input.fitsLike.length > fitSizes.length || input.fitsLike.some(value => !fitSizes.includes(value)))) {
+    throw new HttpError(400, 'Fits like must be a list of standard sizes: ' + fitSizes.join(', '));
+  }
+  const label = size.toUpperCase();
+  const suggestions = /^(ONE[ -]?SIZE|O[ /]?S|FREE(?: SIZE)?)$/.test(label) ? ['One size']
+    : (label.match(/\b(?:XXXS|XXS|XS|XXXL|XXL|XL|3XL|2XL|S|M|L)\b/g) || []).map(value => value === 'XXXL' ? '3XL' : value === '2XL' ? 'XXL' : value);
+  const fitsLike = fitSizes.filter(value => (input.fitsLike ?? suggestions).includes(value));
   const condition = str(input.condition);
   const conditionNotes = str(input.conditionNotes);
   if ((active || condition) && !CONDITIONS.includes(condition)) throw new HttpError(400, 'Choose a condition: ' + CONDITIONS.join(', '));
@@ -200,6 +208,7 @@ function cleanProduct(input, slug, addedOn) {
     brands: brand ? [brand] : [],
     category,
     size,
+    fitsLike,
     condition,
     conditionNotes,
     sizeTags: size ? [size] : [],

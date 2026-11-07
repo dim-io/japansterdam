@@ -1,3 +1,4 @@
+import { productFitsLike } from './sizing.js';
 import { imageFrameStyle } from './image-frames.js';
 import './layout.js?v=grailed-links';
 import { measurementsBlock } from './measurements.js?v=unit-note';
@@ -67,7 +68,8 @@ if (!p) {
     <dl class="facts">
       <div><dt>Brand</dt><dd>${esc(p.brand)}</dd></div>
       <div><dt>Category</dt><dd>${esc(p.category)}</dd></div>
-      <div><dt>Size</dt><dd>${esc(p.size)}</dd></div>
+      <div><dt>Label size</dt><dd>${esc(p.size)}</dd></div>
+      ${productFitsLike(p).length ? `<div><dt>Fits like</dt><dd>${esc(productFitsLike(p).join(' / '))}</dd></div>` : ''}
       <div class="facts__condition"><dt>Condition</dt><dd>${esc(p.condition || 'Not yet assessed')}${p.conditionNotes ? `<p class="condition-notes">${esc(p.conditionNotes)}</p>` : ''}</dd></div>
       <div><dt>Ref</dt><dd class="tnum">${catNo(p)}</dd></div>
     </dl>

@@ -1,3 +1,4 @@
+import { FIT_SIZES, productFitsLike, suggestedFitsLike } from '../js/sizing.js';
 import { imageFrameStyle } from '../js/image-frames.js';
 import { API_BASE } from '../js/config.js';
 import { createProductRoutes } from '../js/product-urls.js';
@@ -236,7 +237,7 @@ async function viewProducts() {
   const list = h('div', { class: 'plist' });
   const search = h('input', { type: 'search', class: 'grow', placeholder: 'Search name or brand', 'aria-label': 'Search', value: listState.q });
   const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Filter' },
-    ['all', 'active', 'inactive', 'available', 'sold'].map((f) => h('button', { type: 'button', 'data-f': f, onclick: () => { listState.filter = f; draw(); } }, ({ all: 'All', active: 'Active', inactive: 'Inactive', available: 'Available', sold: 'Sold' })[f])));
+    ['all', 'active', 'inactive', 'available', 'sold', 'needs-fit'].map((f) => h('button', { type: 'button', 'data-f': f, onclick: () => { listState.filter = f; draw(); } }, ({ all: 'All', active: 'Active', inactive: 'Inactive', available: 'Available', sold: 'Sold', 'needs-fit': 'Set fit' })[f])));
   search.addEventListener('input', () => { listState.q = search.value; draw(); });
   root.replaceChildren(
     h('p', { class: 'hint', style: 'margin:0 0 16px' }, 'Shop order: put your strongest pieces first. This is the default “Curated selection” in the shop. Use ⇡ to move a piece straight to the top, drag to arrange the rest, or use the arrows. Changes save automatically; sold pieces appear last in the shop.'),
@@ -275,7 +276,7 @@ async function viewProducts() {
     const filtering = !!q || listState.filter !== 'all';
     const canReorder = !filtering && !savingOrder;
     seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.f === listState.filter));
-    const rows = products.filter((p) => (listState.filter === 'all' || (listState.filter === 'active' ? p.active !== false : listState.filter === 'inactive' ? p.active === false : p.active !== false && (listState.filter === 'sold') === !!p.sold)) && (!q || (p.name + ' ' + p.brand).toLowerCase().includes(q)));
+    const rows = products.filter((p) => (listState.filter === 'all' || (listState.filter === 'needs-fit' ? !productFitsLike(p).length : listState.filter === 'active' ? p.active !== false : listState.filter === 'inactive' ? p.active === false : p.active !== false && (listState.filter === 'sold') === !!p.sold)) && (!q || (p.name + ' ' + p.brand).toLowerCase().includes(q)));
     count.textContent = `${rows.length} of ${products.length}`;
     $('#reorder-hint').textContent = savingOrder ? 'Saving shop order…' : filtering ? 'Clear the search and filter to change the order.' : 'Drag the ⋮⋮ handle, use ⇡ to move to the top, or use the arrows. This order is the default in the shop.';
     list.replaceChildren(
@@ -293,7 +294,7 @@ async function viewProducts() {
           h('span', { class: 'prow__no' }, noLabel(nums.get(p.slug))),
           h('span', { class: 'prow__name', title: p.name }, p.name, p.active === false ? h('small', { class: 'inactive-label' }, 'Inactive · hidden') : ''),
           h('span', { class: 'prow__brand' }, p.brand),
-          h('span', { class: 'prow__size' }, p.size),
+          h('span', { class: 'prow__size' }, p.size, h('small', { class: 'fit-summary' }, productFitsLike(p).length ? 'Fits ' + productFitsLike(p).join(' / ') : 'Set fit')),
           h('span', { class: 'prow__price' }, formatPrice(p.price)),
           h('button', { type: 'button', class: 'pill' + (p.sold ? ' pill--sold' : ''), title: 'Click to mark as ' + (p.sold ? 'available' : 'sold'), onclick: (e) => { e.stopPropagation(); toggleSold(p, e.currentTarget); } }, p.sold ? 'Sold' : 'Available'));
         const open = () => { location.hash = '#/products/' + encodeURIComponent(p.slug); };
@@ -360,6 +361,7 @@ async function viewEditor(slugParam) {
   const orig = isNew ? null : products.find((p) => p.slug === slugParam);
   if (!isNew && !orig) { $('#view').replaceChildren(h('p', { class: 'loading' }, 'This product does not exist (anymore). '), h('a', { class: 'btn', href: '#/products' }, 'Back to products')); return; }
   const d = JSON.parse(JSON.stringify(orig || blankProduct()));
+  d.fitsLike = productFitsLike(d);
   d.measurements = d.measurements || {};
   d.active = d.active !== false;
   d.imageFrames ||= [];
@@ -408,6 +410,32 @@ async function viewEditor(slugParam) {
   const name = bind('name', { type: 'text', required: true, maxlength: '200', autocomplete: 'off' });
   const brand = bind('brand', { type: 'text', list: 'brand-list', autocomplete: 'off' });
   const size = bind('size', { type: 'text', autocomplete: 'off' });
+  let fitEdited = Array.isArray(orig?.fitsLike);
+  const fitStatus = h('p', { class: 'hint fit-status', role: 'status' });
+  const fitInputs = FIT_SIZES.map(value => {
+    const input = h('input', { type: 'checkbox', value, checked: d.fitsLike.includes(value) });
+    input.addEventListener('change', () => {
+      fitEdited = true;
+      d.fitsLike = FIT_SIZES.filter((_, index) => fitInputs[index].checked);
+      updateFitStatus(); mark();
+    });
+    return input;
+  });
+  function updateFitStatus() {
+    fitStatus.textContent = d.fitsLike.length ? 'Shown in size filters: ' + d.fitsLike.join(', ')
+      : 'No filter size selected. This piece remains visible in All sizes. Assign the fit after checking its measurements.';
+  }
+  function suggestFit() {
+    d.fitsLike = suggestedFitsLike(d.size);
+    fitInputs.forEach((input, index) => { input.checked = d.fitsLike.includes(FIT_SIZES[index]); });
+    updateFitStatus(); mark();
+  }
+  size.addEventListener('input', () => { if (!fitEdited) suggestFit(); });
+  const fitEditor = h('fieldset', { class: 'fit-editor' }, h('legend', {}, 'Fits like — shop filters'),
+    h('div', { class: 'fit-options' }, fitInputs.map((input, index) => h('label', {}, input, FIT_SIZES[index]))),
+    h('p', { class: 'hint' }, 'Select all sizes this garment fits. Keep the original label above. Japanese numbers and waist sizes are not automatically converted; use measurements and your assessment.'),
+    h('button', { type: 'button', class: 'btn btn--sm', onclick: () => { fitEdited = false; suggestFit(); } }, 'Suggest from label size'), fitStatus);
+  updateFitStatus();
   const condition = h('select', { required: true, 'aria-label': 'Condition' },
     h('option', { value: '', selected: !d.condition, disabled: true }, 'Choose condition'),
     CONDITIONS.map((value) => h('option', { value, selected: value === d.condition }, value)));
@@ -567,6 +595,10 @@ async function viewEditor(slugParam) {
       const saved = isNew && !slug
         ? await api('/admin/products', { method: 'POST', body })
         : await api('/admin/products/' + encodeURIComponent(slug), { method: 'PUT', body });
+      if (JSON.stringify(saved.fitsLike) !== JSON.stringify(d.fitsLike)) {
+        if (isNew) slug = saved.slug;
+        throw new Error('Fits like was not saved. Please wait for the backend update.');
+      }
       if (saved.condition !== d.condition || saved.conditionNotes !== (d.conditionNotes || '').trim()) {
         if (isNew) slug = saved.slug;
         throw new Error('Condition was not saved. The backend needs the latest update.');
@@ -613,7 +645,8 @@ async function viewEditor(slugParam) {
           h('p', { class: 'hint' }, 'Turn off to keep this product in standby. Inactive products can be saved without condition details and are only visible here.'),
           field('Name', name),
           h('div', { class: 'grid2' }, field('Brand', brand), field('Category', cat)),
-          h('div', { class: 'grid2' }, field('Size', size), field('Price', h('span', { class: 'price-wrap', style: 'display:block' }, price))),
+          h('div', { class: 'grid2' }, field('Label size', size), field('Price', h('span', { class: 'price-wrap', style: 'display:block' }, price))),
+          fitEditor,
           field('Condition (required when active)', condition),
           field('Condition notes (required when active)', conditionNotes),
           h('p', { class: 'hint' }, 'Describe the actual garment. Distinguish intentional distressing from wear. Add a clear real detail photo for every flaw; check photo numbers after reordering.'),
