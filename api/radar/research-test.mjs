@@ -1,3 +1,4 @@
+import {readCatalog} from './catalog.mjs';
 import {normalize} from '../../tools/deal-radar/scoring.mjs';
 import {normalizeRow} from '../../tools/deal-radar/provider.mjs';
 import {estimateFromShop} from '../../tools/deal-radar/valuation.mjs';
@@ -38,7 +39,7 @@ export async function runResearchTest(env,config,policy,{now=Date.now(),clock=Da
   let report;
   try {
     const items=await readExisting(env.APIFY_TOKEN,policy,{fetcher,now});
-    const products=(await env.RADAR_DB.prepare("SELECT json_extract(data,'$.name') AS name,json_extract(data,'$.brand') AS brand,json_extract(data,'$.price') AS price FROM products").all()).results;
+    const products=await readCatalog(env,fetcher);
     const candidates=items.map(item=>({item,candidate:estimateFromShop(item,products,config)?null:researchCandidate(item,config,now)}))
       .filter(row=>row.candidate).sort((a,b)=>b.candidate.priority-a.candidate.priority).slice(0,5);
     for(const row of candidates)await queueResearch(env,row.item,row.candidate,policy,now);

@@ -1,17 +1,21 @@
 name = "japansterdam-radar"
-account_id = "0e3359947b78095a7afd9ce36f5cac6f"
+account_id = "81a93f1ef55a892620ab77cf0f8163f6"
 main = "worker.mjs"
 compatibility_date = "2026-10-30"
 workers_dev = true
 
 [triggers]
 # Wake frequently; the database reserves at most one actual scan per UTC hour.
-crons = ["*/5 * * * *"]
+# Remains stopped after migration. A new trial requires its own authorization.
+crons = []
+
+[vars]
+SHOP_CATALOG_URL = "https://japansterdam-api.japansterdam-api.workers.dev/public/products"
 
 [[d1_databases]]
 binding = "RADAR_DB"
-database_name = "japansterdam"
-database_id = "4e52cd67-a370-400b-b79b-ca1527cc03de"
+database_name = "japansterdam-radar"
+database_id = "41d7b993-8791-4b19-b8fa-5a5db6eeda7e"
 
 [ai]
 binding = "AI"

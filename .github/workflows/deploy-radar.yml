@@ -1,0 +1,47 @@
+name: Radar op Sams account
+on:
+  workflow_dispatch:
+    inputs:
+      migrate:
+        description: Eenmalig bestaande radarhistorie prive overzetten
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency: deploy-radar-owner
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: api
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.RADAR_CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Radarcontroles
+        run: node --test ../tools/deal-radar/*.test.mjs radar/*.test.mjs
+      - name: Historie controleren of eenmalig prive overzetten
+        env:
+          SOURCE_CLOUDFLARE_API_TOKEN: ${{ inputs.migrate && secrets.CLOUDFLARE_API_TOKEN || '' }}
+          MIGRATE_RADAR: ${{ inputs.migrate == true && 'true' || 'false' }}
+        run: node radar/account-migration.mjs
+      - name: Radar op eigen account publiceren
+        run: npx wrangler deploy --config radar/wrangler.toml
+      - name: Bestaande Apify- en Telegramkoppeling aansluiten
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node radar/deploy-secrets.mjs
+      - name: Oude radarplanning stoppen na geslaagde publicatie
+        if: inputs.migrate == true
+        env:
+          SOURCE_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          STOP_OLD_RADAR: 'true'
+        run: node radar/account-migration.mjs

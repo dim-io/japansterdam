@@ -1,3 +1,4 @@
+import {readCatalog} from './catalog.mjs';
 import {runResearchTest} from './research-test.mjs';
 import {researchCandidate,processResearch,MAX_RESEARCH_NOTICES} from './research.mjs';
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
@@ -32,8 +33,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   // Validate the source before reserving/spending a scan. Retrying a failed inventory read is free of Apify calls.
   // Read only the public catalog fields already used by the storefront.
   // This avoids Worker-to-Worker fetch restrictions and parsing image-heavy descriptions.
-  const catalog = await env.RADAR_DB.prepare("SELECT json_extract(data,'$.name') AS name, json_extract(data,'$.brand') AS brand, json_extract(data,'$.price') AS price FROM products").all();
-  const products = catalog.results;
+  const products = await readCatalog(env, fetcher);
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
   if (policy.mode === 'both-brands') {
