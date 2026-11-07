@@ -12,7 +12,7 @@ const validId=value=>/^[A-Za-z0-9]+$/.test(value||'');
 export async function existingResults(token,policy,{fetcher=fetch,now=Date.now()}={}) {
   async function get(path) {
     const r=await fetcher('https://api.apify.com/v2'+path,{headers:{Authorization:'Bearer '+token},redirect:'manual',signal:AbortSignal.timeout(20000)});
-    if(!r.ok)throw Error('stored_source_unavailable');return r.json();
+    if(!r.ok)throw Error('stored_source_http_'+r.status);return r.json();
   }
   const listing=await get('/acts/omkar-cloud~vinted-scraper/runs?desc=true&limit=8');
   const found=new Map();

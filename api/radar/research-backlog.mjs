@@ -10,7 +10,7 @@ import policy from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
 
 export async function reviewBacklog(env,{query,now=Date.now(),clock=Date.now,fetcher=fetch,readExisting=existingResults,testPolicy=policy}={}) {
   if(!testPolicy.enabled||!testPolicy.researchEnabled||now<Date.parse(testPolicy.startsAt)||now>=Date.parse(testPolicy.endsAt))return {state:'outside_trial'};
-  const key=testPolicy.id+':unreviewed-backlog-v1';
+  const key=testPolicy.id+':unreviewed-backlog-v2';
   const claimed=await query("INSERT OR IGNORE INTO radar_research_tests (pilot_id,attempted_at,state) VALUES (?,?,'pending') RETURNING pilot_id",[key,now]);
   if(!claimed.length)return {state:'already_attempted'};
   const report={state:'completed',waiting:0,revalidated:0,sent:0,excluded:0,unconfirmed:0,newScraperStarts:0,aiCalls:0};
@@ -34,9 +34,9 @@ export async function reviewBacklog(env,{query,now=Date.now(),clock=Date.now,fet
       const result=await processResearch(runtime,item,candidate,testPolicy,{now:clock(),clock,fetcher,mayScreen:()=>false});
       report.sent+=Number(result.sent);
     }
-  }catch{
+  }catch(error){
     // Includes ambiguous delivery: preserve reservations and never retry automatically.
-    report.state='incomplete';report.reason='backlog_review_incomplete';
+    report.state='incomplete';report.reason=/^(stored_source_http_\d{3}|recent_stored_results_missing|stored_source_invalid)$/.test(error?.message||'')?error.message:'backlog_review_incomplete';
   }
   await query('UPDATE radar_research_tests SET state=?,report=? WHERE pilot_id=?',[report.state,JSON.stringify(report),key]);
   return report;
