@@ -1,0 +1,22 @@
+name: Radar op eigen account testen
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency: radar-owner-readiness
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Begrensde koppeling- en beeldtest zonder scrape of berichten
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.RADAR_CLOUDFLARE_API_TOKEN }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node api/radar/owner-readiness.mjs
