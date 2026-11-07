@@ -1,7 +1,8 @@
 import {assess,authenticityAssessment,identifyBrand,listingUrl,normalize,sendTelegram} from '../../tools/deal-radar/scoring.mjs';
 import {garmentType} from '../../tools/deal-radar/valuation.mjs';
 
-export const MAX_RESEARCH_NOTICES = 2;
+// null in the public status means no per-trial notice cap. Delivery deduplication remains active.
+export const MAX_RESEARCH_NOTICES = null;
 const sql=(env,query,...args)=>env.RADAR_DB.prepare(query).bind(...args);
 const plain=(text,max=140)=>String(text||'').replace(/(?:https?:\/\/|www\.)\S+/gi,'').replace(/\s+/g,' ').trim().slice(0,max);
 
@@ -30,6 +31,7 @@ export function researchText(item,screen) {
   return ['ONDERZOEK — GEEN KOOPADVIES',plain(item.title),`${plain(item.brand,60)} · €${item.price.toFixed(2)} · Maat ${plain(item.size,30)||'onbekend'}`,
     'Interessant kledingtype binnen de merkselectie, maar er ontbreekt een passende prijsreferentie.',
     'Verkoopwaarde en marge: onbekend. Authenticiteit: niet bevestigd.',photo,
+    'Platformmaat en dames-/herencategorie zijn indicatief; controleer afmetingen en werkelijke pasvorm.',
     'Controleer eerst model, labels, gebreken en maten; onderzoek daarna vergelijkbare verkopen.',listingUrl(item.url)].join('\n');
 }
 
@@ -56,11 +58,8 @@ export async function processResearch(env,item,candidate,policy,{now,clock,fetch
   const claim=await sql(env,"INSERT OR IGNORE INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,'pending',?) RETURNING item_id",policy.id,alertId,item.price,now).first();
   if(!claim)return {queued:true,sent:false,photo};
   await sql(env,'INSERT OR IGNORE INTO radar_research_limits (pilot_id) VALUES (?)',policy.id).run();
-  const budget=await sql(env,'UPDATE radar_research_limits SET attempts=attempts+1 WHERE pilot_id=? AND attempts<? RETURNING attempts',policy.id,MAX_RESEARCH_NOTICES).first();
-  if(!budget) {
-    await sql(env,"UPDATE radar_alerts SET delivery='skipped' WHERE pilot_id=? AND item_id=?",policy.id,alertId).run();
-    return {queued:true,sent:false,photo};
-  }
+  // Retain the historical attempt counter without limiting future notices.
+  await sql(env,'UPDATE radar_research_limits SET attempts=attempts+1 WHERE pilot_id=?',policy.id).run();
   await sql(env,"UPDATE radar_research SET state='notification_pending' WHERE pilot_id=? AND item_id=?",policy.id,queued.id).run();
   const messageId=await sendTelegram(researchText(item,photo),env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher);
   await sql(env,"UPDATE radar_alerts SET delivery='sent',message_id=? WHERE pilot_id=? AND item_id=?",messageId,policy.id,alertId).run();

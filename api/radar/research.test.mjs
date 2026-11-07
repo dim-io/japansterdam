@@ -37,7 +37,7 @@ test('unpriced items enter the queue and send a distinct human research notice, 
  assert(ctx.messages[0].startsWith('ONDERZOEK — GEEN KOOPADVIES'));assert(ctx.messages[0].includes('onbekend'));assert(!ctx.messages[0].includes('/10'));
  await scan(ctx.env,options(ctx,{now:now+3600000,clock:()=>now+3600000,probeFn:async()=>({runId:'again',items:[{...item,observedAt:new Date(now+3600000).toISOString()}]})}));
  assert.equal(ctx.messages.length,1);assert.equal(ctx.calls(),1);
- const publicStatus=JSON.stringify(await status(ctx.env,now,policy));assert(publicStatus.includes('researchEnabled'));assert(!publicStatus.includes('123456'));assert(!publicStatus.includes(item.title));ctx.db.close();
+ const publicStatus=JSON.stringify(await status(ctx.env,now,policy));assert.equal(JSON.parse(publicStatus).researchNoticeLimit,null);assert(publicStatus.includes('researchEnabled'));assert(!publicStatus.includes('123456'));assert(!publicStatus.includes(item.title));ctx.db.close();
 });
 test('unreadable labels request manual evidence; contradictory labels never produce research alerts',async()=>{
  for(const outcome of ['unclear','rejected']){
@@ -47,7 +47,7 @@ test('unreadable labels request manual evidence; contradictory labels never prod
   else assert.equal(ctx.db.prepare('SELECT state FROM radar_research').get().state,'rejected');ctx.db.close();
  }
 });
-test('the research route shares the existing GPU limits, caps notices at two and does not reset counters',async()=>{
+test('the research route shares the existing GPU limits, does not cap notices and preserves the existing GPU limits',async()=>{
  const ctx=setup();const items=[1,2,3].map(id=>({...item,url:`https://www.vinted.nl/items/${id}-test`}));
  let researchSent=0;
  for(let hour=0;hour<3;hour++){
@@ -55,8 +55,8 @@ test('the research route shares the existing GPU limits, caps notices at two and
   const report=await scan(ctx.env,options(ctx,{now:time,clock:()=>time,probeFn:async()=>({runId:'fixture',items:items.map(i=>({...i,observedAt:new Date(time).toISOString()}))})}));
   researchSent+=report.researchSent;
  }
- assert.equal(ctx.calls(),3);assert.equal(researchSent,2);assert.equal(ctx.messages.length,2);
- assert.equal(ctx.db.prepare('SELECT attempts FROM radar_research_limits').get().attempts,2);
+ assert.equal(ctx.calls(),3);assert.equal(researchSent,3);assert.equal(ctx.messages.length,3);
+ assert.equal(ctx.db.prepare('SELECT attempts FROM radar_research_limits').get().attempts,3);
  assert.equal(ctx.db.prepare('SELECT attempts FROM radar_vision_control WHERE id=?').get(policy.id).attempts,3);ctx.db.close();
  const blocked=setup();blocked.db.prepare('UPDATE radar_vision_control SET attempts=4 WHERE id=?').run(policy.id);
  const waiting=await scan(blocked.env,options(blocked));assert.equal(waiting.researchQueued,1);assert.equal(waiting.researchSent,0);assert.equal(blocked.calls(),0);assert.equal(blocked.db.prepare('SELECT state FROM radar_research').get().state,'queued');blocked.db.close();
@@ -81,4 +81,18 @@ test('a full twenty-item round batches seen records and bounds research work wit
  // two first-round catalogue reads and the wake readiness read (15 extras).
  assert(ctx.dbCalls()+ctx.photoFetches()+ctx.calls()+ctx.messages.length+15<=50);
  ctx.db.close();
+});
+
+
+test('small sizes and womens categories neither reject nor downrank otherwise identical opportunities',()=>{
+ const baseline=researchCandidate(item,config,now);
+ for(const size of ['XXS','XS','S','XL','unknown']){
+  for(const category of ['Women / Jackets','Dames / Jeans','Men / Trousers']){
+   assert.deepEqual(researchCandidate({...item,size,category,gender:'women'},config,now),baseline);
+  }
+ }
+ const jacket={...item,title:'White jeans jacket orSlow',brand:'orSlow',price:35,size:'XXS',category:'Women / Jackets'};
+ assert(researchCandidate(jacket,config,now));
+ assert.deepEqual(researchCandidate({...jacket,size:'L',category:'Men / Jackets'},config,now),researchCandidate(jacket,config,now));
+ assert(researchText(jacket,{state:'inconclusive'}).includes('werkelijke pasvorm'));
 });
