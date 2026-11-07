@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import fs from 'node:fs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
-import {researchCandidate,researchText} from './research.mjs';
+import {researchCandidate,researchText,processResearch} from './research.mjs';
 import {selectPhotoUrls} from './vision.mjs';
 import {scan,status} from './worker.mjs';
 const now=Date.now();
@@ -55,11 +55,11 @@ test('the research route shares the existing GPU limits, does not cap notices an
   const report=await scan(ctx.env,options(ctx,{now:time,clock:()=>time,probeFn:async()=>({runId:'fixture',items:items.map(i=>({...i,observedAt:new Date(time).toISOString()}))})}));
   researchSent+=report.researchSent;
  }
- assert.equal(ctx.calls(),3);assert.equal(researchSent,3);assert.equal(ctx.messages.length,3);
+ assert.equal(ctx.calls(),2);assert.equal(researchSent,3);assert.equal(ctx.messages.length,3);
  assert.equal(ctx.db.prepare('SELECT attempts FROM radar_research_limits').get().attempts,3);
- assert.equal(ctx.db.prepare('SELECT attempts FROM radar_vision_control WHERE id=?').get(policy.id).attempts,3);ctx.db.close();
+ assert.equal(ctx.db.prepare('SELECT attempts FROM radar_vision_control WHERE id=?').get(policy.id).attempts,2);ctx.db.close();
  const blocked=setup();blocked.db.prepare('UPDATE radar_vision_control SET attempts=4 WHERE id=?').run(policy.id);
- const waiting=await scan(blocked.env,options(blocked));assert.equal(waiting.researchQueued,1);assert.equal(waiting.researchSent,0);assert.equal(blocked.calls(),0);assert.equal(blocked.db.prepare('SELECT state FROM radar_research').get().state,'queued');blocked.db.close();
+ const waiting=await scan(blocked.env,options(blocked));assert.equal(waiting.researchQueued,1);assert.equal(waiting.researchSent,1);assert.equal(blocked.calls(),0);assert.equal(blocked.db.prepare('SELECT state FROM radar_research').get().state,'notified');assert(blocked.messages[0].includes('Nog niet visueel gecontroleerd'));blocked.db.close();
 });
 test('an ambiguous Telegram failure remains reserved and is not retried after another hourly scan',async()=>{
  const ctx=setup('consistent',true);await assert.rejects(scan(ctx.env,options(ctx)));
@@ -79,7 +79,7 @@ test('a full twenty-item round batches seen records and bounds research work wit
  assert.equal(report.checked,20);assert.equal(report.newListings,20);assert.equal(report.researchQueued,5);assert.equal(ctx.calls(),1);
  // Include maximum two-brand start/status/dataset requests, account checks,
  // two first-round catalogue reads and the wake readiness read (15 extras).
- assert(ctx.dbCalls()+ctx.photoFetches()+ctx.calls()+ctx.messages.length+15<=50);
+ assert(ctx.dbCalls()+ctx.photoFetches()+ctx.calls()+ctx.messages.length+15<=50,JSON.stringify({db:ctx.dbCalls(),photos:ctx.photoFetches(),ai:ctx.calls(),messages:ctx.messages.length}));
  ctx.db.close();
 });
 
@@ -95,4 +95,24 @@ test('small sizes and womens categories neither reject nor downrank otherwise id
  assert(researchCandidate(jacket,config,now));
  assert.deepEqual(researchCandidate({...jacket,size:'L',category:'Men / Jackets'},config,now),researchCandidate(jacket,config,now));
  assert(researchText(jacket,{state:'inconclusive'}).includes('werkelijke pasvorm'));
+});
+
+
+test('missing AI quota sends an explicitly unreviewed tip once without inventing a photo result',async()=>{
+ const ctx=setup();ctx.db.prepare('UPDATE radar_vision_control SET attempts=4 WHERE id=?').run(policy.id);
+ const report=await scan(ctx.env,options(ctx));
+ assert.equal(report.sent,0);assert.equal(report.researchSent,1);assert.equal(ctx.calls(),0);
+ assert(ctx.messages[0].includes('Nog niet visueel gecontroleerd'));
+ assert(!ctx.messages[0].includes('onvoldoende leesbaar'));
+ assert.equal(ctx.db.prepare('SELECT attempts FROM radar_research_limits').get().attempts,1);
+ ctx.db.close();
+});
+test('no photo slot still permits a notice; a delivery rate limit queues the item without claiming delivery',async()=>{
+ const ctx=setup();let screens=0;
+ const args={now,clock:()=>now,fetcher:ctx.fetcher,screen:async()=>{screens++;return{state:'visually_consistent'};},mayScreen:()=>false};
+ await processResearch(ctx.env,item,researchCandidate(item,config,now),policy,{...args,maySend:()=>false});
+ assert.equal(ctx.messages.length,0);assert.equal(ctx.db.prepare('SELECT COUNT(*) AS n FROM radar_alerts').get().n,0);
+ await processResearch(ctx.env,item,researchCandidate(item,config,now),policy,args);
+ await processResearch(ctx.env,item,researchCandidate(item,config,now),policy,args);
+ assert.equal(ctx.messages.length,1);assert.equal(screens,0);ctx.db.close();
 });

@@ -1,7 +1,7 @@
 import {readCatalog} from './catalog.mjs';
 import readinessPolicy from './owner-readiness.json' with {type:'json'};
 import {runResearchTest} from './research-test.mjs';
-import {researchCandidate,processResearch,MAX_RESEARCH_NOTICES} from './research.mjs';
+import {researchCandidate,processResearch,queueResearchBatch,MAX_RESEARCH_NOTICES} from './research.mjs';
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
 import settings from '../../tools/deal-radar/pilot-v3.json' with { type: 'json' };
 import { preflight } from '../../tools/deal-radar/budget.mjs';
@@ -106,6 +106,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     const selected=new Set([...research].sort((a,b)=>b[1].priority-a[1].priority).slice(0,5).map(([url])=>url));
     for(const url of research.keys())if(!selected.has(url))research.delete(url);
   }
+  const queuedResearch=await queueResearchBatch(env,items.filter(item=>research.has(item.url)).map(item=>({item,candidate:research.get(item.url)})),policy,now);
   const decisions = [];
   for (const item of items) {
     const id = /\/items\/(\d+)/.exec(item.url)?.[1];
@@ -134,7 +135,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     }
     const candidate=research.get(item.url);
     if(candidate) {
-      const outcome=await processResearch(env,item,candidate,policy,{now,clock,fetcher,mayScreen:()=>photoChecksLeft>0&&sent+photoReviewSent+researchSent<2,
+      const outcome=await processResearch(env,item,candidate,policy,{now,clock,fetcher,queued:queuedResearch.get(id),mayScreen:()=>photoChecksLeft>0&&sent+photoReviewSent+researchSent<2,maySend:()=>sent+photoReviewSent+researchSent<2,
         screen:async()=>{
           photoChecksLeft--;
           const ready=await sql(env,'SELECT smoke_ok FROM radar_vision_control WHERE id=?',pilotId).first();
@@ -199,7 +200,7 @@ export async function status(env, now = Date.now(), policy = settings) {
   const researchTest=policy.researchTestOnce ? await sql(env,'SELECT state,report FROM radar_research_tests WHERE pilot_id=?',pilotId).first() : null;
   const researchBudget=policy.researchEnabled ? await sql(env,'SELECT attempts FROM radar_research_limits WHERE pilot_id=?',pilotId).first() : null;
   return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
-    photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
+    researchPhotoCheckRequired:false, photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
     trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:boundedMode(policy) ? 2 : 1,

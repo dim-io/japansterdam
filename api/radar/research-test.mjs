@@ -1,8 +1,9 @@
 import {readCatalog} from './catalog.mjs';
-import {normalize} from '../../tools/deal-radar/scoring.mjs';
+import {normalize,itemPriceLimit} from '../../tools/deal-radar/scoring.mjs';
 import {normalizeRow} from '../../tools/deal-radar/provider.mjs';
 import {estimateFromShop} from '../../tools/deal-radar/valuation.mjs';
 import {researchCandidate,queueResearch,processResearch} from './research.mjs';
+import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import {screenPhotos} from './vision.mjs';
 const sql=(env,query,...args)=>env.RADAR_DB.prepare(query).bind(...args);
 const validId=value=>/^[A-Za-z0-9]+$/.test(value||'');
@@ -26,7 +27,7 @@ export async function existingResults(token,policy,{fetcher=fetch,now=Date.now()
     const rows=await get('/datasets/'+run.defaultDatasetId+'/items?clean=true&format=json&limit=10');
     if(!Array.isArray(rows))throw Error('stored_source_invalid');
     const expected=Object.entries(policy.brands).find(([,id])=>id===input.brandIds)?.[0];
-    found.set(input.brandIds,rows.slice(0,10).map(row=>normalizeRow(row,run.finishedAt)).filter(item=>item&&normalize(item.brand)===normalize(expected)));
+    found.set(input.brandIds,rows.slice(0,10).map(row=>normalizeRow(row,run.finishedAt,itemPriceLimit(expected,config))).filter(item=>item&&normalize(item.brand)===normalize(expected)));
   }
   if(found.size!==Object.keys(policy.brands).length)throw Error('recent_stored_results_missing');
   return [...found.values()].flat();

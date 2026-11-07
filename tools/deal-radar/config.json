@@ -79,13 +79,13 @@
     ],
     "Fragment Design": [
       "Nike x Fragment Design",
-      "Nike × Fragment Design",
+      "Nike \u00d7 Fragment Design",
       "Fragment x Resonate",
       "Fragment Design x Resonate",
       "Resonate"
     ],
     "Fumito Ganryu": [
-      "Comme de Garçons (Ganryu)",
+      "Comme de Gar\u00e7ons (Ganryu)",
       "Ganryu"
     ],
     "SOPHNET.": [
@@ -126,5 +126,9 @@
   "maxItemPriceByBrand": {
     "Kapital": 70,
     "Needles": 70
+  },
+  "researchExcludedItems": {
+    "10594928216": "Photo label identifies Needles x UNIQLO; do not compare with mainline Needles.",
+    "10692446883": "Manual photo review shows holes near the rear neckline; reported good condition is insufficient."
   }
 }

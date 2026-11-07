@@ -209,3 +209,10 @@ De artikelgrens is €70 voor Kapital/Needles en €40 voor de andere merken, ex
 ### Maat en platformcategorie
 
 Kleine maten (inclusief XXS en XS) en een damescategorie vormen geen afwijzingsgrond of automatische verlaging van de onderzoeksprioriteit. De bronzoekopdrachten hebben geen maat- of genderfilter. Platformgegevens kunnen fout zijn; werkelijke afmetingen, pasvorm en het model moeten handmatig worden beoordeeld. Dit kan juist een verkeerd gecategoriseerde kans opleveren. Kinderartikelen en expliciete replica's blijven uitgesloten. De orSlow-denimjas van €35 in XXS blijft volgens deze regels geschikt voor onderzoek, zonder daarmee authenticiteit of marge te bevestigen.
+
+
+### Onderzoekstips zonder verplichte AI-fotocheck
+
+Een geschikte, recent als beschikbaar waargenomen kandidaat mag ook zonder automatische fototriage worden gemeld: **Nog niet visueel gecontroleerd — onderzoekskandidaat**. Dit geeft nooit een dealscore, marge, authenticiteitsgoedkeuring of koopadvies. Een ontbrekende/uitgeschakelde fotocheck wordt niet als onleesbare labels gepresenteerd. Een tegenstrijdige foto-uitkomst, bekende verkeerde productlijn of handmatig geconstateerde gebreken blijven uitgesloten. De hoogst gerangschikte kandidaten krijgen eerst toegang tot de ongewijzigde fotoquota. Per scan blijven hoogstens twee berichten mogelijk om de Free-verzoekgrens te respecteren; er is geen maximum per proef.
+
+`research-backlog.mjs` controleert de bestaande wachtlijst eenmalig met recent succesvol opgehaalde Apify-resultaten (hoogstens 90 minuten oud). De originele waarnemingstijd blijft behouden; afwezige, oude of niet beschikbaar bevestigde advertenties worden niet doorgestuurd. Geen nieuwe actorstarts, AI-aanvragen, betaalde upgrades of verlenging van de proef. De historische deduplicatiesleutel blijft behouden; eerdere `skipped`-meldingen kunnen worden geclaimd, maar `sent` en onzekere `pending` nooit. Alleen geaggregeerde resultaten komen in de workflowlogs; de wachtlijst blijft privé.
