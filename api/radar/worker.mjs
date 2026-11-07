@@ -1,4 +1,5 @@
 import {readCatalog} from './catalog.mjs';
+import readinessPolicy from './owner-readiness.json' with {type:'json'};
 import {runResearchTest} from './research-test.mjs';
 import {researchCandidate,processResearch,MAX_RESEARCH_NOTICES} from './research.mjs';
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
@@ -180,12 +181,15 @@ export async function status(env, now = Date.now(), policy = settings) {
   const pilotId = policy.id || PILOT_ID;
   const row = await sql(env, 'SELECT * FROM radar_control WHERE id=?', pilotId).first();
   const vision = await sql(env,'SELECT attempts,smoke_ok,last_outcome FROM radar_vision_control WHERE id=?',pilotId).first();
+  const readiness = await sql(env,'SELECT state,result,created_at FROM radar_photo_checks WHERE pilot_id=? AND item_id=? AND evidence_key=?',readinessPolicy.id,'smoke-v2','empty-pixel-regression-v2').first();
+  const readinessResult = readiness?.result ? JSON.parse(readiness.result) : null;
   const report = row?.last_report ? JSON.parse(row.last_report) : null;
   const researchStates=policy.researchEnabled ? (await sql(env,'SELECT state,COUNT(*) AS count FROM radar_research WHERE pilot_id=? GROUP BY state',pilotId).all()).results : [];
   const researchTest=policy.researchTestOnce ? await sql(env,'SELECT state,report FROM radar_research_tests WHERE pilot_id=?',pilotId).first() : null;
   const researchBudget=policy.researchEnabled ? await sql(env,'SELECT attempts FROM radar_research_limits WHERE pilot_id=?',pilotId).first() : null;
   return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
-    photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? 'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
+    photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
+    readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
     trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:policy.mode === 'both-brands' ? 2 : 1,
     byBrand:report?.byBrand || [],

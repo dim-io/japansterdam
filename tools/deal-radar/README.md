@@ -16,6 +16,10 @@
 
 De historische proefinstructies en technische keuzes hieronder beschrijven eerdere versies; ze betekenen geen toestemming om een nieuwe proef te starten.
 
+### Test op Sams account (7 november 2026)
+
+De eenmalige workflow `Radar op eigen account testen` controleerde de overgedragen database, actuele openbare shopreferenties, het gratis Apify-plan/tegoed en Telegram via alleen-lezen `getMe`/`getChat`. Er zijn nul Actor-runs gestart en nul berichten verstuurd. De foto-engine gaf via de Workers AI API op dit account bij één leeg testbeeld correct `ready / empty_image_correctly_inconclusive` terug. Dit test modeltoegang en conservatief gedrag, niet de echtheid van een kledingstuk of de kwaliteit op echte productfoto's. De aparte testreservering telt mee in het gedeelde dagelijkse AI-budget en wijzigt de oude proeftellers niet. De HTTP-status toont de uitkomst onder `readinessTest`; de normale scanner en automatische fotoanalyse blijven uitgeschakeld. Het testvenster is vast op één uur begrensd en dezelfde beeldtest wordt bij herhaling uit de database gelezen.
+
 Rechtstreekse toegang tot Vinted gaf tijdens de controle HTTP 403. Deze versie omzeilt geen toegangsscherm en bevat geen werkende Vinted-scraper. De officiële Pro Integrations API levert voorraad-/orderbeheer, geen brede cataloguszoekfeed. De generieke radar kan een advertentiefeed met het onderstaande contract verwerken; de Apify-proef is inmiddels afzonderlijk aangesloten. Alleen een lijst zoekresultaten uit Google biedt geen betrouwbare uurlijkse dekking van nieuwe advertenties.
 
 ## Wat werkt

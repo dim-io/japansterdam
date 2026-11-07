@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import worker, { scan, wake, status, inWindow, PILOT_ID } from './worker.mjs';
 import { fixtureReviews, photoFixture } from '../../tools/deal-radar/auth-fixture.mjs';
+import readinessPolicy from './owner-readiness.json' with {type:'json'};
 const now = Date.now();
 const policy = { enabled: true, startsAt: new Date(now - 1000).toISOString(), endsAt: new Date(now + 23*3600000).toISOString(), maxAttempts: 25, brands: { Kapital: '576107', Needles: '360271' } };
 function setup(attempts = 0) {
@@ -24,6 +25,15 @@ function setup(attempts = 0) {
 const product = { name: 'Needles Painter Trousers', brand:'Needles', price:210 };
 const item = { title: product.name, brand:'Needles', price:10, currency:'EUR', condition:'very_good', available:true, observedAt:new Date(now).toISOString(), url:'https://www.vinted.nl/items/123456-test', comparables:[], photoUrls:photoFixture };
 const options = { authenticityReviews: fixtureReviews(item, now), now, policy, clock: () => now };
+
+test('public readiness status exposes only the test outcome, without activating scans or revealing model payloads',async()=>{
+  const {db,env}=setup(24);
+  db.prepare('INSERT INTO radar_photo_checks VALUES (?,?,?,?,?,?)').run(readinessPolicy.id,'smoke-v2','empty-pixel-regression-v2','ready',JSON.stringify({state:'ready',reason:'empty_image_correctly_inconclusive',privatePayload:'do-not-publish'}),now);
+  const result=await status(env,now,{...policy,enabled:false});
+  assert.equal(result.readinessTest.state,'ready');assert.equal(result.photoAnalysisState,'inactive_after_readiness_test');
+  assert.equal(result.active,false);assert.equal(result.automaticPhotoAnalysis,false);assert.equal(result.attempts,24);
+  assert(!JSON.stringify(result).includes('do-not-publish'));db.close();
+});
 
 test('hard end and malformed windows stop before credentials, database or provider access', async()=>{
   assert.equal(inWindow(Date.parse(policy.endsAt),policy),false);
