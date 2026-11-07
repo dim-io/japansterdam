@@ -17,11 +17,11 @@ export function listingPhotos(row) {
 
 // Keep missing fields unknown. A successful search is not evidence that a
 // returned listing is still available or that it is a profitable deal.
-export function normalizeRow(row, observedAt) {
+export function normalizeRow(row, observedAt, maxPrice=40) {
   const url = listingUrl(row.link || row.url);
   const price = typeof row.price === 'number' ? row.price : Number(row.price?.amount);
   const currency = row.currency || row.price?.currency_code;
-  if (!url || !Number.isFinite(price) || price <= 0 || price > 40 || currency !== 'EUR') return null;
+  if (![40,70].includes(maxPrice)||!url || !Number.isFinite(price) || price <= 0 || price > maxPrice || currency !== 'EUR') return null;
   const conditions = { 'New with tags': 'new_with_tags', 'New without tags': 'new_without_tags', 'Very good': 'very_good', Good: 'good', Satisfactory: 'satisfactory' };
   const item = { url, title: String(row.title || '').slice(0, 200), brand: String(row.brand || row.brand_title || ''), price, currency,
     size: String(row.size || row.size_title || ''), condition: conditions[row.condition || row.status] || null,
@@ -33,7 +33,7 @@ export function normalizeRow(row, observedAt) {
   return item;
 }
 
-export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now(), maxResults = 3, maxCostUsd = MAX_COST }) {
+export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now(), maxResults = 3, maxCostUsd = MAX_COST, maxPrice=40 }) {
   if (!token || /\s/.test(token)) throw new Error('Sla eerst je Apify API-token op als GitHub-secret APIFY_TOKEN.');
   const api = async (endpoint, { method = 'GET', body } = {}) => {
     let response;
@@ -46,12 +46,13 @@ export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep
   };
   if (!/^\d+(?:,\d+){0,9}$/.test(brandIds)) throw new Error('Ongeldige merkselectie.');
   if (![3,10].includes(maxResults) || !Number.isFinite(maxCostUsd) || maxCostUsd < .02 || maxCostUsd > .03) throw new Error('Ongeldig scanbudget.');
+  if (![40,70].includes(maxPrice)) throw new Error('Ongeldige prijsgrens.');
   const search = new URL('https://www.vinted.nl/catalog');
   brandIds.split(',').forEach((id) => search.searchParams.append('brand_ids[]', id));
-  search.searchParams.set('price_to', '40');
+  search.searchParams.set('price_to', String(maxPrice));
   search.searchParams.set('currency', 'EUR');
   search.searchParams.set('order', 'newest_first');
-  const input = { ...INPUT, brandIds, maxResults, searchQueries: [search.href] };
+  const input = { ...INPUT, brandIds, maxResults, maxPrice, searchQueries: [search.href] };
   const started = await api('/actors/' + ACTOR + '/runs?timeout=90&waitForFinish=20&maxItems=' + maxResults + '&maxTotalChargeUsd=' + maxCostUsd + '&restartOnError=false', { method: 'POST', body: input });
   let run = started.data;
   if (!run || !/^[A-Za-z0-9]+$/.test(run.id || '')) throw new Error('Apify gaf geen geldig runnummer terug.');
@@ -72,7 +73,7 @@ export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep
   const rows = await api('/datasets/' + run.defaultDatasetId + '/items?clean=true&limit=' + maxResults + '&format=json');
   if (!Array.isArray(rows)) throw new Error('Apify gaf geen advertentielijst terug.');
   const observedAt = run.finishedAt || new Date(now()).toISOString();
-  const items = rows.slice(0, maxResults).filter((r) => r && typeof r === 'object').map((r) => normalizeRow(r, observedAt)).filter(Boolean);
+  const items = rows.slice(0, maxResults).filter((r) => r && typeof r === 'object').map((r) => normalizeRow(r, observedAt,maxPrice)).filter(Boolean);
   return { runId: run.id, maxCostUsd, returned: rows.length, items, confirmedAvailable: items.filter((i) => i.available === true).length,
     usageTotalUsd: typeof run.usageTotalUsd === 'number' ? run.usageTotalUsd : null };
 }

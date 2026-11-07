@@ -24,6 +24,11 @@ export function identifyBrand(raw, config) {
   return null;
 }
 
+export function itemPriceLimit(brand, config) {
+  const canonical=identifyBrand(brand,config);
+  return config.maxItemPriceByBrand?.[canonical] ?? config.maxItemPrice;
+}
+
 // Only the trusted repository review catalog can support a high-risk brand claim.
 // Seller/feed "authentic", a brand field and photo presence cannot approve it.
 export function listingEvidenceKey(item) {
@@ -56,7 +61,8 @@ export function assess(item, config, now = Date.now()) {
   const reject = (reason) => ({ eligible: false, reason });
   const url = listingUrl(item.url);
   if (!url) return reject('Geen geldige Vinted-itemlink');
-  if (item.currency !== 'EUR' || !positive(item.price) || item.price <= 0 || item.price > config.maxItemPrice) return reject('Buiten de prijsgrens van €40 of ongeldige prijs');
+  const priceLimit=itemPriceLimit(item.brand,config);
+  if (item.currency !== 'EUR' || !positive(item.price) || item.price <= 0 || item.price > priceLimit) return reject(`Buiten de prijsgrens van €${priceLimit} of ongeldige prijs`);
   if (item.available !== true) return reject('Beschikbaarheid niet bevestigd');
   const observed = Date.parse(item.observedAt), published = Date.parse(item.publishedAt);
   if (!Number.isFinite(observed) || now - observed > config.maxFeedAgeMinutes * 60_000 || observed > now + 300_000) return reject('Prijs/beschikbaarheid niet recent genoeg gecontroleerd');

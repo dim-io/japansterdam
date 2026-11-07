@@ -36,6 +36,8 @@ jobs:
         run: node radar/account-migration.mjs
       - name: Workers-adres op eigen account controleren
         run: node radar/workers-domain.mjs
+      - name: Nieuwe proef initialiseren met behoud van historie
+        run: node radar/bootstrap-trial.mjs
       - name: Radar op eigen account publiceren
         run: npx wrangler deploy --config radar/wrangler.toml
       - name: Bestaande Apify- en Telegramkoppeling aansluiten

@@ -1,6 +1,6 @@
 # Japansterdam vondstenradar
 
-**Huidige status (7 november 2026): de radar staat op Sams eigen Cloudflare-account en is gestopt.** De vorige proef is afgelopen; er is geen nieuw proefvenster gestart. De webshop blijft op Dimi's account. Er is geen betaald abonnement afgesloten en de radar koopt nooit automatisch iets.
+**Huidige status (7 november 2026): een nieuwe, begrensde 24-uurs proef op Sams eigen Cloudflare-account.** Needles en Kapital worden tot €70 gezocht; Engineered Garments en orSlow tot €40. De webshop blijft op Dimi's account. Er is geen betaald abonnement afgesloten en de radar koopt nooit automatisch iets.
 
 ### Eigen account: radar en statistieken
 
@@ -10,7 +10,7 @@
 - De bestaande 24 scanpogingen, eerdere bezorgreserveringen en vijf onderzoekskandidaten zijn behouden. De nieuwe omgeving vereist een eigen AI-readinesscontrole; historische smoke-tests op Dimi's account worden niet als bewijs hergebruikt. De fototellers zijn behouden.
 - De nieuwe worker leest actuele prijsreferenties uit de openbare webshop-API. Hij heeft geen toegang tot de shopdatabase. Een onbereikbare of ongeldige catalogus stopt de beoordeling.
 - `Radar op Sams account` publiceert alleen de radar met `RADAR_CLOUDFLARE_API_TOKEN`; `Backend live zetten` gebruikt de oorspronkelijke sleutel alleen voor de webshop. De radarsleutel verloopt op 5 februari 2027 en moet voor toekomstige publicaties tijdig worden vervangen.
-- De eenmalige overdrachtsoptie controleert een verificatiemarker. Bij volgende publicaties wordt de oude database niet opnieuw gelezen. Een ontbrekende marker blokkeert publicatie; nooit een stille reset. De oude radarcron is uitgezet, de nieuwe configuratie heeft eveneens geen cron.
+- De eenmalige overdrachtsoptie controleert een verificatiemarker. Bij volgende publicaties wordt de oude database niet opnieuw gelezen. Een ontbrekende marker blokkeert publicatie; nooit een stille reset. De oude radarcron is uitgezet. De nieuwe cron wordt uitsluitend voor het hieronder vastgelegde proefvenster gebruikt.
 - De oude gedeelde database blijft als archief behouden. Nieuwe radarmigraties horen bij de afzonderlijke radardatabase; pas nooit de volledige shopmigratiereeks op die database toe.
 - Web Analytics is op Sams account geregistreerd en de officiële meetcode staat op de elf openbare HTML-pagina's. Het beheerscherm wordt niet gemeten. De privacytekst is via het CMS bijgewerkt.
 
@@ -195,3 +195,12 @@ Per ronde worden maximaal vijf ongeprijsde onderzoekskandidaten vastgelegd, maxi
 Op verzoek van de eigenaar wordt de nieuwe onderzoeksroute één keer op recente, bestaande Apify-resultaten gecontroleerd (`researchTestOnce`). De cron reserveert deze controle apart in `radar_research_tests` (migratie 0007), leest uitsluitend reeds voltooide runs en datasets, en onderzoekt hoogstens één geselecteerde kandidaat. Er worden geen Actors gestart of herstart. De originele controletijd van de advertentie blijft behouden; resultaten ouder dan 90 minuten worden niet gebruikt.
 
 De test gebruikt dezelfde foto- en meldingsbudgetten, deduplicatie, gratis-accountbevestiging en eindtijd. Scanpogingen, uurreservering en `last_scan_at` worden niet aangepast: een controle op opgeslagen data wordt niet als verse scrape gepresenteerd. Herpublicaties of gelijktijdige cron-events herhalen de test niet. De publieke status toont alleen de geaggregeerde uitkomst onder `researchTest`; een onzekere fout blijft als mislukt/pending zichtbaar en wordt niet automatisch opnieuw geprobeerd.
+
+
+## Derde proef: vier merken en merkspecifieke prijsgrenzen
+
+`pilot-v3.json` bepaalt één nieuw 24-uurs venster met maximaal 24 gereserveerde scanrondes. Per uur worden twee merken met maximaal tien resultaten per merk onderzocht: Kapital + Engineered Garments, vervolgens Needles + orSlow. Iedere merkselectie komt eens per twee uur terug. Dit houdt het maximum op 48 Apify-starts, elk met maximaal $0,03, plus een verplichte tegoedcontrole en reserve. Gratis plan of tegoed niet bevestigd betekent stoppen; er wordt geen tegoed of abonnement gekocht.
+
+De artikelgrens is €70 voor Kapital/Needles en €40 voor de andere merken, exclusief verzending/koperskosten. Zowel de zoek-URL, Actor-input, normalisatie als beoordeling gebruiken die grens. Authenticiteit blijft voor alle vier de proefmerken een harde voorwaarde voor een koopadvies. Een foto-uitkomst is nooit authenticatie; de aparte onderzoeksroute meldt expliciet ontbrekende labels of prijsreferenties. De eerdere foutieve Kapital-werkjas staat ook onder zijn juiste advertentie-ID in het afwijsregister.
+
+`bootstrap-trial.mjs` kopieert alleen de eerdere deduplicatie-/onderzoeksstatus naar het nieuwe proef-ID en gebruikt de geslaagde beeldtest op Sams account. Oude tellers en het gedeelde dagelijkse fotobudget worden niet gereset. De nieuwe proef heeft maximaal vier foto-aanvragen, terwijl het gedeelde maximum van drie per UTC-dag blijft gelden (inclusief de eerdere readiness-test). Per ronde hoogstens één fotocontrole en voor de hele proef maximaal twee aparte onderzoeksmeldingen. Niet elk gevonden product krijgt dus een fotoanalyse. Na de eindtijd of 24 rondes zijn verdere wakeups inert; er wordt niets automatisch verlengd.

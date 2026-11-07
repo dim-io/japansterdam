@@ -29,13 +29,13 @@
     "Wacko Maria",
     "SOPHNET.",
     "Neighborhood",
-    "The Changes"
+    "The Changes",
+    "orSlow"
   ],
   "peripheralBrands": [
     "Visvim",
     "Auralee",
     "Kaptain Sunshine",
-    "orSlow",
     "Fullcount",
     "Resolute",
     "Iron Heart",
@@ -105,7 +105,9 @@
   "authenticityRequiredBrands": [
     "Kapital",
     "Needles",
-    "Visvim"
+    "Visvim",
+    "Engineered Garments",
+    "orSlow"
   ],
   "authenticityReviews": {
     "1069814625": {
@@ -113,6 +115,16 @@
       "verdict": "brand_mismatch",
       "source": "user_feedback",
       "note": "Generieke werkkleding; door Sam afgewezen als foutief onder Kapital geplaatst."
+    },
+    "10679814625": {
+      "brand": "Kapital",
+      "verdict": "brand_mismatch",
+      "source": "user_feedback",
+      "note": "Generieke werkkleding; door Sam afgewezen als foutief onder Kapital geplaatst."
     }
+  },
+  "maxItemPriceByBrand": {
+    "Kapital": 70,
+    "Needles": 70
   }
 }

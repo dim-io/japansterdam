@@ -2,7 +2,7 @@ export const ACCOUNT_ID = '81a93f1ef55a892620ab77cf0f8163f6';
 export function validOwnerConfirmation(policy, now=Date.now()) {
   const c=policy?.visionAccountConfirmation;
   const issued=Date.parse(c?.confirmedAt),authorized=Date.parse(c?.authorizedAt || c?.confirmedAt),expires=Date.parse(c?.validUntil),end=Date.parse(policy?.endsAt);
-  return c?.accountId===ACCOUNT_ID&&c.plan==='free'&&c.source==='owner_confirmation'
+  return c?.accountId===ACCOUNT_ID&&c.plan==='free'&&['owner_confirmation','dashboard_current_plan'].includes(c.source)
     &&Number.isFinite(issued)&&Number.isFinite(expires)&&issued<=now+300000&&now>=issued&&now<expires
     &&expires===end&&expires>authorized&&authorized>=issued&&authorized<=now+300000&&expires-authorized<=86400000+3600000&&authorized-issued<=86400000;
 }

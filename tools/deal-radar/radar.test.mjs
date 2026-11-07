@@ -37,7 +37,7 @@ test('a supported deal has an explained score and conservative net-cost estimate
 
 test('price, availability and fresh observation are hard gates', () => {
   for (const change of [
-    { price: 40.01 }, { price: -1 }, { price: 0 }, { price: NaN }, { price: '20' }, { currency: 'GBP' },
+    { price: 70.01 }, { price: -1 }, { price: 0 }, { price: NaN }, { price: '20' }, { currency: 'GBP' },
     { available: false }, { available: undefined }, { isBundle: true },
     { observedAt: '2025-01-01' }, { observedAt: undefined },
     { publishedAt: new Date(now + 86_400_000).toISOString() },

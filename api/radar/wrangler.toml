@@ -6,8 +6,8 @@ workers_dev = true
 
 [triggers]
 # Wake frequently; the database reserves at most one actual scan per UTC hour.
-# Remains stopped after migration. A new trial requires its own authorization.
-crons = []
+# The fixed 24-hour trial gates every scan; wakeups outside it do nothing.
+crons = ["*/5 * * * *"]
 
 [vars]
 SHOP_CATALOG_URL = "https://japansterdam-api.japansterdam-api.workers.dev/public/products"

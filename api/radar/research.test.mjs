@@ -27,7 +27,7 @@ function setup(outcome='consistent',failure=false){
 const options=(ctx,changes={})=>({now,clock:()=>now,policy,fetcher:ctx.fetcher,probeFn:async()=>({runId:'fixture',items:[item]}),...changes});
 test('unpriced research keeps availability, condition, freshness, brand identity and counterfeit gates',()=>{
  assert(researchCandidate(item,config,now));
- for(const patch of [{price:41},{price:0},{currency:'GBP'},{available:false},{condition:'satisfactory'},{flaws:['hole']},{title:'Needles replica track pants'},{description:'Uniqlo collaboration'},{title:'Needles child jacket'},{title:'Work jacket',brand:'Kapital'},{title:'Needles handmade scarf'},{observedAt:new Date(now-2*3600000).toISOString()},{photoUrls:[]}])assert.equal(researchCandidate({...item,...patch},config,now),null,JSON.stringify(patch));
+ for(const patch of [{price:70.01},{price:0},{currency:'GBP'},{available:false},{condition:'satisfactory'},{flaws:['hole']},{title:'Needles replica track pants'},{description:'Uniqlo collaboration'},{title:'Needles child jacket'},{title:'Work jacket',brand:'Kapital'},{title:'Needles handmade scarf'},{observedAt:new Date(now-2*3600000).toISOString()},{photoUrls:[]}])assert.equal(researchCandidate({...item,...patch},config,now),null,JSON.stringify(patch));
  const blocked={...config,authenticityReviews:{123456:{brand:'Needles',verdict:'brand_mismatch'}}};assert.equal(researchCandidate(item,blocked,now),null);
  const value=researchText(item,{state:'inconclusive'});assert(value.includes('Verkoopwaarde en marge: onbekend'));assert(value.includes('Authenticiteit: niet bevestigd'));assert(!value.includes('/10'));
 });

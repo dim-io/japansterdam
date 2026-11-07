@@ -3,11 +3,11 @@ import readinessPolicy from './owner-readiness.json' with {type:'json'};
 import {runResearchTest} from './research-test.mjs';
 import {researchCandidate,processResearch,MAX_RESEARCH_NOTICES} from './research.mjs';
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
-import settings from '../../tools/deal-radar/pilot-v2.json' with { type: 'json' };
+import settings from '../../tools/deal-radar/pilot-v3.json' with { type: 'json' };
 import { preflight } from '../../tools/deal-radar/budget.mjs';
 import { compareCatalog } from './freshness.mjs';
 import { probe } from '../../tools/deal-radar/provider.mjs';
-import { assess, alertText, identifyBrand, sendTelegram } from '../../tools/deal-radar/scoring.mjs';
+import { assess, alertText, identifyBrand, itemPriceLimit, sendTelegram } from '../../tools/deal-radar/scoring.mjs';
 import { screenPhotos, reviewMessage, MAX_VISION_CALLS } from './vision.mjs';
 import { estimateFromShop, missingReferenceReason } from '../../tools/deal-radar/valuation.mjs';
 
@@ -18,6 +18,17 @@ export function inWindow(now, policy = settings) {
     && Number.isFinite(start) && Number.isFinite(end) && end > start && end - start <= 86400000 && now >= start && now < end;
 }
 const sql = (env, query, ...args) => env.RADAR_DB.prepare(query).bind(...args);
+const boundedMode=policy=>['both-brands','rotating-brands'].includes(policy.mode);
+export function scanSelection(policy,slot,attempts=1){
+  const brands=Object.entries(policy.brands);
+  if(policy.mode==='rotating-brands'){
+    const groups=policy.brandGroups;
+    if(!Array.isArray(groups)||groups.length!==2||groups.some(g=>!Array.isArray(g)||g.length!==2)
+      ||new Set(groups.flat()).size!==4||groups.flat().some(b=>!policy.brands[b])||brands.length!==4)throw Error('Ongeldig merkschema');
+    return groups[slot%groups.length].map(b=>[b,policy.brands[b]]);
+  }
+  return policy.mode==='both-brands'?brands:[brands[(attempts-1)%brands.length]];
+}
 
 export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = probe, authenticityReviews = config.authenticityReviews, policy = settings, clock = Date.now } = {}) {
   // No credentials, database writes or provider requests outside the existing window.
@@ -26,7 +37,8 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     throw new Error('Radarconfiguratie ontbreekt');
   }
   const pilotId = policy.id || PILOT_ID;
-  const slot = Math.floor((now - (policy.mode === 'both-brands' ? Date.parse(policy.startsAt) : 0)) / 3600000);
+  const slot = Math.floor((now - (boundedMode(policy) ? Date.parse(policy.startsAt) : 0)) / 3600000);
+  if(policy.mode==='rotating-brands')scanSelection(policy,slot);
   const previous = await sql(env, 'SELECT * FROM radar_control WHERE id = ?', pilotId).first();
   if (!previous) throw new Error('Radarstatus niet overgezet; scanner blijft gestopt');
   await sql(env, 'UPDATE radar_control SET last_wake_at = ? WHERE id = ?', now, pilotId).run();
@@ -36,7 +48,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   const products = await readCatalog(env, fetcher);
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
-  if (policy.mode === 'both-brands') {
+  if (boundedMode(policy)) {
     const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? 1.69 : .31);
     if (!budget.enoughCredit) throw new Error('RADAR_BUDGET_BLOCKED');
   }
@@ -45,18 +57,17 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     'UPDATE radar_control SET attempts = attempts + 1, last_slot = ?, last_attempt_at = ?, transport_retry=0, last_error=NULL, error_at=NULL WHERE id = ? AND (last_slot < ? OR transport_retry=1) AND attempts < ? RETURNING attempts',
     slot, now, pilotId, slot, Math.min(policy.maxAttempts, 25)).first();
   if (!reservation) return { skipped: true };
-  const brands = Object.entries(policy.brands);
-  const selection = policy.mode === 'both-brands' ? brands : [brands[(reservation.attempts - 1) % brands.length]];
+  const selection = scanSelection(policy,slot,reservation.attempts);
   const selectedBrand = selection.map(([brand]) => brand).join(' + ');
   const results = [];
   for (const [brand, brandId] of selection) {
     if (!inWindow(clock(), policy)) break;
     try {
       const source = await probeFn({ token: env.APIFY_TOKEN, brandIds: brandId, fetcher,
-        ...(policy.mode === 'both-brands' ? {maxResults:10,maxCostUsd:.03} : {}) });
+        ...(boundedMode(policy) ? {maxResults:10,maxCostUsd:.03} : {}),maxPrice:itemPriceLimit(brand,config) });
       const items = source.items.filter((item) => identifyBrand(item.brand,config) === identifyBrand(brand,config));
-      const freshness = policy.mode === 'both-brands' && reservation.attempts === 1
-        ? await compareCatalog(brandId,items,fetcher) : null;
+      const freshness = boundedMode(policy) && reservation.attempts === 1
+        ? await compareCatalog(brandId,items,fetcher,itemPriceLimit(brand,config)) : null;
       results.push({...source,items,brand,freshness});
     } catch { throw new Error('RADAR_PROVIDER_FAILED'); }
   }
@@ -191,7 +202,9 @@ export async function status(env, now = Date.now(), policy = settings) {
     photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
-    trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:policy.mode === 'both-brands' ? 2 : 1,
+    trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:boundedMode(policy) ? 2 : 1,
+    priceLimits:Object.fromEntries(Object.keys(policy.brands).map(brand=>[brand,itemPriceLimit(brand,config)])),
+    brandSchedule:policy.brandGroups||null,scanIntervalHours:policy.mode==='rotating-brands'?2:policy.mode==='both-brands'?1:Object.keys(policy.brands).length,
     byBrand:report?.byBrand || [],
     researchTest:researchTest?.report?JSON.parse(researchTest.report):researchTest?{state:researchTest.state}:null,
     researchEnabled:policy.researchEnabled===true,researchStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
