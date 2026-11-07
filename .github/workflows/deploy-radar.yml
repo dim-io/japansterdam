@@ -31,6 +31,8 @@ jobs:
           SOURCE_CLOUDFLARE_API_TOKEN: ${{ inputs.migrate && secrets.CLOUDFLARE_API_TOKEN || '' }}
           MIGRATE_RADAR: ${{ inputs.migrate == true && 'true' || 'false' }}
         run: node radar/account-migration.mjs
+      - name: Workers-adres op eigen account controleren
+        run: node radar/workers-domain.mjs
       - name: Radar op eigen account publiceren
         run: npx wrangler deploy --config radar/wrangler.toml
       - name: Bestaande Apify- en Telegramkoppeling aansluiten

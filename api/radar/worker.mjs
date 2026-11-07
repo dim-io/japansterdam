@@ -31,8 +31,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   await sql(env, 'UPDATE radar_control SET last_wake_at = ? WHERE id = ?', now, pilotId).run();
   if ((previous.last_slot >= slot && !previous.transport_retry) || previous.attempts >= Math.min(policy.maxAttempts, 25)) return { skipped: true };
   // Validate the source before reserving/spending a scan. Retrying a failed inventory read is free of Apify calls.
-  // Read only the public catalog fields already used by the storefront.
-  // This avoids Worker-to-Worker fetch restrictions and parsing image-heavy descriptions.
+  // Across accounts, read current public references without shop database access.
   const products = await readCatalog(env, fetcher);
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
