@@ -1,6 +1,20 @@
 # Japansterdam vondstenradar
 
-**Status: Telegram en Apify zijn getest. De volledige proef heeft echte Needles-advertenties beoordeeld en een gemarkeerde proefmelding verzonden. Er staat nu een afzonderlijke, begrensde 24-uurs proef klaar voor Needles en Kapital.** Er is geen betaald abonnement afgesloten en de radar koopt nooit automatisch iets.
+**Huidige status (7 november 2026): de radar staat op Sams eigen Cloudflare-account en is gestopt.** De vorige proef is afgelopen; er is geen nieuw proefvenster gestart. De webshop blijft op Dimi's account. Er is geen betaald abonnement afgesloten en de radar koopt nooit automatisch iets.
+
+### Eigen account: radar en statistieken
+
+- Radarstatus: https://japansterdam-radar.sam-jesse.workers.dev/status
+- Web Analytics: https://dash.cloudflare.com/81a93f1ef55a892620ab77cf0f8163f6/web-analytics
+- De afzonderlijke D1-database heet `japansterdam-radar`. Alle negen radartabellen zijn via geauthenticeerde API-aanvragen in geheugen overgezet en inhoudelijk vergeleken. Geen ruwe advertenties, accountdata of sleutels worden in GitHub-logs, caches of artifacts gezet. Shopgebruikers, bestellingen, conceptproducten en foto's zijn niet gekopieerd.
+- De bestaande 24 scanpogingen, eerdere bezorgreserveringen en vijf onderzoekskandidaten zijn behouden. De nieuwe omgeving vereist een eigen AI-readinesscontrole; historische smoke-tests op Dimi's account worden niet als bewijs hergebruikt. De fototellers zijn behouden.
+- De nieuwe worker leest actuele prijsreferenties uit de openbare webshop-API. Hij heeft geen toegang tot de shopdatabase. Een onbereikbare of ongeldige catalogus stopt de beoordeling.
+- `Radar op Sams account` publiceert alleen de radar met `RADAR_CLOUDFLARE_API_TOKEN`; `Backend live zetten` gebruikt de oorspronkelijke sleutel alleen voor de webshop. De radarsleutel verloopt op 5 februari 2027 en moet voor toekomstige publicaties tijdig worden vervangen.
+- De eenmalige overdrachtsoptie controleert een verificatiemarker. Bij volgende publicaties wordt de oude database niet opnieuw gelezen. Een ontbrekende marker blokkeert publicatie; nooit een stille reset. De oude radarcron is uitgezet, de nieuwe configuratie heeft eveneens geen cron.
+- De oude gedeelde database blijft als archief behouden. Nieuwe radarmigraties horen bij de afzonderlijke radardatabase; pas nooit de volledige shopmigratiereeks op die database toe.
+- Web Analytics is op Sams account geregistreerd en de officiële meetcode staat op de elf openbare HTML-pagina's. Het beheerscherm wordt niet gemeten. De privacytekst is via het CMS bijgewerkt.
+
+De historische proefinstructies en technische keuzes hieronder beschrijven eerdere versies; ze betekenen geen toestemming om een nieuwe proef te starten.
 
 Rechtstreekse toegang tot Vinted gaf tijdens de controle HTTP 403. Deze versie omzeilt geen toegangsscherm en bevat geen werkende Vinted-scraper. De officiële Pro Integrations API levert voorraad-/orderbeheer, geen brede cataloguszoekfeed. De generieke radar kan een advertentiefeed met het onderstaande contract verwerken; de Apify-proef is inmiddels afzonderlijk aangesloten. Alleen een lijst zoekresultaten uit Google biedt geen betrouwbare uurlijkse dekking van nieuwe advertenties.
 

@@ -1,5 +1,8 @@
 name: Radar op Sams account
 on:
+  push:
+    branches: [main]
+    paths: ['api/radar/**', 'tools/deal-radar/**', '.github/workflows/deploy-radar.yml']
   workflow_dispatch:
     inputs:
       migrate:
