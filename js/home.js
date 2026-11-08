@@ -1,5 +1,6 @@
 import { imageFrameStyle } from './image-frames.js';
-import './layout.js?v=grailed-links';
+import { publishedStories, storyCard } from './journal-shared.js';
+import './layout.js?v=journal-1';
 import { initHomeMotion } from './home-motion.js';
 import { getContent, getProducts, byNewest, cardHTML, esc, catNo, productUrl, brandUrl, formatPrice } from './data.js';
 
@@ -30,6 +31,12 @@ if (heroLink && heroImage) {
 
 const [c, products] = await Promise.all([getContent(), getProducts()]);
 const h = c.home;
+const stories = publishedStories(c.journal).slice(0, 2);
+const journalSection = document.getElementById('home-journal');
+if (journalSection && stories.length) {
+  document.getElementById('home-journal-grid').innerHTML = stories.map(storyCard).join('');
+  journalSection.hidden = false;
+}
 
 // shoppable hero: caption linking to the product worn by the model
 const hp = h.heroProduct && products.find((p) => p.slug === h.heroProduct.slug);

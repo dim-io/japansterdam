@@ -1,4 +1,9 @@
 // japansterdam-api: Cloudflare Worker (D1 + R2). No dependencies.
+// Draft stories stay in the authenticated editor, never in the public feed.
+function publicContent(data) {
+  if (!data.journal) return data;
+  return { ...data, journal: { ...data.journal, articles: (data.journal.articles || []).filter((article) => article.published === true) } };
+}
 
 const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Accessories'];
 const CONDITIONS = ['New / unworn', 'Excellent', 'Very good', 'Good', 'Fair'];
@@ -301,7 +306,7 @@ async function handle(request, env, ctx) {
   if (method === 'GET' && path === '/public/content') {
     const row = await env.DB.prepare("SELECT data FROM content WHERE id = 'main'").first();
     if (!row) throw new HttpError(404, 'No content yet');
-    return new Response(row.data, { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=30' } });
+    return json(publicContent(JSON.parse(row.data)), 200, { 'Cache-Control': 'public, max-age=30' });
   }
   if (method === 'GET' && seg[0] === 'img' && seg.length > 1) {
     const key = decodeURIComponent(seg.slice(1).join('/'));
@@ -354,6 +359,11 @@ async function handle(request, env, ctx) {
     }
 
     if (seg[0] === 'admin') {
+      if (path === '/admin/content' && method === 'GET') {
+        const row = await env.DB.prepare("SELECT data FROM content WHERE id = 'main'").first();
+        if (!row) throw new HttpError(404, 'No content yet');
+        return json(JSON.parse(row.data), 200, { 'Cache-Control': 'no-store' });
+      }
       if (path === '/admin/products' && method === 'GET') return json(await listProducts(env));
 
       if (path === '/admin/products' && method === 'POST') {

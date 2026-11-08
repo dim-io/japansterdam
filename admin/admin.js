@@ -9,7 +9,7 @@ const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Accessori
 const CONDITIONS = ['New / unworn', 'Excellent', 'Very good', 'Good', 'Fair'];
 const SECTION_NAMES = {
   site: 'General', home: 'Home page', shop: 'Shop', about: 'About', contact: 'Contact', shipping: 'Shipping & returns',
-  faq: 'FAQ', sizeGuide: 'Size guide', privacy: 'Privacy', product: 'Product page',
+  faq: 'FAQ', sizeGuide: 'Size guide', privacy: 'Privacy', product: 'Product page', journal: 'Journal',
 };
 const $ = (s, r = document) => r.querySelector(s);
 const base = () => API_BASE.replace(/\/+$/, '');
@@ -666,6 +666,7 @@ async function viewEditor(slugParam) {
 /* ---------- pages (generated form) ---------- */
 async function viewPages(sectionKey) {
   if (!content) content = await fetchContent();
+  content.journal ||= { title: 'Journal', intro: 'People, materials and cultural connections behind Japanese garments. Curated in Amsterdam.', articles: [] };
   const keys = Object.keys(content);
   const key = keys.includes(sectionKey) ? sectionKey : keys[0];
   setTitle('Pages');
@@ -740,7 +741,8 @@ async function viewPages(sectionKey) {
 
   const form = h('div', {});
   const sectionVal = content[key];
-  if (sectionVal && typeof sectionVal === 'object' && !Array.isArray(sectionVal)) Object.keys(sectionVal).forEach((c) => form.append(renderField(sectionVal, c, key === 'about' && c === 'closingQuote' ? 'Opening statement' : humanize(c))));
+  if (key === 'journal') form.append(journalEditor(sectionVal, touch));
+  else if (sectionVal && typeof sectionVal === 'object' && !Array.isArray(sectionVal)) Object.keys(sectionVal).forEach((c) => form.append(renderField(sectionVal, c, key === 'about' && c === 'closingQuote' ? 'Opening statement' : humanize(c))));
   else form.append(renderField(content, key, label(key)));
 
   const saveBtn = h('button', { type: 'button', class: 'btn btn--primary' }, 'Save all pages');
@@ -761,9 +763,56 @@ async function viewPages(sectionKey) {
   setDirty(dirty);
 }
 async function fetchContent() {
-  const r = await fetch(base() + '/public/content', { cache: 'no-store' });
-  if (!r.ok) throw new ApiError(r.status, 'Could not load the page texts');
-  return r.json();
+  return api('/admin/content');
+}
+
+function journalEditor(journal, touch) {
+  const root = h('div', { class: 'journal-editor' });
+  const articles = journal.articles ||= [];
+  const field = (obj, key, name, long = false) => {
+    const input = h(long ? 'textarea' : 'input', { type: long ? null : 'text', rows: long ? '10' : null, 'aria-label': name });
+    input.value = obj[key] || '';
+    input.addEventListener('input', () => { obj[key] = input.value; touch(); });
+    return h('label', { class: 'field' }, h('span', {}, name), input);
+  };
+  const draw = () => {
+    root.replaceChildren(field(journal, 'title', 'Journal title'), field(journal, 'intro', 'Journal introduction'),
+      h('p', { class: 'hint' }, 'Stories appear in this order. Published stories are visible on the site; drafts remain private. Product links use the existing product URL or ID.'));
+    articles.forEach((article, i) => {
+      const published = h('input', { type: 'checkbox', checked: article.published === true, 'aria-label': `Publish ${article.title || 'story ' + (i + 1)}` });
+      published.addEventListener('change', () => { article.published = published.checked; touch(); });
+      const move = (to) => { if (to < 0 || to >= articles.length) return; articles.splice(to, 0, articles.splice(i, 1)[0]); touch(); draw(); };
+      const related = h('textarea', { rows: '3', 'aria-label': 'Related product IDs' });
+      related.value = (article.relatedProducts || []).join('\n');
+      related.addEventListener('input', () => { article.relatedProducts = related.value.split(/\n/).map(s => s.trim()).filter(Boolean); touch(); });
+      const item = h('details', { class: 'grp', open: true }, h('summary', {}, `${i + 1}. ${article.title || 'New story'}`),
+        h('label', { class: 'switch' }, published, 'Published on website'),
+        field(article, 'title', 'Story title'), field(article, 'slug', 'Story slug'), field(article, 'subtitle', 'Subtitle'),
+        field(article, 'category', 'Category'), field(article, 'date', 'Publication date (YYYY-MM-DD)'),
+        field(article, 'cover', 'Cover image URL'), field(article, 'coverAlt', 'Cover image description'),
+        field(article, 'bodyHtml', 'Article HTML', true),
+        h('label', { class: 'field' }, h('span', {}, 'Related products (one product ID or URL per line)'), related),
+        field(article, 'substackUrl', 'Published Substack URL (leave empty for a draft)'),
+        h('div', { class: 'srow' },
+          h('button', { type: 'button', class: 'btn btn--sm', disabled: i === 0, onclick: () => move(i - 1) }, 'Move story up'),
+          h('button', { type: 'button', class: 'btn btn--sm', disabled: i === articles.length - 1, onclick: () => move(i + 1) }, 'Move story down')));
+      root.append(item);
+    });
+    root.append(h('button', { type: 'button', class: 'btn btn--sm', onclick: () => {
+      articles.push({ title: '', slug: '', subtitle: '', category: '', date: '', cover: '', coverAlt: '', bodyHtml: '', relatedProducts: [], substackUrl: '', published: false }); touch(); draw();
+    } }, '+ Add story'));
+    const input = h('textarea', { rows: '4', 'aria-label': 'Prepared article JSON', placeholder: 'Paste a prepared article or array of articles' });
+    root.append(h('details', { class: 'grp' }, h('summary', {}, 'Import prepared articles'), input,
+      h('button', { type: 'button', class: 'btn btn--sm', onclick: () => {
+        try {
+          const parsed = JSON.parse(input.value), entries = Array.isArray(parsed) ? parsed : [parsed];
+          if (!entries.length || entries.some(a => !a || typeof a.title !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.slug || '') || typeof a.bodyHtml !== 'string')) throw new Error('Each story needs a title, a valid slug and Article HTML.');
+          entries.forEach(a => { const index = articles.findIndex(x => x.slug === a.slug); if (index < 0) articles.push(a); else articles[index] = a; });
+          touch(); draw(); toast('Articles imported. Save all pages to keep them.');
+        } catch (error) { toast(error.message, true); }
+      } }, 'Import articles')));
+  };
+  draw(); return root;
 }
 
 boot();

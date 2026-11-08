@@ -16,7 +16,7 @@ const ICON_BAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const ICON_MENU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18"/></svg>';
 const ICON_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>';
 
-const NAV = [['Shop', 'shop.html'], ['About', 'about.html'], ['Contact', 'contact.html']];
+const NAV = [['Shop', 'shop.html'], ['Journal', 'journal.html'], ['About', 'about.html'], ['Contact', 'contact.html']];
 const current = (href) => (page === href || (page === 'product.html' && href === 'shop.html') ? ' aria-current="page"' : '');
 const navLinks = (cls = '') => NAV.map(([l, h]) => `<a href="${h}"${current(h)}>${l}</a>`).join('');
 
@@ -45,6 +45,7 @@ function footerHTML() {
       <li><a class="ft-link" href="size-guide.html">Size Guide</a></li>
       <li><a class="ft-link" href="faq.html">FAQs</a></li></ul></div>
     <div class="ft__col"><h2>Company</h2><ul>
+      <li><a class="ft-link" href="journal.html">Journal</a></li>
       <li><a class="ft-link" href="about.html">About</a></li>
       <li><a class="ft-link" href="contact.html">Contact</a></li>
       <li><a class="ft-link" href="privacy-policy.html">Privacy Policy</a></li></ul></div>

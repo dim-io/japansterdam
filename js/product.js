@@ -1,6 +1,7 @@
 import { productFitsLike } from './sizing.js';
+import { productStoriesHTML } from './journal-shared.js';
 import { imageFrameStyle } from './image-frames.js';
-import './layout.js?v=grailed-links';
+import './layout.js?v=journal-1';
 import { measurementsBlock } from './measurements.js?v=unit-note';
 import { getContent, getProducts, getProduct, formatPrice, esc, stripHtml, productUrl, brandUrl, altFor, cardHTML, catNo, related, setMeta, jsonLd } from './data.js';
 import { inBag, addToBag, onBagChange } from './bag.js';
@@ -77,6 +78,7 @@ if (!p) {
     ${p.sold ? '' : `<p class="pdp__once">${esc((c.product && c.product.oneOnly) || '')}</p>`}
     <div class="pdp__desc rich">${p.description}</div>
     <div id="product-measurements"></div>
+    ${productStoriesHTML(p, c.journal)}
     <div class="acc">
       <details><summary>Size guide</summary><div class="acc__body"><a href="size-guide.html">Open the size guide</a></div></details>
       <details><summary>Questions? Email ${esc(email)}</summary><div class="acc__body"><a href="mailto:${esc(email)}?subject=${subject}">${esc(email)}</a></div></details>
