@@ -1,9 +1,9 @@
 {
   "enabled": true,
-  "id": "pilot-2026-11-07",
-  "previousPilotId": "pilot-2026-11-06",
-  "startsAt": "2026-11-07T00:44:34.007154+00:00",
-  "endsAt": "2026-11-08T00:44:34.007154+00:00",
+  "id": "pilot-2026-11-08",
+  "previousPilotId": "pilot-2026-11-07",
+  "startsAt": "2026-11-08T10:59:10.879325+00:00",
+  "endsAt": "2026-11-09T10:59:10.879325+00:00",
   "maxAttempts": 24,
   "brands": {
     "Kapital": "576107",
@@ -21,7 +21,7 @@
       "orSlow"
     ]
   ],
-  "revision": "rotating-four-brands-70-premium-40-others-v3",
+  "revision": "four-brand-unreviewed-notices-24h-v4",
   "mode": "rotating-brands",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
@@ -33,8 +33,9 @@
     "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
     "plan": "free",
     "source": "dashboard_current_plan",
-    "confirmedAt": "2026-11-07T00:29:33.587131+00:00",
-    "authorizedAt": "2026-11-07T00:39:34.007154+00:00",
-    "validUntil": "2026-11-08T00:44:34.007154+00:00"
-  }
+    "confirmedAt": "2026-11-08T10:59:10.879325+00:00",
+    "authorizedAt": "2026-11-08T10:59:10.879325+00:00",
+    "validUntil": "2026-11-09T10:59:10.879325+00:00"
+  },
+  "reviewBacklog": false
 }

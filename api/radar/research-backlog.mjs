@@ -9,6 +9,7 @@ import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import policy from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
 
 export async function reviewBacklog(env,{query,now=Date.now(),clock=Date.now,fetcher=fetch,readExisting=existingResults,testPolicy=policy}={}) {
+  if(testPolicy.reviewBacklog===false)return {state:'disabled_for_this_trial'};
   if(!testPolicy.enabled||!testPolicy.researchEnabled||now<Date.parse(testPolicy.startsAt)||now>=Date.parse(testPolicy.endsAt))return {state:'outside_trial'};
   const key=testPolicy.id+':unreviewed-backlog-v2';
   const claimed=await query("INSERT OR IGNORE INTO radar_research_tests (pilot_id,attempted_at,state) VALUES (?,?,'pending') RETURNING pilot_id",[key,now]);

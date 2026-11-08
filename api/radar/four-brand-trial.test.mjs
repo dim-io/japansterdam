@@ -11,7 +11,7 @@ import {freePlanDecision} from './free-plan.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import current from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
 import readiness from './owner-readiness.json' with {type:'json'};
-const now=Date.now(),p={...current,startsAt:new Date(now).toISOString(),endsAt:new Date(now+86400000).toISOString()};
+const now=Date.now(),p={...current,previousPilotId:'pilot-2026-11-06',startsAt:new Date(now).toISOString(),endsAt:new Date(now+86400000).toISOString()};
 test('only the two premium brands get seventy euros, consistently at normalization and assessment',()=>{
  for(const [brand,limit] of [['Needles',70],['Kapital',70],['Kountry',70],['Engineered Garments',40],['Orslow',40]]){
   assert.equal(itemPriceLimit(brand,config),limit);
