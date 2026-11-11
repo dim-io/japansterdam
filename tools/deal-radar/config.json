@@ -130,5 +130,30 @@
   "researchExcludedItems": {
     "10594928216": "Photo label identifies Needles x UNIQLO; do not compare with mainline Needles.",
     "10692446883": "Manual photo review shows holes near the rear neckline; reported good condition is insufficient."
+  },
+  "curationPreferences": {
+    "enabled": true,
+    "listingFeedback": {
+      "10724039125": {
+        "verdict": "interesting",
+        "reason": "Sam liked the blue velour execution and a matching top from the seller; wash-label model number checked by Sam. Bid EUR105 for both, not a confirmed purchase or market value."
+      },
+      "10720361203": {
+        "verdict": "skip",
+        "reason": "Generic standalone Needles track pants; Sam prefers other Needles garments or a convincing set."
+      },
+      "10720892142": {
+        "verdict": "skip",
+        "reason": "This specific Engineered Garments longsleeve did not fit the desired look; age alone is not an exclusion."
+      },
+      "10718287439": {
+        "verdict": "skip",
+        "reason": "This specific Kapital shirt did not fit Sams taste and had insufficiently convincing authenticity evidence."
+      },
+      "10722206945": {
+        "verdict": "skip",
+        "reason": "This specific Kapital shirt did not fit Sams taste and had insufficiently convincing authenticity evidence."
+      }
+    }
   }
 }

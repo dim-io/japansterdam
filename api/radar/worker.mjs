@@ -1,3 +1,5 @@
+import {curation} from './curation.mjs';
+import {queueBestBundle,checkNextBundle} from './bundles.mjs';
 import {readCatalog} from './catalog.mjs';
 import readinessPolicy from './owner-readiness.json' with {type:'json'};
 import {runResearchTest} from './research-test.mjs';
@@ -49,7 +51,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
   if (boundedMode(policy)) {
-    const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? 1.69 : .31);
+    const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? (policy.bundleChecks?.enabled?1.81:1.69) : .31);
     if (!budget.enoughCredit) throw new Error('RADAR_BUDGET_BLOCKED');
   }
   // Atomic database reservation: overlapping events and redeployments cannot spend twice in one hour.
@@ -75,7 +77,8 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   const items = [...new Map(results.flatMap((r)=>r.items).map((item)=>[item.url,item])).values()];
   let newListings = 0, sent = 0, photoReviewSent = 0, researchQueued = 0, researchSent = 0;
   const researchConfig={...config,authenticityReviews};
-  let photoChecksLeft=1;
+  // In the bundle pilot, keep the limited model-reading budget for paired label checks.
+  let photoChecksLeft=policy.bundleChecks?.reservePhotoChecks?0:1;
   const research=new Map();
   const ids=items.map((item)=>/\/items\/(\d+)/.exec(item.url)?.[1]).filter(Boolean);
   const seenIds=new Set();
@@ -106,6 +109,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     const selected=new Set([...research].sort((a,b)=>b[1].priority-a[1].priority).slice(0,5).map(([url])=>url));
     for(const url of research.keys())if(!selected.has(url))research.delete(url);
   }
+  const bundlesQueued=await queueBestBundle(env,items,researchConfig,policy,now);
   const queuedResearch=await queueResearchBatch(env,items.filter(item=>research.has(item.url)).map(item=>({item,candidate:research.get(item.url)})),policy,now);
   const decisions = [];
   for (const item of items) {
@@ -114,10 +118,12 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     if (!seenIds.has(id)) newListings++;
     const valuation = estimateFromShop(item, products, config);
     let deal = assess({ ...item, ...(valuation ? { valuation } : {}) }, { ...config, authenticityReviews }, now);
+    const preference=curation(item,config);
+    if(!preference.allowed)deal={...deal,eligible:false,reason:preference.reason};
     let photoScreen = null;
     // Only spend GPU quota on financially interesting, otherwise valid candidates.
     // AI screening never writes a trusted authentication approval.
-    if (deal.authenticity?.state === 'unreviewed' && valuation && env.VISION_FREE_CONFIRMED === 'true') {
+    if (preference.allowed && deal.authenticity?.state === 'unreviewed' && valuation && env.VISION_FREE_CONFIRMED === 'true') {
       const preliminary = assess({ ...item, valuation }, { ...config, authenticityRequiredBrands: [], authenticityReviews }, now);
       if (preliminary.eligible && photoChecksLeft>0) {
         const ready = await sql(env, 'SELECT smoke_ok FROM radar_vision_control WHERE id=?', pilotId).first();
@@ -158,7 +164,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   }
   const report = { scheduler: 'cloudflare', scannedAt: new Date(now).toISOString(), attempts: reservation.attempts,
     selectedBrand, byBrand:results.map((r)=>({brand:r.brand,checked:r.items.length,freshness:r.freshness})), checked: items.length, newListings, repeatedListings: items.length - newListings,
-    sent, photoReviewSent, researchQueued, researchSent, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
+    sent, photoReviewSent, researchQueued, researchSent, bundlesQueued, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
   await sql(env, 'UPDATE radar_control SET last_scan_at=?, last_report=?, last_error=NULL, error_at=NULL WHERE id=?',
     now, JSON.stringify(report), pilotId).run();
   console.log(JSON.stringify({scheduler:report.scheduler,attempts:report.attempts,checked:report.checked,newListings,sent,photoReviewSent,researchQueued,researchSent}));
@@ -176,7 +182,10 @@ export async function wake(env, options = {}) {
       const ready=await sql(env,'SELECT smoke_ok FROM radar_vision_control WHERE id=?',policy.id || PILOT_ID).first();
       if(ready?.smoke_ok!==1)await screenPhotos(env,{brand:'Kapital'},config,policy,{now:checkTime,smoke:true});
     }
-    return await scan(env, options);
+    const result=await scan(env, options);
+    // Seller lookups run on idle wakes, never in the same Free request as a full scan.
+    if(result.skipped&&inWindow(checkTime,policy))return {...result,...await checkNextBundle(env,config,policy,{now:checkTime,clock:options.clock||Date.now,fetcher:options.fetcher||fetch})};
+    return result;
   }
   catch (error) {
     const code = ['RADAR_INVENTORY_FAILED', 'RADAR_PROVIDER_FAILED', 'RADAR_BUDGET_BLOCKED'].includes(error.message) ? error.message : 'RADAR_RUNTIME_FAILED';
@@ -199,6 +208,8 @@ export async function status(env, now = Date.now(), policy = settings) {
   const researchStates=policy.researchEnabled ? (await sql(env,'SELECT state,COUNT(*) AS count FROM radar_research WHERE pilot_id=? GROUP BY state',pilotId).all()).results : [];
   const researchTest=policy.researchTestOnce ? await sql(env,'SELECT state,report FROM radar_research_tests WHERE pilot_id=?',pilotId).first() : null;
   const researchBudget=policy.researchEnabled ? await sql(env,'SELECT attempts FROM radar_research_limits WHERE pilot_id=?',pilotId).first() : null;
+  const bundleBudget=policy.bundleChecks?.enabled?await sql(env,'SELECT attempts FROM radar_bundle_limits WHERE pilot_id=?',pilotId).first():null;
+  const bundleStates=policy.bundleChecks?.enabled?(await sql(env,'SELECT state,COUNT(*) AS count FROM radar_bundle_checks WHERE pilot_id=? GROUP BY state',pilotId).all()).results:[];
   return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
     researchPhotoCheckRequired:false, photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
@@ -209,7 +220,7 @@ export async function status(env, now = Date.now(), policy = settings) {
     byBrand:report?.byBrand || [],
     researchTest:researchTest?.report?JSON.parse(researchTest.report):researchTest?{state:researchTest.state}:null,
     researchEnabled:policy.researchEnabled===true,researchStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
-    bundleCheck: 'planned_not_active', active: inWindow(now,policy), endsAt: policy.endsAt,
+    bundleCheck: policy.bundleChecks?.enabled?'bounded_idle_wake_lookup':'inactive',bundleCheckLimit:policy.bundleChecks?.maxAttempts||0,bundleChecksUsed:bundleBudget?.attempts||0,bundleStates, active: inWindow(now,policy), endsAt: policy.endsAt,
     lastWakeAt: row?.last_wake_at ? new Date(row.last_wake_at).toISOString() : null,
     lastScanAt: row?.last_scan_at ? new Date(row.last_scan_at).toISOString() : null,
     attempts: row?.attempts ?? null, limit: Math.min(policy.maxAttempts, 25),

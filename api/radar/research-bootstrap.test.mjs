@@ -6,7 +6,7 @@ import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import {existingResults,runResearchTest} from './research-test.mjs';
 const now=Date.now();
 const policy={id:'pilot-2026-11-06',enabled:true,researchEnabled:true,researchTestOnce:true,startsAt:new Date(now-3600000).toISOString(),endsAt:new Date(now+3600000).toISOString(),maxPhotoChecks:4,dailyVisionLimit:3,brands:{Needles:'360271',Kapital:'576107'}};
-const item={url:'https://www.vinted.nl/items/123456-test',title:'Needles wide track pants',brand:'Needles',price:35,currency:'EUR',condition:'very_good',available:true,observedAt:new Date(now-60000).toISOString(),photoUrls:['https://images1.vinted.net/a.png','https://images1.vinted.net/b.png'],comparables:[]};
+const item={url:'https://www.vinted.nl/items/123456-test',title:'Needles Rebuild patchwork shirt',brand:'Needles',price:35,currency:'EUR',condition:'very_good',available:true,observedAt:new Date(now-60000).toISOString(),photoUrls:['https://images1.vinted.net/a.png','https://images1.vinted.net/b.png'],comparables:[]};
 function setup(){
  const db=new DatabaseSync(':memory:');
  for(const migration of ['0002_radar.sql','0003_radar_transport_retry.sql','0004_radar_vision.sql','0005_radar_second_trial.sql','0006_radar_research.sql','0007_radar_research_test.sql'])db.exec(fs.readFileSync(new URL('../migrations/'+migration,import.meta.url),'utf8'));

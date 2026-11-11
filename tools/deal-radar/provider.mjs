@@ -15,6 +15,15 @@ export function listingPhotos(row) {
   }))].slice(0, 12);
 }
 
+// Keep only a public source identifier needed for a bounded wardrobe lookup.
+export function sellerReference(row) {
+  const id=String(row.seller_id||row.seller?.id||'');
+  const username=String(row.seller_username||row.seller?.username||'');
+  const validId=/^\d{1,16}$/.test(id)?id:null;
+  const validName=/^[a-zA-Z0-9_.-]{2,100}$/.test(username)?username:null;
+  return validId||validName?{id:validId,username:validName}:null;
+}
+
 // Keep missing fields unknown. A successful search is not evidence that a
 // returned listing is still available or that it is a profitable deal.
 export function normalizeRow(row, observedAt, maxPrice=40) {
@@ -26,7 +35,7 @@ export function normalizeRow(row, observedAt, maxPrice=40) {
   const item = { url, title: String(row.title || '').slice(0, 200), brand: String(row.brand || row.brand_title || ''), price, currency,
     size: String(row.size || row.size_title || ''), condition: conditions[row.condition || row.status] || null,
     available: row.availability === 'available' ? true : row.availability ? false : null,
-    photoUrls: listingPhotos(row),
+    photoUrls: listingPhotos(row), sellerRef:sellerReference(row),
     description: String(row.description || '').slice(0, 5000), sourceUploadAge: String(row.uploaded_ago || '').slice(0, 80) || null, observedAt, comparables: [] };
   if (typeof row.shipping_price === 'number' && row.shipping_price >= 0) item.shippingCost = row.shipping_price;
   if (typeof row.buyer_protection_fee === 'number' && row.buyer_protection_fee >= 0) item.buyerFee = row.buyer_protection_fee;

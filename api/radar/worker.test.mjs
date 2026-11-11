@@ -1,3 +1,4 @@
+import {BUNDLE_SCHEMA} from './bundles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
@@ -14,6 +15,7 @@ function setup(attempts = 0) {
   db.exec(fs.readFileSync(new URL('../migrations/0004_radar_vision.sql', import.meta.url), 'utf8'));
   db.exec(fs.readFileSync(new URL('../migrations/0006_radar_research.sql', import.meta.url), 'utf8'));
   db.exec(fs.readFileSync(new URL('../migrations/0007_radar_research_test.sql', import.meta.url), 'utf8'));
+  for(const schema of BUNDLE_SCHEMA)db.exec(schema);
   db.exec('CREATE TABLE products (data TEXT NOT NULL)');
   db.prepare('INSERT INTO products (data) VALUES (?)').run(JSON.stringify({ name: 'Needles Painter Trousers', brand: 'Needles', price: 210 }));
   db.prepare('INSERT INTO radar_control (id,attempts) VALUES (?,?)').run(PILOT_ID,attempts);

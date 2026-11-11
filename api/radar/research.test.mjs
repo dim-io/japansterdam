@@ -4,14 +4,16 @@ import {DatabaseSync} from 'node:sqlite';
 import fs from 'node:fs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import {researchCandidate,researchText,processResearch} from './research.mjs';
+import {BUNDLE_SCHEMA} from './bundles.mjs';
 import {selectPhotoUrls} from './vision.mjs';
 import {scan,status} from './worker.mjs';
 const now=Date.now();
 const policy={id:'pilot-2026-11-06',enabled:true,researchEnabled:true,startsAt:new Date(now-1000).toISOString(),endsAt:new Date(now+23*3600000).toISOString(),maxAttempts:24,maxPhotoChecks:4,dailyVisionLimit:3,brands:{Needles:'360271'}};
-const item={title:'Needles wide track pants',brand:'Needles',price:35,currency:'EUR',size:'XL',condition:'very_good',available:true,description:'',observedAt:new Date(now).toISOString(),url:'https://www.vinted.nl/items/123456-test',photoUrls:['https://images1.vinted.net/front.png','https://images1.vinted.net/label.png'],comparables:[]};
+const item={title:'Needles Rebuild patchwork shirt',brand:'Needles',price:35,currency:'EUR',size:'XL',condition:'very_good',available:true,description:'',observedAt:new Date(now).toISOString(),url:'https://www.vinted.nl/items/123456-test',photoUrls:['https://images1.vinted.net/front.png','https://images1.vinted.net/label.png'],comparables:[]};
 function setup(outcome='consistent',failure=false){
  const db=new DatabaseSync(':memory:');
  for(const name of ['0002_radar.sql','0003_radar_transport_retry.sql','0004_radar_vision.sql','0005_radar_second_trial.sql','0006_radar_research.sql'])db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8'));
+ for(const schema of BUNDLE_SCHEMA)db.exec(schema);
  db.exec('CREATE TABLE products(data TEXT NOT NULL)');db.prepare('INSERT INTO products VALUES(?)').run(JSON.stringify({name:'Needles Painter Trousers',brand:'Needles',price:210}));
  db.prepare('UPDATE radar_vision_control SET smoke_ok=1 WHERE id=?').run(policy.id);
  const messages=[];let calls=0,dbCalls=0,photoFetches=0;
@@ -115,4 +117,12 @@ test('no photo slot still permits a notice; a delivery rate limit queues the ite
  await processResearch(ctx.env,item,researchCandidate(item,config,now),policy,args);
  await processResearch(ctx.env,item,researchCandidate(item,config,now),policy,args);
  assert.equal(ctx.messages.length,1);assert.equal(screens,0);ctx.db.close();
+});
+
+
+test('full scan plus a batched bundle queue retains the Free fifty-request ceiling',async()=>{
+ const ctx=setup();const items=Array.from({length:20},(_,i)=>({...item,url:`https://www.vinted.nl/items/${2000+i}-test`,sellerRef:{id:String(2000+i)}}));
+ const report=await scan(ctx.env,options(ctx,{policy:{...policy,bundleChecks:{enabled:true,maxAttempts:4}},probeFn:async()=>({runId:'fixture',items})}));
+ assert.equal(report.bundlesQueued,5);assert.equal(report.researchSent,2);
+ assert(ctx.dbCalls()+ctx.photoFetches()+ctx.calls()+ctx.messages.length+15<=50,JSON.stringify({db:ctx.dbCalls(),photos:ctx.photoFetches(),ai:ctx.calls(),messages:ctx.messages.length}));ctx.db.close();
 });

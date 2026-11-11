@@ -1,3 +1,4 @@
+import {BUNDLE_SCHEMA} from './bundles.mjs';
 import {pathToFileURL} from 'node:url';
 import {client,TARGET,SOURCE} from './account-migration.mjs';
 import {inWindow,scanSelection} from './worker.mjs';
@@ -6,6 +7,7 @@ import policy from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
 export async function bootstrapTrial(query,p=policy,now=Date.now()){
   if(!/^pilot-\d{4}-\d{2}-\d{2}$/.test(p.id)||p.id===p.previousPilotId)throw Error('Ongeldig proefvenster');
   if((await query('SELECT verified FROM radar_transfer WHERE id=?',[SOURCE.database]))[0]?.verified!==1)throw Error('Accountoverdracht niet geverifieerd');
+  if(p.bundleChecks?.enabled)for(const schema of BUNDLE_SCHEMA)await query(schema);
   if((await query('SELECT id FROM radar_control WHERE id=?',[p.id])).length)return {alreadyInitialized:true};
   if(p.maxAttempts!==24||!inWindow(Date.parse(p.startsAt),p)||now>=Date.parse(p.endsAt)||Date.parse(p.startsAt)-now>3600000)throw Error('Ongeldig proefvenster');
   scanSelection(p,0);scanSelection(p,1);
@@ -17,6 +19,8 @@ export async function bootstrapTrial(query,p=policy,now=Date.now()){
   await query('INSERT OR IGNORE INTO radar_alerts SELECT ?,item_id,price,delivery,message_id,attempted_at FROM radar_alerts WHERE pilot_id=?',[p.id,p.previousPilotId]);
   await query('INSERT OR IGNORE INTO radar_research SELECT ?,item_id,data,priority,state,photo_state,first_seen,last_seen FROM radar_research WHERE pilot_id=?',[p.id,p.previousPilotId]);
   await query("INSERT OR IGNORE INTO radar_vision_control (id,smoke_ok,last_outcome,last_check_at) VALUES (?,1,'empty_image_correctly_inconclusive',?)",[p.id,proof.created_at]);
+  if(p.bundleChecks?.enabled)await query('INSERT OR IGNORE INTO radar_bundle_checks SELECT ?,item_id,data,seller_key,priority,state,result,created_at FROM radar_bundle_checks WHERE pilot_id=?',[p.id,p.previousPilotId]);
+  if(p.bundleChecks?.enabled)await query('INSERT OR IGNORE INTO radar_bundle_sellers SELECT ?,seller_key FROM radar_bundle_sellers WHERE pilot_id=?',[p.id,p.previousPilotId]);
   // Publish the scan reservation last, after historical deduplication is complete.
   await query('INSERT OR IGNORE INTO radar_control (id) VALUES (?)',[p.id]);
   return {alreadyInitialized:false,historyPreserved:true};

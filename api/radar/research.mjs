@@ -1,3 +1,4 @@
+import {curation} from './curation.mjs';
 import {assess,authenticityAssessment,identifyBrand,listingUrl,normalize,sendTelegram} from '../../tools/deal-radar/scoring.mjs';
 import {garmentType} from '../../tools/deal-radar/valuation.mjs';
 
@@ -7,7 +8,7 @@ const sql=(env,query,...args)=>env.RADAR_DB.prepare(query).bind(...args);
 const plain=(text,max=140)=>String(text||'').replace(/(?:https?:\/\/|www\.)\S+/gi,'').replace(/\s+/g,' ').trim().slice(0,max);
 
 // This route identifies items worth investigating, never a resale value or authenticity approval.
-export function researchCandidate(item,config,now=Date.now()) {
+export function researchCandidate(item,config,now=Date.now(),{forBundle=false}={}) {
   const id=/\/items\/(\d+)/.exec(listingUrl(item.url)||'')?.[1];
   if(config.researchExcludedItems?.[id])return null;
   const brand=identifyBrand(item.brand,config),type=garmentType(item.title);
@@ -22,18 +23,22 @@ export function researchCandidate(item,config,now=Date.now()) {
   if(check.reason!=='Geen passende prijsreferentie: flipwaarde blijft onbekend')return null;
   const photos=item.photoUrls||[];
   if(photos.length<2)return null;
+  const preference=curation(item,config);
+  if(!preference.allowed&&!forBundle)return null;
+  if(!preference.allowed&&!preference.track)return null;
   const distinctive=/\b(track|painter|velour|velvet|bandana|boro|sashiko|kountry|rebuild|jogging)\b/.test(text);
-  return {type,reason:'model_reference_missing',priority:Number(distinctive)*2+Number(photos.length>=4)*3+Number(item.price<=35)+Number(item.condition!=='good')};
+  return {type,reason:'model_reference_missing',curationReason:preference.reason,priority:preference.boost+Number(distinctive)*2+Number(photos.length>=4)*3+Number(item.price<=35)+Number(item.condition!=='good')};
 }
 
-export function researchText(item,screen) {
+export function researchText(item,screen,candidate={}) {
   const photo=screen?.state==='visually_consistent'
     ? 'Fotoanalyse: kledingstuk en leesbare labels lijken samenhangend; dit bewijst geen authenticiteit.'
     : screen?.state==='inconclusive'&&screen.reason==='missing_or_unreadable_evidence'
     ? 'Fotoanalyse: onvoldoende leesbaar merk- of waslabel. Vraag duidelijke labelfoto’s op.'
     : 'Nog niet visueel gecontroleerd — onderzoekskandidaat. Controleer zelf kledingstuk, merklabel en waslabel.';
   return ['ONDERZOEK — GEEN KOOPADVIES',plain(item.title),`${plain(item.brand,60)} · €${item.price.toFixed(2)} · Maat ${plain(item.size,30)||'onbekend'}`,
-    'Interessant kledingtype binnen de merkselectie, maar er ontbreekt een passende prijsreferentie.',
+    'Kandidaat binnen jouw selectie; model, uitvoering en vraagprijs verdienen nader onderzoek. Een passende prijsreferentie ontbreekt.',
+    ...(candidate.curationReason==='preferred_needles_garment'?['Selectie: een van jouw voorkeurscategorieën van Needles; beoordeel de specifieke uitvoering.']:[]),
     'Verkoopwaarde en marge: onbekend. Authenticiteit: niet bevestigd.',photo,
     'Platformmaat en dames-/herencategorie zijn indicatief; controleer afmetingen en werkelijke pasvorm.',
     'Controleer eerst model, labels, gebreken en maten; onderzoek daarna vergelijkbare verkopen.',listingUrl(item.url)].join('\n');
@@ -73,7 +78,7 @@ export async function processResearch(env,item,candidate,policy,{now,clock,fetch
   // Retain the historical attempt counter without limiting future notices.
   await sql(env,'INSERT INTO radar_research_limits (pilot_id,attempts) VALUES (?,1) ON CONFLICT(pilot_id) DO UPDATE SET attempts=attempts+1',policy.id).run();
   await sql(env,"UPDATE radar_research SET state='notification_pending' WHERE pilot_id=? AND item_id=?",policy.id,queued.id).run();
-  const messageId=await sendTelegram(researchText(item,photo),env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher);
+  const messageId=await sendTelegram(researchText(item,photo,candidate),env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher);
   await sql(env,"UPDATE radar_alerts SET delivery='sent',message_id=? WHERE pilot_id=? AND item_id=?",messageId,policy.id,alertId).run();
   await sql(env,"UPDATE radar_research SET state='notified' WHERE pilot_id=? AND item_id=?",policy.id,queued.id).run();
   return {queued:true,sent:true,photo};

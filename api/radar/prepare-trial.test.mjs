@@ -14,3 +14,8 @@ test('successful preparation checks readiness without scraper or message side ef
  const result=await prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async(token,fetcher,reserve)=>{assert.equal(reserve,1.69);return{freePlanConfirmed:true,enoughCredit:true};},readiness:async()=>({shopReferences:true,telegramReady:true,photoState:'ready'})});
  assert.deepEqual(result,{freeSourceBudgetConfirmed:true,photoState:'ready',newScraperStarts:0,messagesSent:0});
 });
+
+
+test('the bundle pilot reserves four extra bounded actor calls inside Free credit',async()=>{
+ await prepareTrial({}, {now,testPolicy:{...testPolicy,bundleChecks:{enabled:true}},query:async()=>[],budget:async(token,fetcher,reserve)=>{assert.equal(reserve,1.81);return{freePlanConfirmed:true,enoughCredit:true};},readiness:async()=>({shopReferences:true,telegramReady:true,photoState:'ready'})});
+});

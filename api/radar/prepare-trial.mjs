@@ -8,7 +8,7 @@ import policy from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
 export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testPolicy=policy,readiness=check,budget=preflight}={}) {
   if((await query('SELECT id FROM radar_control WHERE id=?',[testPolicy.id])).length)return {alreadyInitialized:true};
   if(!testPolicy.enabled||now>=Date.parse(testPolicy.endsAt))throw Error('trial_window_closed');
-  const source=await budget(env.APIFY_TOKEN,fetcher,1.69);
+  const source=await budget(env.APIFY_TOKEN,fetcher,testPolicy.bundleChecks?.enabled?1.81:1.69);
   if(!source.freePlanConfirmed||!source.enoughCredit)throw Error('free_source_budget_not_confirmed');
   const ready=await readiness(env,{query,now,fetcher});
   if(!ready.shopReferences||!ready.telegramReady||ready.photoState!=='ready')throw Error('trial_readiness_not_confirmed');
