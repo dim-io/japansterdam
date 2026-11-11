@@ -7,7 +7,7 @@ export async function readWardrobe(token,ref,config,{fetcher=fetch,clock=Date.no
  if(!token||!seller)throw Error('WARDROBE_SOURCE_INVALID');
  const api=async(path,options={})=>{
   const r=await fetcher('https://api.apify.com/v2'+path,{...options,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},redirect:'manual',signal:AbortSignal.timeout(25000)});
-  if(!r.ok)throw Error('WARDROBE_SOURCE_UNAVAILABLE');return r.json();
+  if(!r.ok)throw Error('WARDROBE_HTTP_'+r.status);return r.json();
  };
  let run=(await api('/actors/omkar-cloud~vinted-seller-scraper/runs?timeout=90&waitForFinish=20&maxItems=11&maxTotalChargeUsd=0.03&restartOnError=false',{method:'POST',body:JSON.stringify({sellers:[seller.id||seller.username],includeItems:true,includeFeedback:false,maxItems:10,maxFeedback:0,language:'en'})})).data;
  const valid=r=>r&&/^[A-Za-z0-9]+$/.test(r.id||'');
@@ -20,7 +20,8 @@ export async function readWardrobe(token,ref,config,{fetcher=fetch,clock=Date.no
  if(!terminal.has(run.status)){
   await api('/actor-runs/'+run.id+'/abort',{method:'POST'});throw Error('WARDROBE_SOURCE_UNAVAILABLE');
  }
- if(run.status!=='SUCCEEDED'||!/^[A-Za-z0-9]+$/.test(run.defaultDatasetId||''))throw Error('WARDROBE_SOURCE_UNAVAILABLE');
+ if(run.status!=='SUCCEEDED')throw Error('WARDROBE_RUN_'+run.status.replace(/[^A-Z]/g,'_'));
+ if(!/^[A-Za-z0-9]+$/.test(run.defaultDatasetId||''))throw Error('WARDROBE_SOURCE_INVALID');
  const finished=Date.parse(run.finishedAt);
  if(!Number.isFinite(finished)||finished>clock()+300000||clock()-finished>90*60000)throw Error('WARDROBE_SOURCE_STALE');
  const rows=await api('/datasets/'+run.defaultDatasetId+'/items?clean=true&format=json&limit=11');

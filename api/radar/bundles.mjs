@@ -76,7 +76,7 @@ export async function checkNextBundle(env,config,policy,{now=Date.now(),clock=Da
     }else outcome.bundleCheck='already_notified';
    }
   }
- }catch{outcome.bundleCheck='lookup_or_delivery_unconfirmed';}
+ }catch(error){outcome.bundleCheck='lookup_or_delivery_unconfirmed';outcome.reason=/^WARDROBE_[A-Z_0-9]+$/.test(error?.message||'')?error.message:'unconfirmed_source_or_delivery';}
  // Only minimal wardrobe evidence is retained, no seller profiles, ratings or reviews.
  await sql(env,'UPDATE radar_bundle_checks SET state=?,result=? WHERE pilot_id=? AND item_id=?',outcome.bundleCheck,JSON.stringify(outcome),policy.id,row.item_id).run();
  return outcome;

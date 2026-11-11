@@ -58,6 +58,10 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: node radar/initial-round.mjs
+      - name: Laatste verkopersbroncontrole uitlezen zonder nieuwe scrape
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        run: node radar/wardrobe-readiness.mjs
       - name: Wachtende onderzoekstips eenmalig met recente brongegevens controleren
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
