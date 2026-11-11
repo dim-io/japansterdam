@@ -9,7 +9,8 @@ test('wardrobe calls are capped and return only active matching-seller items, ne
   calls++;assert(!url.includes('token='));assert.equal(opts.redirect,'manual');
   if(opts.method==='POST'){
    assert(url.includes('maxTotalChargeUsd=0.03'));assert(url.includes('maxItems=11'));
-   assert.deepEqual(JSON.parse(opts.body),{sellers:['42'],includeItems:true,includeFeedback:false,maxItems:10,maxFeedback:0,language:'en'});
+   assert.equal(Object.hasOwn(JSON.parse(opts.body),'maxFeedback'),false); // Optional field has minimum 1; omit it when feedback is disabled.
+   assert.deepEqual(JSON.parse(opts.body),{sellers:['42'],includeItems:true,includeFeedback:false,maxItems:10,language:'en'});
    return Response.json({data:{id:'run123',status:'SUCCEEDED',defaultDatasetId:'data123',finishedAt:new Date(now).toISOString()}});
   }
   return Response.json([row,{...row,row_type:'seller'},{...row,seller_id:'99'},{...row,price:71},{...row,link:'https://evil.test/items/123-test'},{...row,link:'https://www.vinted.nl/items/456-test',is_sold:true}]);

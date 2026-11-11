@@ -9,7 +9,7 @@ export async function readWardrobe(token,ref,config,{fetcher=fetch,clock=Date.no
   const r=await fetcher('https://api.apify.com/v2'+path,{...options,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},redirect:'manual',signal:AbortSignal.timeout(25000)});
   if(!r.ok)throw Error('WARDROBE_HTTP_'+r.status);return r.json();
  };
- let run=(await api('/actors/omkar-cloud~vinted-seller-scraper/runs?timeout=90&waitForFinish=20&maxItems=11&maxTotalChargeUsd=0.03&restartOnError=false',{method:'POST',body:JSON.stringify({sellers:[seller.id||seller.username],includeItems:true,includeFeedback:false,maxItems:10,maxFeedback:0,language:'en'})})).data;
+ let run=(await api('/actors/omkar-cloud~vinted-seller-scraper/runs?timeout=90&waitForFinish=20&maxItems=11&maxTotalChargeUsd=0.03&restartOnError=false',{method:'POST',body:JSON.stringify({sellers:[seller.id||seller.username],includeItems:true,includeFeedback:false,maxItems:10,language:'en'})})).data;
  const valid=r=>r&&/^[A-Za-z0-9]+$/.test(r.id||'');
  if(!valid(run))throw Error('WARDROBE_SOURCE_INVALID');
  const terminal=new Set(['SUCCEEDED','FAILED','TIMED-OUT','ABORTED']);
