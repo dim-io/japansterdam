@@ -7,7 +7,7 @@ test('existing trials never spend a second readiness test or restart budgets',as
 });
 test('new trial requires the full free source reserve before any image inference',async()=>{
  let calls=0;
- for(const freePlanConfirmed of [false,true])await assert.rejects(prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async()=>({freePlanConfirmed,enoughCredit:false}),readiness(){calls++;}}),/free_source_budget/);
+ for(const freePlanConfirmed of [false,true])await assert.rejects(prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async()=>({freePlanConfirmed,enoughCredit:false}),readiness(){calls++;}}),new RegExp('free_source_budget_not_confirmed:'+(freePlanConfirmed?'insufficient_free_credit':'free_plan_unconfirmed')));
  assert.equal(calls,0);
 });
 test('successful preparation checks readiness without scraper or message side effects',async()=>{
