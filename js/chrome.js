@@ -56,7 +56,7 @@ function footerHTML() {
     <p>Sign up to receive news and updates.</p>
     <a class="btn btn--light" href="${esc(site.substack)}" data-site="substack" target="_blank" rel="noopener">Subscribe on Substack</a>
   </div>
-  <p class="ft__bottom">© 2026 Japansterdam · Amsterdam</p>
+  <p class="ft__bottom">© 2026 Japansterdam · Amsterdam · KVK 42217083</p>
 </div>`;
 }
 
