@@ -3,7 +3,7 @@ export function budgetDecision(user, limits, required=1.69, policy={}) {
   const plan=user?.data?.plan;
   const free=plan?.monthlyBasePriceUsd===0 && (String(plan.tier||plan.id).toUpperCase()==='FREE') && user.data.isPaying!==true;
   const credit=plan?.monthlyUsageCreditsUsd,used=limits?.data?.current?.monthlyUsageUsd,cap=limits?.data?.limits?.maxMonthlyUsageUsd;
-  const paid=policy.allowPaidIncludedCredits===true && String(plan?.tier||plan?.id).toUpperCase()==='STARTER'
+  const paid=policy.allowPaidIncludedCredits===true && typeof (plan?.tier||plan?.id)==='string' && !['','FREE'].includes(String(plan?.tier||plan?.id).toUpperCase())
     && Number.isFinite(plan?.monthlyBasePriceUsd) && plan.monthlyBasePriceUsd>0
     && Number.isFinite(policy.maxMonthlyUsageUsd) && policy.maxMonthlyUsageUsd>0 && policy.maxMonthlyUsageUsd<=19;
   const allowed=free||paid;

@@ -18,3 +18,8 @@ test('preflight passes the authorized policy to the private account decision',as
  const result=await preflight('fixture',async url=>Response.json(url.endsWith('/users/me')?user:limits),1.81,policy);
  assert.equal(result.enoughCredit,true);
 });
+
+test('paid plan API tier aliases are supported while incomplete account evidence stays blocked',()=>{
+ for(const tier of ['STARTER','BRONZE','PERSONAL'])assert.equal(budgetDecision({...user,data:{...user.data,plan:{...user.data.plan,tier}}},limits,1.81,policy).enoughCredit,true);
+ assert.equal(budgetDecision({data:{isPaying:true,plan:{tier:'STARTER'}}},limits,1.81,policy).enoughCredit,false);
+});
