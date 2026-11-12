@@ -12,7 +12,7 @@ export function researchCandidate(item,config,now=Date.now(),{forBundle=false}={
   const id=/\/items\/(\d+)/.exec(listingUrl(item.url)||'')?.[1];
   if(config.researchExcludedItems?.[id])return null;
   const brand=identifyBrand(item.brand,config),type=garmentType(item.title);
-  if(!brand||!config.coreBrands.includes(brand)||!type)return null;
+  if(!brand||![...config.coreBrands,...(config.researchBrands||[])].includes(brand)||!type)return null;
   if(!['new_with_tags','new_without_tags','very_good','good'].includes(item.condition)||item.flaws?.length)return null;
   const text=normalize(item.title+' '+(item.description||''));
   if(!text.includes(normalize(brand)))return null; // A misfilled brand field alone is insufficient.

@@ -2,7 +2,7 @@
 // An inaccessible/ambiguous page is unknown, never proof of fresh results.
 export async function compareCatalog(brandId,items,fetcher=fetch,maxPrice=40) {
   const url=new URL('https://www.vinted.nl/catalog');
-  url.search=new URLSearchParams({'brand_ids[]':brandId,price_to:String(maxPrice),currency:'EUR',order:'newest_first'});
+  url.search=new URLSearchParams({...(typeof brandId==='object'?{search_text:brandId.searchText}:{'brand_ids[]':brandId}),price_to:String(maxPrice),currency:'EUR',order:'newest_first'});
   try {
     const r=await fetcher(url.href,{redirect:'manual',signal:AbortSignal.timeout(15000)});
     if(!r.ok || !r.headers.get('content-type')?.includes('text/html'))return {state:'unverified',reason:'catalog_unavailable'};

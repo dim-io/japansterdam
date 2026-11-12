@@ -30,7 +30,8 @@
     "SOPHNET.",
     "Neighborhood",
     "The Changes",
-    "orSlow"
+    "orSlow",
+    "WTAPS"
   ],
   "peripheralBrands": [
     "Visvim",
@@ -79,13 +80,13 @@
     ],
     "Fragment Design": [
       "Nike x Fragment Design",
-      "Nike \u00d7 Fragment Design",
+      "Nike × Fragment Design",
       "Fragment x Resonate",
       "Fragment Design x Resonate",
       "Resonate"
     ],
     "Fumito Ganryu": [
-      "Comme de Gar\u00e7ons (Ganryu)",
+      "Comme de Garçons (Ganryu)",
       "Ganryu"
     ],
     "SOPHNET.": [
@@ -100,6 +101,9 @@
     ],
     "orSlow": [
       "Or Slow"
+    ],
+    "Sage de Cret": [
+      "Sage de Crêt"
     ]
   },
   "authenticityRequiredBrands": [
@@ -153,7 +157,49 @@
       "10722206945": {
         "verdict": "skip",
         "reason": "This specific Kapital shirt did not fit Sams taste and had insufficiently convincing authenticity evidence."
+      },
+      "10738630152": {
+        "verdict": "skip",
+        "reason": "Sam did not like this specific candidate from the November 11 trial. This is item-level feedback, not a ban on its brand or garment category."
+      },
+      "10760858891": {
+        "verdict": "skip",
+        "reason": "Sam did not like this specific candidate from the November 11 trial. This is item-level feedback, not a ban on its brand or garment category."
+      },
+      "10763768360": {
+        "verdict": "skip",
+        "reason": "Sam did not like this specific candidate from the November 11 trial. This is item-level feedback, not a ban on its brand or garment category."
+      },
+      "10780398934": {
+        "verdict": "skip",
+        "reason": "Sam did not like this specific candidate from the November 11 trial. This is item-level feedback, not a ban on its brand or garment category."
+      },
+      "10780529953": {
+        "verdict": "skip",
+        "reason": "Sam did not like this specific candidate from the November 11 trial. This is item-level feedback, not a ban on its brand or garment category."
       }
     }
-  }
+  },
+  "researchBrands": [
+    "BEAMS Plus",
+    "Nonnative",
+    "Remi Relief",
+    "Nanamica",
+    "Ordinary Fits",
+    "Sage de Cret",
+    "Kaptain Sunshine",
+    "White Mountaineering",
+    "Uniform Experiment",
+    "SOPHNET.",
+    "Neighborhood",
+    "WTAPS",
+    "South2 West8",
+    "Haversack",
+    "Blue Blue Japan",
+    "Ts(s)",
+    "Kapital",
+    "Needles",
+    "Engineered Garments",
+    "orSlow"
+  ]
 }

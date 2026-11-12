@@ -1,11 +1,59 @@
 {
   "enabled": true,
-  "id": "pilot-2026-11-11",
-  "previousPilotId": "pilot-2026-11-08",
-  "startsAt": "2026-11-11T20:56:43.775240+00:00",
-  "endsAt": "2026-11-12T20:56:43.775240+00:00",
+  "id": "pilot-2026-11-12",
+  "previousPilotId": "pilot-2026-11-11",
+  "startsAt": "2026-11-12T22:16:45.087575+00:00",
+  "endsAt": "2026-11-13T22:16:45.087575+00:00",
   "maxAttempts": 24,
   "brands": {
+    "BEAMS Plus": {
+      "searchText": "BEAMS Plus"
+    },
+    "Nonnative": {
+      "searchText": "Nonnative"
+    },
+    "Remi Relief": {
+      "searchText": "Remi Relief"
+    },
+    "Nanamica": {
+      "searchText": "Nanamica"
+    },
+    "Ordinary Fits": {
+      "searchText": "Ordinary Fits"
+    },
+    "Sage de Cret": {
+      "searchText": "Sage de Cret"
+    },
+    "Kaptain Sunshine": {
+      "searchText": "Kaptain Sunshine"
+    },
+    "White Mountaineering": {
+      "searchText": "White Mountaineering"
+    },
+    "Uniform Experiment": {
+      "searchText": "Uniform Experiment"
+    },
+    "SOPHNET.": {
+      "searchText": "SOPHNET."
+    },
+    "Neighborhood": {
+      "searchText": "Neighborhood"
+    },
+    "WTAPS": {
+      "searchText": "WTAPS"
+    },
+    "South2 West8": {
+      "searchText": "South2 West8"
+    },
+    "Haversack": {
+      "searchText": "Haversack"
+    },
+    "Blue Blue Japan": {
+      "searchText": "Blue Blue Japan"
+    },
+    "Ts(s)": {
+      "searchText": "Ts(s)"
+    },
     "Kapital": "576107",
     "Needles": "360271",
     "Engineered Garments": "609050",
@@ -13,15 +61,47 @@
   },
   "brandGroups": [
     [
-      "Needles",
-      "orSlow"
+      "BEAMS Plus",
+      "Nonnative"
+    ],
+    [
+      "Remi Relief",
+      "Nanamica"
+    ],
+    [
+      "Ordinary Fits",
+      "Sage de Cret"
+    ],
+    [
+      "Kaptain Sunshine",
+      "White Mountaineering"
+    ],
+    [
+      "Uniform Experiment",
+      "SOPHNET."
+    ],
+    [
+      "Neighborhood",
+      "WTAPS"
+    ],
+    [
+      "South2 West8",
+      "Haversack"
+    ],
+    [
+      "Blue Blue Japan",
+      "Ts(s)"
     ],
     [
       "Kapital",
-      "Engineered Garments"
+      "Needles"
+    ],
+    [
+      "Engineered Garments",
+      "orSlow"
     ]
   ],
-  "revision": "curation-and-matching-sets-v5",
+  "revision": "twenty-brand-discovery-v6",
   "mode": "rotating-brands",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
@@ -33,9 +113,9 @@
     "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
     "plan": "free",
     "source": "dashboard_current_plan",
-    "confirmedAt": "2026-11-11T20:56:43.775240+00:00",
-    "authorizedAt": "2026-11-11T20:56:43.775240+00:00",
-    "validUntil": "2026-11-12T20:56:43.775240+00:00"
+    "confirmedAt": "2026-11-12T22:16:45.087575+00:00",
+    "authorizedAt": "2026-11-12T22:16:45.087575+00:00",
+    "validUntil": "2026-11-13T22:16:45.087575+00:00"
   },
   "reviewBacklog": false,
   "bundleChecks": {

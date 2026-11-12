@@ -25,8 +25,8 @@ export function scanSelection(policy,slot,attempts=1){
   const brands=Object.entries(policy.brands);
   if(policy.mode==='rotating-brands'){
     const groups=policy.brandGroups;
-    if(!Array.isArray(groups)||groups.length!==2||groups.some(g=>!Array.isArray(g)||g.length!==2)
-      ||new Set(groups.flat()).size!==4||groups.flat().some(b=>!policy.brands[b])||brands.length!==4)throw Error('Ongeldig merkschema');
+    if(!Array.isArray(groups)||groups.length<1||groups.length>12||groups.some(g=>!Array.isArray(g)||g.length!==2)
+      ||new Set(groups.flat()).size!==brands.length||groups.flat().length!==brands.length||groups.flat().some(b=>!policy.brands[b])||brands.length>24||brands.length<2)throw Error('Ongeldig merkschema');
     return groups[slot%groups.length].map(b=>[b,policy.brands[b]]);
   }
   return policy.mode==='both-brands'?brands:[brands[(attempts-1)%brands.length]];
@@ -65,7 +65,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   for (const [brand, brandId] of selection) {
     if (!inWindow(clock(), policy)) break;
     try {
-      const source = await probeFn({ token: env.APIFY_TOKEN, brandIds: brandId, fetcher,
+      const source = await probeFn({ token: env.APIFY_TOKEN, ...(typeof brandId==='object'?{searchText:brandId.searchText}:{brandIds:brandId}), fetcher,
         ...(boundedMode(policy) ? {maxResults:10,maxCostUsd:.03} : {}),maxPrice:itemPriceLimit(brand,config) });
       const items = source.items.filter((item) => identifyBrand(item.brand,config) === identifyBrand(brand,config));
       const freshness = boundedMode(policy) && reservation.attempts === 1
@@ -216,7 +216,7 @@ export async function status(env, now = Date.now(), policy = settings) {
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
     trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:boundedMode(policy) ? 2 : 1,
     priceLimits:Object.fromEntries(Object.keys(policy.brands).map(brand=>[brand,itemPriceLimit(brand,config)])),
-    brandSchedule:policy.brandGroups||null,scanIntervalHours:policy.mode==='rotating-brands'?2:policy.mode==='both-brands'?1:Object.keys(policy.brands).length,
+    brandSchedule:policy.brandGroups||null,scanIntervalHours:policy.mode==='rotating-brands'?policy.brandGroups.length:policy.mode==='both-brands'?1:Object.keys(policy.brands).length,
     byBrand:report?.byBrand || [],
     researchTest:researchTest?.report?JSON.parse(researchTest.report):researchTest?{state:researchTest.state}:null,
     researchEnabled:policy.researchEnabled===true,researchStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,

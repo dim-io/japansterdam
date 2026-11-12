@@ -42,7 +42,7 @@ export function normalizeRow(row, observedAt, maxPrice=40) {
   return item;
 }
 
-export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now(), maxResults = 3, maxCostUsd = MAX_COST, maxPrice=40 }) {
+export async function probe({ token, brandIds = '360271', searchText = null, fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now(), maxResults = 3, maxCostUsd = MAX_COST, maxPrice=40 }) {
   if (!token || /\s/.test(token)) throw new Error('Sla eerst je Apify API-token op als GitHub-secret APIFY_TOKEN.');
   const api = async (endpoint, { method = 'GET', body } = {}) => {
     let response;
@@ -53,15 +53,19 @@ export async function probe({ token, brandIds = '360271', fetcher = fetch, sleep
     if (!response.ok) throw new Error('Apify gaf HTTP ' + response.status + '. Controleer je token, toegang tot de scraper en gratis tegoed.');
     return response.json();
   };
-  if (!/^\d+(?:,\d+){0,9}$/.test(brandIds)) throw new Error('Ongeldige merkselectie.');
+  if (searchText !== null && (typeof searchText !== 'string' || searchText.length < 2 || searchText.length > 80 || /[\r\n]/.test(searchText))) throw new Error('Ongeldige zoekterm.');
+  if (searchText === null && !/^\d+(?:,\d+){0,9}$/.test(brandIds)) throw new Error('Ongeldige merkselectie.');
   if (![3,10].includes(maxResults) || !Number.isFinite(maxCostUsd) || maxCostUsd < .02 || maxCostUsd > .03) throw new Error('Ongeldig scanbudget.');
   if (![40,70].includes(maxPrice)) throw new Error('Ongeldige prijsgrens.');
   const search = new URL('https://www.vinted.nl/catalog');
-  brandIds.split(',').forEach((id) => search.searchParams.append('brand_ids[]', id));
+  if (searchText !== null) search.searchParams.set('search_text', searchText);
+  else brandIds.split(',').forEach((id) => search.searchParams.append('brand_ids[]', id));
   search.searchParams.set('price_to', String(maxPrice));
   search.searchParams.set('currency', 'EUR');
   search.searchParams.set('order', 'newest_first');
-  const input = { ...INPUT, brandIds, maxResults, maxPrice, searchQueries: [search.href] };
+  const input = { ...INPUT, maxResults, maxPrice, searchQueries: [search.href] };
+  if (searchText !== null) delete input.brandIds;
+  else input.brandIds = brandIds;
   const started = await api('/actors/' + ACTOR + '/runs?timeout=90&waitForFinish=20&maxItems=' + maxResults + '&maxTotalChargeUsd=' + maxCostUsd + '&restartOnError=false', { method: 'POST', body: input });
   let run = started.data;
   if (!run || !/^[A-Za-z0-9]+$/.test(run.id || '')) throw new Error('Apify gaf geen geldig runnummer terug.');
