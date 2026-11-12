@@ -299,6 +299,12 @@ async function handle(request, env, ctx) {
   const method = request.method;
   const seg = path.split('/').filter(Boolean);
 
+  if (path.startsWith('/checkout/')) {
+    const { commerceRoute } = await import('./checkout.mjs');
+    const result = await commerceRoute(request, env, ctx);
+    if (result) return result;
+  }
+
   // public
   if (method === 'GET' && path === '/public/products') {
     return json((await listProducts(env)).filter((p) => p.active !== false), 200, { 'Cache-Control': 'no-store' });
@@ -359,6 +365,11 @@ async function handle(request, env, ctx) {
     }
 
     if (seg[0] === 'admin') {
+      if (path === '/admin/checkout' || path.startsWith('/admin/checkout/') || path === '/admin/orders' || path.startsWith('/admin/orders/')) {
+        const { commerceRoute } = await import('./checkout.mjs');
+        const result = await commerceRoute(request, env, ctx, { admin: true });
+        if (result) return result;
+      }
       if (path === '/admin/content' && method === 'GET') {
         const row = await env.DB.prepare("SELECT data FROM content WHERE id = 'main'").first();
         if (!row) throw new HttpError(404, 'No content yet');
@@ -407,12 +418,16 @@ async function handle(request, env, ctx) {
           if (isObj(input) && input.conditionNotes === undefined) input.conditionNotes = old.conditionNotes;
           if (isObj(input) && input.active === undefined) input.active = old.active;
           if (isObj(input) && input.imageFrames === undefined) input.imageFrames = (old.imageFrames || []).filter((f) => (input.images || []).includes(f.url));
+          const { guardProduct } = await import('./checkout.mjs');
+          await guardProduct(env, slug, input);
           const product = cleanProduct(input, slug, old.addedOn || Date.now());
           await env.DB.prepare('UPDATE products SET data = ?, updated_at = ? WHERE slug = ?').bind(JSON.stringify(product), Date.now(), slug).run();
           await audit(env, user.id, 'product.update', slug);
           return json(product);
         }
         if (method === 'DELETE') {
+          const { guardProduct } = await import('./checkout.mjs');
+          await guardProduct(env, slug, null);
           const r = await env.DB.prepare('DELETE FROM products WHERE slug = ?').bind(slug).run();
           if (!r.meta.changes) throw new HttpError(404, 'Product not found');
           await audit(env, user.id, 'product.delete', slug);
@@ -463,6 +478,10 @@ async function handle(request, env, ctx) {
 }
 
 export default {
+  async scheduled(controller, env, ctx) {
+    const { reconcile } = await import('./checkout.mjs');
+    ctx.waitUntil(reconcile(env));
+  },
   async fetch(request, env, ctx) {
     const cors = corsHeaders(request, env);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
@@ -470,7 +489,7 @@ export default {
     try {
       res = await handle(request, env, ctx);
     } catch (e) {
-      if (e instanceof HttpError) res = json({ error: e.message }, e.status);
+      if (e instanceof HttpError || e?.name === 'CheckoutError') res = json({ error: e.message }, e.status);
       else { console.error(e); res = json({ error: 'Something went wrong' }, 500); }
     }
     const out = new Response(res.body, res);

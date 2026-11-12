@@ -203,3 +203,5 @@ fieldset.grp legend{padding:0 8px;font-size:11px;letter-spacing:.1em;text-transf
 .fit-options label{display:inline-flex;align-items:center;gap:6px;min-height:32px;cursor:pointer}
 .fit-options input{accent-color:var(--ink);width:16px;height:16px}
 .fit-status{margin:10px 0 0}.fit-summary{display:block;color:var(--muted);font-size:11px}
+
+.commerce-settings{max-width:780px}.commerce-settings h2{margin:28px 0 12px}.co-setting-check{display:flex;gap:10px;align-items:flex-start;margin:14px 0}.co-setting-check input{width:18px;flex:none}.commerce-settings .toolbar input{max-width:180px}.item{overflow-wrap:anywhere}

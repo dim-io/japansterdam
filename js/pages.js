@@ -1,5 +1,5 @@
 // Renders about, contact, faq, shipping, size guide and privacy from data/content.json.
-import './layout.js?v=stable-page-load-1';
+import './layout.js?v=checkout-1';
 import { getContent, esc } from './data.js';
 
 const c = await getContent();

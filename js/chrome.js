@@ -39,6 +39,7 @@ function footerHTML() {
     <div class="ft__brand"><a href="index.html" aria-label="Japansterdam, home"><img src="assets/img/site/footer-logo.jpg" alt="Japansterdam" width="1535" height="1024" loading="lazy"></a></div>
     <div class="ft__col"><h2>Help</h2><ul>
       <li><a class="ft-link" href="shipping-returns.html">Shipping &amp; Returns</a></li>
+      <li><a class="ft-link" href="returns.html">Withdraw from an order</a></li>
       <li><a class="ft-link" href="size-guide.html">Size Guide</a></li>
       <li><a class="ft-link" href="faq.html">FAQs</a></li></ul></div>
     <div class="ft__col"><h2>Company</h2><ul>

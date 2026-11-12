@@ -16,3 +16,7 @@ migrations_dir = "migrations"
 [[kv_namespaces]]
 binding = "IMAGES"
 id = "8a168c9f3c4f4594a08248a29656d8dc"
+
+# Reconcile payment status and retry order confirmations; never releases stock on a timer alone.
+[triggers]
+crons = ["*/5 * * * *"]

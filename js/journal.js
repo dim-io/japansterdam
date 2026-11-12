@@ -1,4 +1,4 @@
-import './layout.js?v=stable-page-load-1';
+import './layout.js?v=checkout-1';
 import { getContent, getProducts, esc, cardHTML, setMeta, jsonLd } from './data.js';
 import { publishedStories, storyUrl, storyCard, storyDate, readingMinutes, matchesProduct, safeArticleHTML } from './journal-shared.js';
 

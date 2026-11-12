@@ -516,3 +516,13 @@ img[data-fade]{opacity:1}
 .co__form .row .field input{width:100%;box-sizing:border-box}
 
 .hdr__grailed img{display:block;width:22px;height:22px;object-fit:contain}
+
+/* Secure checkout: readable policies, explicit totals and long order references. */
+.co-consent{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.5}
+.co-consent input{flex:none;width:18px;height:18px;margin-top:2px}
+.co-legal{font-size:12px;line-height:1.65;color:var(--muted)}
+.co-legal details{border-bottom:1px solid var(--line);padding:10px 0}
+.co-legal details p{padding-top:12px;white-space:pre-line}
+.co-legal summary{cursor:pointer;color:var(--ink)}
+.order-reference{overflow-wrap:anywhere;font-size:12px;letter-spacing:.03em}
+.withdrawal-form{max-width:640px;margin:36px 0}

@@ -3,7 +3,7 @@ import { imageFrameStyle } from './image-frames.js';
 import { getContent, getProducts, formatPrice, esc, productUrl } from './data.js';
 import { getBag, bagCount, removeFromBag, setBag, onBagChange } from './bag.js';
 
-import { renderChrome } from './chrome.js';
+import { renderChrome } from './chrome.js?v=checkout-1';
 const page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
 const { headerHTML, footerHTML, navLinks, ICON_CLOSE, site } = renderChrome(page);
 

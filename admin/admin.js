@@ -1,3 +1,4 @@
+import { commerceView } from './commerce.js?v=checkout-1';
 import { FIT_SIZES, productFitsLike, suggestedFitsLike } from '../js/sizing.js';
 import { imageFrameStyle } from '../js/image-frames.js';
 import { API_BASE } from '../js/config.js';
@@ -184,6 +185,11 @@ async function route(keepDirty = false) {
     if (view === 'products' && parts[1]) await viewEditor(parts[1]);
     else if (view === 'products') await viewProducts();
     else if (view === 'pages') await viewPages(parts[1]);
+    else if (view === 'orders' || view === 'checkout') {
+      setTitle(view === 'orders' ? 'Orders' : 'Checkout settings');
+      await loadProducts(true);
+      await commerceView({view,root:el,h,api,toast,products});
+    }
     else { location.hash = '#/products'; }
   } catch (e) {
     if (e.status === 401) return;
