@@ -1,7 +1,7 @@
 import { productFitsLike } from './sizing.js';
 import { productStoriesHTML } from './journal-shared.js';
 import { imageFrameStyle } from './image-frames.js';
-import './layout.js?v=journal-1';
+import './layout.js?v=stable-page-load-1';
 import { measurementsBlock } from './measurements.js?v=unit-note';
 import { getContent, getProducts, getProduct, formatPrice, esc, stripHtml, productUrl, brandUrl, altFor, cardHTML, catNo, related, setMeta, jsonLd } from './data.js';
 import { inBag, addToBag, onBagChange } from './bag.js';

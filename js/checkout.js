@@ -1,5 +1,5 @@
 import { imageFrameStyle } from './image-frames.js';
-import './layout.js?v=journal-1';
+import './layout.js?v=stable-page-load-1';
 import { getContent, getProducts, formatPrice, esc, productUrl } from './data.js';
 import { getBag, removeFromBag, clearBag, onBagChange } from './bag.js';
 

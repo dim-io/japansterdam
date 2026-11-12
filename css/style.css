@@ -35,9 +35,12 @@ ul,ol{padding:0;list-style:none}
 .rich a{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .rich a:hover{text-decoration-color:var(--red)}
 .tnum{font-variant-numeric:tabular-nums}
-/* images: stone placeholder on the container, img fades in (300ms) only after load (js adds .is-loaded) */
-img[data-fade]{opacity:0;transition:opacity .3s ease}
-img[data-fade].is-loaded{opacity:1}
+/* Keep the footer below the initial viewport while live page content loads. */
+#main{min-height:calc(100vh - var(--header-h));min-height:calc(100svh - var(--header-h))}
+#shop-grid:empty{min-height:60vh}
+.filters .sel:empty{visibility:hidden}
+/* Images already reserve their dimensions; show them as soon as they decode. */
+img[data-fade]{opacity:1}
 
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);padding:16px 28px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;line-height:1.2;transition:background .2s,color .2s}

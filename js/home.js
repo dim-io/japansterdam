@@ -1,6 +1,6 @@
 import { imageFrameStyle } from './image-frames.js';
 import { publishedStories, storyCard } from './journal-shared.js';
-import './layout.js?v=journal-1';
+import './layout.js?v=stable-page-load-1';
 import { initHomeMotion } from './home-motion.js';
 import { getContent, getProducts, byNewest, cardHTML, esc, catNo, productUrl, brandUrl, formatPrice } from './data.js';
 

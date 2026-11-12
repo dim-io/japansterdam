@@ -1,5 +1,5 @@
 import { FIT_SIZES, productFitsLike, matchesFit } from './sizing.js';
-import './layout.js?v=journal-1';
+import './layout.js?v=stable-page-load-1';
 import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from './data.js';
 import { onBagChange } from './bag.js';
 
