@@ -17,7 +17,12 @@
 .journal-section-head{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:30px}
 .journal-section-head .h-block{margin-top:10px;font-size:clamp(24px,3vw,42px)}
 .home-journal{border-top:1px solid var(--line);background:var(--cream)}
-.home-journal .journal-grid{gap:40px}
+.home-journal .journal-grid{gap:32px}
+.home-journal.section{padding:56px 0}
+.home-journal .h-section{font-size:clamp(28px,3vw,42px)}
+.home-journal .story-card h2{font-size:clamp(26px,2.5vw,36px)}
+.home-journal .story-card__copy{padding-top:18px}
+.home-journal .story-card__summary,.home-journal .story-card__meta{display:none}
 .journal-subscribe{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:40px 0;margin-top:72px;display:flex;gap:32px;align-items:center;justify-content:space-between}
 .journal-subscribe h2{font:400 clamp(30px,4vw,44px)/1.15 var(--serif);margin:12px 0}
 .journal-subscribe p:not(.eyebrow){max-width:520px;color:var(--muted)}
