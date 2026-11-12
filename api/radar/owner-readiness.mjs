@@ -32,9 +32,9 @@ export async function check(env,{query,fetcher=fetch,now=Date.now(),testPolicy=p
   if(!allowed(testPolicy,now))throw Error('readiness_window_closed');
   const marker=await query('SELECT verified FROM radar_transfer WHERE id=?',[SOURCE.database]);
   if(marker[0]?.verified!==1)throw Error('migration_not_verified');
-  const summary={migrationVerified:true,shopReferences:false,apifyFree:false,apifyReady:false,telegramReady:false,newScraperStarts:0,messagesSent:0};
+  const summary={migrationVerified:true,shopReferences:false,apifyFree:false,apifyIncludedPlan:false,apifyReady:false,telegramReady:false,newScraperStarts:0,messagesSent:0};
   try{await readCatalog({SHOP_CATALOG_URL:'https://japansterdam-api.japansterdam-api.workers.dev/public/products'},fetcher);summary.shopReferences=true;}catch{}
-  try{const budget=await preflight(env.APIFY_TOKEN,fetcher,.31);summary.apifyFree=budget.freePlanConfirmed;summary.apifyReady=budget.enoughCredit;}catch{}
+  try{const budget=await preflight(env.APIFY_TOKEN,fetcher,.31,testPolicy.sourceBudget);summary.apifyFree=budget.freePlanConfirmed;summary.apifyIncludedPlan=budget.includedPlanConfirmed;summary.apifyReady=budget.enoughCredit;}catch{}
   summary.telegramReady=await telegramReadiness(env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher);
   await query('INSERT OR IGNORE INTO radar_vision_control (id) VALUES (?)',[testPolicy.id]);
   const result=await screenPhotos({VISION_FREE_CONFIRMED:'true',AI:aiAdapter(env.CLOUDFLARE_API_TOKEN,fetcher),RADAR_DB:databaseAdapter(query)},{brand:'Kapital'},config,testPolicy,{now,fetcher,clock:Date.now,smoke:true});

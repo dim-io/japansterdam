@@ -2,8 +2,8 @@
   "enabled": true,
   "id": "pilot-2026-11-12",
   "previousPilotId": "pilot-2026-11-11",
-  "startsAt": "2026-11-12T22:16:45.087575+00:00",
-  "endsAt": "2026-11-13T22:16:45.087575+00:00",
+  "startsAt": "2026-11-12T22:37:07.910646+00:00",
+  "endsAt": "2026-11-13T22:37:07.910646+00:00",
   "maxAttempts": 24,
   "brands": {
     "BEAMS Plus": {
@@ -114,13 +114,18 @@
     "plan": "free",
     "source": "dashboard_current_plan",
     "confirmedAt": "2026-11-12T22:16:45.087575+00:00",
-    "authorizedAt": "2026-11-12T22:16:45.087575+00:00",
-    "validUntil": "2026-11-13T22:16:45.087575+00:00"
+    "authorizedAt": "2026-11-12T22:37:07.910646+00:00",
+    "validUntil": "2026-11-13T22:37:07.910646+00:00"
   },
   "reviewBacklog": false,
   "bundleChecks": {
     "enabled": true,
     "maxAttempts": 4,
     "reservePhotoChecks": true
+  },
+  "sourceBudget": {
+    "allowPaidIncludedCredits": true,
+    "maxMonthlyUsageUsd": 19,
+    "authorizedAt": "2026-11-12T22:37:07.910646+00:00"
   }
 }

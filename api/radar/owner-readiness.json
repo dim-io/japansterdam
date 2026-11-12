@@ -2,13 +2,18 @@
   "id": "owner-readiness-2026-11-12",
   "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
   "enabled": true,
-  "startsAt": "2026-11-12T22:16:45.087575+00:00",
-  "endsAt": "2026-11-12T23:16:45.087575+00:00",
+  "startsAt": "2026-11-12T22:37:07.910646+00:00",
+  "endsAt": "2026-11-12T23:37:07.910646+00:00",
   "maxPhotoChecks": 1,
   "dailyVisionLimit": 3,
   "freeAccountEvidence": {
     "plan": "free",
     "source": "dashboard_current_plan",
     "confirmedAt": "2026-11-12T22:16:45.087575+00:00"
+  },
+  "sourceBudget": {
+    "allowPaidIncludedCredits": true,
+    "maxMonthlyUsageUsd": 19,
+    "authorizedAt": "2026-11-12T22:37:07.910646+00:00"
   }
 }

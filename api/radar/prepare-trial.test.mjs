@@ -7,12 +7,12 @@ test('existing trials never spend a second readiness test or restart budgets',as
 });
 test('new trial requires the full free source reserve before any image inference',async()=>{
  let calls=0;
- for(const freePlanConfirmed of [false,true])await assert.rejects(prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async()=>({freePlanConfirmed,enoughCredit:false}),readiness(){calls++;}}),new RegExp('free_source_budget_not_confirmed:'+(freePlanConfirmed?'insufficient_free_credit':'free_plan_unconfirmed')));
+ for(const freePlanConfirmed of [false,true])await assert.rejects(prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async()=>({freePlanConfirmed,enoughCredit:false}),readiness(){calls++;}}),new RegExp('source_budget_not_confirmed:'+(freePlanConfirmed?'insufficient_included_credit':'plan_unconfirmed')));
  assert.equal(calls,0);
 });
 test('successful preparation checks readiness without scraper or message side effects',async()=>{
  const result=await prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async(token,fetcher,reserve)=>{assert.equal(reserve,1.69);return{freePlanConfirmed:true,enoughCredit:true};},readiness:async()=>({shopReferences:true,telegramReady:true,photoState:'ready'})});
- assert.deepEqual(result,{freeSourceBudgetConfirmed:true,photoState:'ready',newScraperStarts:0,messagesSent:0});
+ assert.deepEqual(result,{includedSourceBudgetConfirmed:true,photoState:'ready',newScraperStarts:0,messagesSent:0});
 });
 
 

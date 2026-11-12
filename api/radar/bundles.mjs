@@ -42,9 +42,9 @@ export async function checkNextBundle(env,config,policy,{now=Date.now(),clock=Da
  }
  const prior=await sql(env,"SELECT item_id FROM radar_bundle_checks WHERE pilot_id=? AND seller_key=? AND state NOT IN ('queued','stale','budget_exhausted','seller_already_checked') AND item_id<>? LIMIT 1",policy.id,row.seller_key,row.item_id).first();
  if(prior){await sql(env,"UPDATE radar_bundle_checks SET state='seller_already_checked' WHERE pilot_id=? AND item_id=?",policy.id,row.item_id).run();return {bundleCheck:'seller_already_checked'};}
- // Keep all paid-source calls inside the explicitly confirmed Free credit reserve.
- const source=await budget(env.APIFY_TOKEN,fetcher,.31);
- if(!source.freePlanConfirmed||!source.enoughCredit)return {bundleCheck:'budget_blocked'};
+ // Keep all paid-source calls inside the explicitly authorized included-credit reserve.
+ const source=await budget(env.APIFY_TOKEN,fetcher,.31,policy.sourceBudget);
+ if(!(source.includedPlanConfirmed??source.freePlanConfirmed)||!source.enoughCredit)return {bundleCheck:'budget_blocked'};
  if(!inWindow(clock(),policy))return {bundleCheck:'inactive'};
  const claim=await sql(env,"UPDATE radar_bundle_checks SET state='pending' WHERE pilot_id=? AND item_id=? AND state='queued' RETURNING item_id",policy.id,row.item_id).first();
  if(!claim)return {bundleCheck:'already_reserved'};

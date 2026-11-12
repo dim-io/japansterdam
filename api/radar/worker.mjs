@@ -51,7 +51,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
   if (boundedMode(policy)) {
-    const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? (policy.bundleChecks?.enabled?1.81:1.69) : .31);
+    const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? (policy.bundleChecks?.enabled?1.81:1.69) : .31,policy.sourceBudget);
     if (!budget.enoughCredit) throw new Error('RADAR_BUDGET_BLOCKED');
   }
   // Atomic database reservation: overlapping events and redeployments cannot spend twice in one hour.
