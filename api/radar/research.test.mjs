@@ -126,3 +126,27 @@ test('full scan plus a batched bundle queue retains the Free fifty-request ceili
  assert.equal(report.bundlesQueued,5);assert.equal(report.researchSent,2);
  assert(ctx.dbCalls()+ctx.photoFetches()+ctx.calls()+ctx.messages.length+15<=50,JSON.stringify({db:ctx.dbCalls(),photos:ctx.photoFetches(),ai:ctx.calls(),messages:ctx.messages.length}));ctx.db.close();
 });
+
+test('strict Japanese-brand policy never sends an unchecked, contradictory or unreadable research tip',async()=>{
+ for(const result of [{state:'unreviewed'},{state:'inconclusive',reason:'missing_or_unreadable_evidence'},{state:'disabled',reason:'daily_photo_budget_reached'},{state:'rejected',reason:'contradictory_brand_or_details'}]) {
+  const ctx=setup();const strict={...policy,requireVisualBrandEvidence:true};
+  const out=await processResearch(ctx.env,item,researchCandidate(item,config,now),strict,{now,clock:()=>now,fetcher:ctx.fetcher,screen:async()=>result});
+  assert.equal(out.sent,false);assert.equal(ctx.messages.length,0);assert.equal(ctx.db.prepare('SELECT COUNT(*) n FROM radar_alerts').get().n,0);ctx.db.close();
+ }
+});
+test('strict policy permits a label-supported research tip but still makes no authenticity promise',async()=>{
+ const ctx=setup();const strict={...policy,requireVisualBrandEvidence:true};
+ const out=await processResearch(ctx.env,item,researchCandidate(item,config,now),strict,{now,clock:()=>now,fetcher:ctx.fetcher,screen:async()=>({state:'visually_consistent'})});
+ assert.equal(out.sent,true);assert(ctx.messages[0].includes('dit bewijst geen authenticiteit'));ctx.db.close();
+});
+test('strict policy does not spend or send when there is no photo slot',async()=>{
+ const ctx=setup();let calls=0;
+ const out=await processResearch(ctx.env,item,researchCandidate(item,config,now),{...policy,requireVisualBrandEvidence:true},{now,clock:()=>now,fetcher:ctx.fetcher,mayScreen:()=>false,screen:async()=>{calls++;}});
+ assert.equal(out.sent,false);assert.equal(calls,0);assert.equal(ctx.messages.length,0);ctx.db.close();
+});
+
+test('non-selected brands returned by the scraper never reach photo checks or Telegram',async()=>{
+ const ctx=setup();
+ const out=await scan(ctx.env,options(ctx,{policy:{...policy,requireVisualBrandEvidence:true},probeFn:async()=>({runId:'fixture',returned:3,items:['Zara','Superdry','Unknown'].map((brand,i)=>({...item,brand,title:brand+' Japan style jacket',url:`https://www.vinted.nl/items/${800+i}-test`}))})}));
+ assert.equal(out.checked,0);assert.equal(out.byBrand[0].sourceReturned,3);assert.equal(out.byBrand[0].excludedByBrand,3);assert.equal(ctx.calls(),0);assert.equal(ctx.messages.length,0);ctx.db.close();
+});

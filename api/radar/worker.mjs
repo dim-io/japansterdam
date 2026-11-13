@@ -67,7 +67,8 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     try {
       const source = await probeFn({ token: env.APIFY_TOKEN, ...(typeof brandId==='object'?{searchText:brandId.searchText}:{brandIds:brandId}), fetcher,
         ...(boundedMode(policy) ? {maxResults:10,maxCostUsd:.03} : {}),maxPrice:itemPriceLimit(brand,config) });
-      const items = source.items.filter((item) => identifyBrand(item.brand,config) === identifyBrand(brand,config));
+      const expectedBrand=identifyBrand(brand,config);
+      const items = expectedBrand?source.items.filter((item) => identifyBrand(item.brand,config) === expectedBrand):[];
       const freshness = boundedMode(policy) && reservation.attempts === 1
         ? await compareCatalog(brandId,items,fetcher,itemPriceLimit(brand,config)) : null;
       results.push({...source,items,brand,freshness});
@@ -153,6 +154,13 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     if (deal.reason === 'Geen passende prijsreferentie: flipwaarde blijft onbekend') deal.reason = missingReferenceReason(item, products, config);
     decisions.push({ photoScreening: photoScreen?.state || null, authenticity: deal.authenticity?.state || 'not_assessed', photoCount: item.photoUrls?.length || 0, title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
     if (!deal.eligible || sent+photoReviewSent+researchSent>=2 || !inWindow(clock(), policy)) continue;
+    if(policy.requireVisualBrandEvidence&&deal.authenticity?.state!=='reviewed_supported') {
+      if(!photoScreen&&photoChecksLeft>0&&env.VISION_FREE_CONFIRMED==='true') {
+        photoChecksLeft--;
+        photoScreen=await screenPhotos(env,item,researchConfig,policy,{now,fetcher,clock});
+      }
+      if(photoScreen?.state!=='visually_consistent')continue;
+    }
     // Reserve delivery before sending. An ambiguous failure is not retried automatically.
     const delivery = await sql(env,
       "INSERT INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,'pending',?) ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, delivery='pending', message_id=NULL, attempted_at=excluded.attempted_at WHERE excluded.price <= radar_alerts.price * 0.8 RETURNING item_id",
@@ -163,7 +171,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     sent++;
   }
   const report = { scheduler: 'cloudflare', scannedAt: new Date(now).toISOString(), attempts: reservation.attempts,
-    selectedBrand, byBrand:results.map((r)=>({brand:r.brand,checked:r.items.length,freshness:r.freshness})), checked: items.length, newListings, repeatedListings: items.length - newListings,
+    selectedBrand, byBrand:results.map((r)=>({brand:r.brand,checked:r.items.length,sourceReturned:r.returned??null,excludedByBrand:Math.max(0,(r.returned??r.items.length)-r.items.length),freshness:r.freshness})), checked: items.length, newListings, repeatedListings: items.length - newListings,
     sent, photoReviewSent, researchQueued, researchSent, bundlesQueued, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
   await sql(env, 'UPDATE radar_control SET last_scan_at=?, last_report=?, last_error=NULL, error_at=NULL WHERE id=?',
     now, JSON.stringify(report), pilotId).run();
@@ -211,7 +219,7 @@ export async function status(env, now = Date.now(), policy = settings) {
   const bundleBudget=policy.bundleChecks?.enabled?await sql(env,'SELECT attempts FROM radar_bundle_limits WHERE pilot_id=?',pilotId).first():null;
   const bundleStates=policy.bundleChecks?.enabled?(await sql(env,'SELECT state,COUNT(*) AS count FROM radar_bundle_checks WHERE pilot_id=? GROUP BY state',pilotId).all()).results:[];
   return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
-    researchPhotoCheckRequired:false, photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
+    researchPhotoCheckRequired:policy.requireVisualBrandEvidence===true, photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
     trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:boundedMode(policy) ? 2 : 1,

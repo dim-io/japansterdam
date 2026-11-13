@@ -6,51 +6,33 @@
   "endsAt": "2026-11-13T22:37:07.910646+00:00",
   "maxAttempts": 24,
   "brands": {
-    "BEAMS Plus": {
-      "searchText": "BEAMS Plus"
-    },
+    "BEAMS Plus": "7373680",
     "Nonnative": {
       "searchText": "Nonnative"
     },
     "Remi Relief": {
       "searchText": "Remi Relief"
     },
-    "Nanamica": {
-      "searchText": "Nanamica"
-    },
+    "Nanamica": "596562",
     "Ordinary Fits": {
       "searchText": "Ordinary Fits"
     },
     "Sage de Cret": {
       "searchText": "Sage de Cret"
     },
-    "Kaptain Sunshine": {
-      "searchText": "Kaptain Sunshine"
-    },
-    "White Mountaineering": {
-      "searchText": "White Mountaineering"
-    },
+    "Kaptain Sunshine": "2588542",
+    "White Mountaineering": "605090",
     "Uniform Experiment": {
       "searchText": "Uniform Experiment"
     },
-    "SOPHNET.": {
-      "searchText": "SOPHNET."
-    },
-    "Neighborhood": {
-      "searchText": "Neighborhood"
-    },
-    "WTAPS": {
-      "searchText": "WTAPS"
-    },
-    "South2 West8": {
-      "searchText": "South2 West8"
-    },
+    "SOPHNET.": "352670",
+    "Neighborhood": "330747",
+    "WTAPS": "320615",
+    "South2 West8": "2901292",
     "Haversack": {
       "searchText": "Haversack"
     },
-    "Blue Blue Japan": {
-      "searchText": "Blue Blue Japan"
-    },
+    "Blue Blue Japan": "360813",
     "Ts(s)": {
       "searchText": "Ts(s)"
     },
@@ -101,7 +83,7 @@
       "orSlow"
     ]
   ],
-  "revision": "twenty-brand-discovery-v6",
+  "revision": "japanese-brand-label-gate-v7",
   "mode": "rotating-brands",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
@@ -121,11 +103,12 @@
   "bundleChecks": {
     "enabled": true,
     "maxAttempts": 4,
-    "reservePhotoChecks": true
+    "reservePhotoChecks": false
   },
   "sourceBudget": {
     "allowPaidIncludedCredits": true,
     "maxMonthlyUsageUsd": 19,
     "authorizedAt": "2026-11-12T22:37:07.910646+00:00"
-  }
+  },
+  "requireVisualBrandEvidence": true
 }

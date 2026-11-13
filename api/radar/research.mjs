@@ -70,6 +70,8 @@ export async function processResearch(env,item,candidate,policy,{now,clock,fetch
   const state=photo?.state==='rejected'?'rejected':photo?.state==='visually_consistent'?'review_ready':
     photo?.state==='inconclusive'&&photo.reason==='missing_or_unreadable_evidence'?'needs_labels':'unreviewed';
   await sql(env,'UPDATE radar_research SET state=?,photo_state=? WHERE pilot_id=? AND item_id=?',state,photo?.state||null,policy.id,queued.id).run();
+  // Missing labels, unavailable models and exhausted photo quota never fall back to an unchecked alert.
+  if(policy.requireVisualBrandEvidence&&photo?.state!=='visually_consistent')return {queued:true,sent:false,photo};
   if(!maySend()||!['review_ready','needs_labels','unreviewed'].includes(state)||clock()>=Date.parse(policy.endsAt)||clock()<Date.parse(policy.startsAt))return {queued:true,sent:false,photo};
   // Share the prior photo-review delivery key: an item does not receive a second human-review alert.
   const alertId='photo-review:'+queued.id;

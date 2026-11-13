@@ -66,6 +66,7 @@ export async function checkNextBundle(env,config,policy,{now=Date.now(),clock=Da
    // Preserve the daily three-call and per-trial four-call limits, including readiness.
    for(const item of [main,partner])screens.push(await screen(env,item,config,policy,{now:clock(),clock,fetcher}));
    if(screens.some(s=>s.state==='rejected'))outcome.bundleCheck='contradictory_labels';
+   else if(policy.requireVisualBrandEvidence&&screens.some(s=>s.state!=='visually_consistent'))outcome.bundleCheck='needs_readable_brand_labels';
    else if([main,partner].some(item=>isNeedlesTrackPants(item,config))&&!coherentLabelCodes(...screens))outcome.bundleCheck='needs_both_readable_model_numbers';
    else if(inWindow(clock(),policy)){
     const delivery=await sql(env,"INSERT OR IGNORE INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,'pending',?) RETURNING item_id",policy.id,'bundle:'+row.item_id,main.price+partner.price,clock()).first();

@@ -34,3 +34,11 @@ test('expired, unavailable or budget-blocked items never start a wardrobe scan; 
  c.db.prepare('INSERT INTO radar_bundle_limits VALUES (?,4)').run(policy.id);
  assert.equal((await checkNextBundle(c.env,config,policy,c.options)).bundleCheck,'budget_exhausted');assert.equal(c.runs(),0);c.db.close();
 });
+
+test('strict policy blocks non-track bundles as well when either brand label is unreadable',async()=>{
+ const c=setup(),strict={...policy,requireVisualBrandEvidence:true};
+ const ordinary={...pants,title:'Needles blue velour trousers'};
+ await queueBestBundle(c.env,[ordinary,top],config,strict,now);
+ const out=await checkNextBundle(c.env,config,strict,{...c.options,wardrobe:async()=>[ordinary,top],screen:async()=>({state:'inconclusive'})});
+ assert.equal(out.bundleCheck,'needs_readable_brand_labels');assert.equal(c.messages(),0);c.db.close();
+});
