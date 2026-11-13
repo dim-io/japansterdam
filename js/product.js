@@ -32,10 +32,16 @@ if (!p) {
   const descriptionDoc = new DOMParser().parseFromString(p.description || '', 'text/html');
   const publishedSlugs = new Set((c.journal?.articles || []).filter(a => a.published === true && a.title).map(a => a.slug));
   const inlineStories = [];
-  for (const paragraph of descriptionDoc.querySelectorAll('[data-journal-story]')) {
-    const story = paragraph.getAttribute('data-journal-story');
-    if (!publishedSlugs.has(story)) paragraph.remove();
-    else { paragraph.removeAttribute('hidden'); inlineStories.push(story); }
+  for (const anchor of descriptionDoc.querySelectorAll('a[href]')) {
+    const target = new URL(anchor.getAttribute('href'), location.href);
+    if (target.origin !== location.origin || !target.pathname.endsWith('/journal.html')) continue;
+    const story = target.searchParams.get('story');
+    if (!story) continue;
+    const paragraph = anchor.closest('p');
+    if (!publishedSlugs.has(story)) {
+      if (paragraph?.textContent.trim().startsWith('From the Journal:')) paragraph.remove();
+      else anchor.replaceWith(...anchor.childNodes);
+    } else { paragraph?.removeAttribute('hidden'); inlineStories.push(story); }
   }
   const descriptionHTML = descriptionDoc.body.innerHTML;
   const desc = stripHtml(p.description).slice(0, 155);
