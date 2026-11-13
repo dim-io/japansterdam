@@ -23,8 +23,8 @@ export function matchesProduct(article, product) {
   });
 }
 
-export function productStoriesHTML(product, journal) {
-  const stories = publishedStories(journal).filter(a => matchesProduct(a, product));
+export function productStoriesHTML(product, journal, inlineStories = []) {
+  const stories = publishedStories(journal).filter(a => matchesProduct(a, product) && !inlineStories.includes(a.slug));
   if (!stories.length) return '';
   return `<aside class="pdp-story" aria-label="The story behind this piece"><p class="eyebrow">From the Journal</p>${stories.map(a => `<a href="${storyUrl(a.slug)}"><span>${esc(a.title)}</span><span aria-hidden="true">↗</span></a>`).join('')}</aside>`;
 }

@@ -1,5 +1,5 @@
 import { productFitsLike } from './sizing.js';
-import { productStoriesHTML } from './journal-shared.js';
+import { productStoriesHTML } from './journal-shared.js?v=inline-links-1';
 import { imageFrameStyle } from './image-frames.js';
 import './layout.js?v=checkout-1';
 import { measurementsBlock } from './measurements.js?v=unit-note';
@@ -28,6 +28,16 @@ if (!p) {
   canonicalTag.rel = 'canonical';
   canonicalTag.href = canonical.href;
   const email = c.site.email;
+  // Editorial links can be prepared while a story is still a private draft.
+  const descriptionDoc = new DOMParser().parseFromString(p.description || '', 'text/html');
+  const publishedSlugs = new Set((c.journal?.articles || []).filter(a => a.published === true && a.title).map(a => a.slug));
+  const inlineStories = [];
+  for (const paragraph of descriptionDoc.querySelectorAll('[data-journal-story]')) {
+    const story = paragraph.getAttribute('data-journal-story');
+    if (!publishedSlugs.has(story)) paragraph.remove();
+    else { paragraph.removeAttribute('hidden'); inlineStories.push(story); }
+  }
+  const descriptionHTML = descriptionDoc.body.innerHTML;
   const desc = stripHtml(p.description).slice(0, 155);
   setMeta({
     title: `${p.name} — ${p.brand} — Japansterdam`,
@@ -76,9 +86,9 @@ if (!p) {
     </dl>
     <button class="btn btn--primary btn--block" type="button" id="add-btn"></button>
     ${p.sold ? '' : `<p class="pdp__once">${esc((c.product && c.product.oneOnly) || '')}</p>`}
-    <div class="pdp__desc rich">${p.description}</div>
+    <div class="pdp__desc rich">${descriptionHTML}</div>
     <div id="product-measurements"></div>
-    ${productStoriesHTML(p, c.journal)}
+    ${productStoriesHTML(p, c.journal, inlineStories)}
     <div class="acc">
       <details><summary>Size guide</summary><div class="acc__body"><a href="size-guide.html">Open the size guide</a></div></details>
       <details><summary>Questions? Email ${esc(email)}</summary><div class="acc__body"><a href="mailto:${esc(email)}?subject=${subject}">${esc(email)}</a></div></details>
