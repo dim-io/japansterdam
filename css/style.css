@@ -545,4 +545,5 @@ img[data-fade]{opacity:1}
 @media(min-width:900px){.selects .brand-filter{width:190px;max-width:220px}}
 
 /* Quiet, readable context under the existing collection heading. */
-.collection__intro{margin:18px auto 0;color:var(--muted);font-size:14px;line-height:1.6;max-width:52ch}
+.collection__intro{margin:18px auto 0;color:var(--muted);font-size:14px;line-height:1.6;text-wrap:balance}
+.collection__origin{white-space:nowrap}
