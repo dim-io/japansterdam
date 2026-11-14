@@ -162,7 +162,7 @@ img[data-fade]{opacity:1}
 .marquee:hover .marquee__track{animation-play-state:paused}
 .marquee__group{display:flex;align-items:center;flex-shrink:0}
 .marquee__seq{display:flex;align-items:center;flex-shrink:0}
-.marquee__x{width:.72em;height:.72em;flex:none;color:var(--red);margin-right:1.1em}
+.marquee__x{width:.85em;height:.85em;flex:none;color:var(--red);margin-right:1.1em}
 .marquee__item{font-family:var(--display);font-stretch:125%;font-variation-settings:'wdth' 125;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;line-height:1.2;margin-right:1.1em}
 @keyframes marquee{to{transform:translateX(-50%)}}
 @media(prefers-reduced-motion:reduce){
