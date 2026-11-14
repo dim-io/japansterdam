@@ -49,7 +49,9 @@ if (hp && cap) {
 
 // marquee: "Now online:" first, then the brands separated by a red cross. Two identical groups, translated by -50%.
 const marquee = document.getElementById('marquee');
-const X = '<svg class="marquee__x" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="2.2" fill="none"/></svg>';
+// Two layered thread bundles echo the stitched crosses in the wordmark.
+// Vector strands stay sharp at ticker size; no raster texture or repeated IDs.
+const X = '<svg class="marquee__x" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20L20 4" stroke="#8f1016" stroke-width="5"/><path d="M3.5 19L19 3.5M5 20.5L20.5 5" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 19.5L19.5 4.5" stroke="#ed5149" stroke-width=".7"/><path d="M4 4L20 20" stroke="#8f1016" stroke-width="5"/><path d="M3.5 5L19 20.5M5 3.5L20.5 19" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 4.5L19.5 19.5" stroke="#ed5149" stroke-width=".7"/></g></svg>';
 const lead = 'Now online:';
 const raw = h.marquee.startsWith(lead) ? h.marquee.slice(lead.length) : h.marquee;
 const names = raw.split(',').map((s) => s.trim()).filter(Boolean);
