@@ -23,7 +23,7 @@ function headerHTML() {
     <button class="icon-btn hdr__burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu" data-open-menu>${ICON_MENU}</button>
     <nav class="hdr__nav" aria-label="Primary">${navLinks()}</nav>
   </div>
-  <a class="hdr__logo" href="index.html" aria-label="Japansterdam, home"><img src="assets/img/site/header-logo.png" alt="Japansterdam" width="702" height="104"></a>
+  <a class="hdr__logo" href="index.html" aria-label="Japansterdam — pre-owned &amp; archive pieces, home"><img src="assets/img/site/header-logo.png" alt="Japansterdam" width="702" height="104"><span class="hdr__tagline">pre-owned &amp; archive pieces</span></a>
   <div class="hdr__tools">
     <a class="icon-btn hdr__insta" href="${esc(site.instagram)}" data-site="instagram" target="_blank" rel="noopener" aria-label="Instagram">${ICON_INSTA}</a>
     <a class="icon-btn hdr__grailed" href="${esc(site.grailed)}" data-site="grailed" target="_blank" rel="noopener" aria-label="Shop Japansterdam on Grailed" title="Shop Japansterdam on Grailed"><img src="assets/icons/grailed.png" width="22" height="22" alt=""></a>

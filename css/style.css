@@ -65,7 +65,8 @@ img[data-fade]{opacity:1}
 .hdr__nav a,.menu__legal a{font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;padding:6px 0;border-bottom:1px solid transparent}
 .hdr__nav a:hover{border-bottom-color:var(--ink)}
 .hdr__nav a[aria-current="page"]{border-bottom-color:var(--ink)}
-.hdr__logo{display:block;line-height:0}
+.hdr__logo{display:block;line-height:0;text-decoration:none}
+.hdr__tagline{display:none}
 .hdr__logo img{height:20px;width:auto;transition:height .25s ease}
 .site-header.is-compact .hdr__logo img{height:17px}
 .hdr__tools{display:flex;justify-content:flex-end;align-items:center;gap:4px}
@@ -78,6 +79,8 @@ img[data-fade]{opacity:1}
 .hdr__burger{margin-left:-10px}
 @media(min-width:900px){
   .site-header.is-compact{--hdr-cur:calc(var(--header-h) - 12px)}
+  .hdr__logo{display:grid;justify-items:center;gap:5px}
+  .hdr__tagline{display:block;color:#626262;font:400 9px/1.2 var(--body);letter-spacing:.08em;white-space:nowrap}
   .hdr__nav{display:flex}.hdr__burger{display:none}.hdr__logo img{height:28px}.site-header.is-compact .hdr__logo img{height:22px}.hdr__insta,.hdr__grailed{display:inline-flex}
 }
 
