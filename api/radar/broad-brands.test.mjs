@@ -38,7 +38,7 @@ test('all five rejected tips stay excluded without banning their garment categor
 });
 
 test('new peripheral brands can generate research tips without a resale comparable',()=>{
- for(const brand of ['Nanamica','Kaptain Sunshine','South2 West8','Haversack','Blue Blue Japan','WTAPS']) {
+ for(const brand of ['Nanamica','Kaptain Sunshine','South2 West8','Wacko Maria','Blue Blue Japan','WTAPS']) {
   const candidate=researchCandidate({url:'https://www.vinted.nl/items/999-piece',brand,title:brand+' jacket',price:25,currency:'EUR',available:true,condition:'very_good',observedAt:new Date().toISOString(),photoUrls:['https://images1.vinted.net/a.png','https://images1.vinted.net/b.png'],comparables:[]},config);
   assert(candidate,brand+' should reach research');
  }

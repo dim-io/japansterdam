@@ -8,26 +8,31 @@ const sql=(env,query,...args)=>env.RADAR_DB.prepare(query).bind(...args);
 const plain=(text,max=140)=>String(text||'').replace(/(?:https?:\/\/|www\.)\S+/gi,'').replace(/\s+/g,' ').trim().slice(0,max);
 
 // This route identifies items worth investigating, never a resale value or authenticity approval.
-export function researchCandidate(item,config,now=Date.now(),{forBundle=false}={}) {
+export function researchAssessment(item,config,now=Date.now(),{forBundle=false}={}) {
+  const reject=reason=>({candidate:null,reason});
   const id=/\/items\/(\d+)/.exec(listingUrl(item.url)||'')?.[1];
-  if(config.researchExcludedItems?.[id])return null;
+  if(config.researchExcludedItems?.[id])return reject('explicit_exclusion');
   const brand=identifyBrand(item.brand,config),type=garmentType(item.title);
-  if(!brand||![...config.coreBrands,...(config.researchBrands||[])].includes(brand)||!type)return null;
-  if(!['new_with_tags','new_without_tags','very_good','good'].includes(item.condition)||item.flaws?.length)return null;
+  if(!brand||![...config.coreBrands,...(config.researchBrands||[])].includes(brand))return reject('brand_outside_selection');
+  if(!type)return reject('garment_type_unknown');
+  if(!['new_with_tags','new_without_tags','very_good','good'].includes(item.condition)||item.flaws?.length)return reject('condition_or_flaws');
   const text=normalize(item.title+' '+(item.description||''));
-  if(!text.includes(normalize(brand)))return null; // A misfilled brand field alone is insufficient.
-  if(/\b(uniqlo|gu|baby|babies|kids|child|children|bimba|bimbo|enfant|garcon|fille|kinder|maanden|months)\b/.test(text))return null;
+  if(!text.includes(normalize(brand)))return reject('brand_claim_unsupported'); // A misfilled brand field alone is insufficient.
+  if(/\b(uniqlo|gu|baby|babies|kids|child|children|bimba|bimbo|enfant|garcon|fille|kinder|maanden|months)\b/.test(text))return reject('excluded_collaboration_or_child_item');
   const authenticity=authenticityAssessment(item,config,now);
-  if(!['unreviewed','reviewed_supported'].includes(authenticity.state))return null;
+  if(!['unreviewed','reviewed_supported'].includes(authenticity.state))return reject('authenticity_contradiction');
   const check=assess(item,{...config,authenticityRequiredBrands:[]},now);
-  if(check.reason!=='Geen passende prijsreferentie: flipwaarde blijft onbekend')return null;
+  if(check.reason!=='Geen passende prijsreferentie: flipwaarde blijft onbekend')return reject(check.eligible?'priced_candidate':check.reason.includes('prijsgrens')?'price_limit':check.reason.includes('Beschikbaarheid')?'availability_unconfirmed':check.reason.includes('recent genoeg')||check.reason.includes('uploadtijd')?'source_freshness':check.reason.includes('imitatie')?'imitation_language':'financial_or_other_eligibility');
   const photos=item.photoUrls||[];
-  if(photos.length<2)return null;
+  if(photos.length<2)return reject('insufficient_photos');
   const preference=curation(item,config);
-  if(!preference.allowed&&!forBundle)return null;
-  if(!preference.allowed&&!preference.track)return null;
+  if(!preference.allowed&&!forBundle)return reject('curation_excluded');
+  if(!preference.allowed&&!preference.track)return reject('curation_excluded');
   const distinctive=/\b(track|painter|velour|velvet|bandana|boro|sashiko|kountry|rebuild|jogging)\b/.test(text);
-  return {type,reason:'model_reference_missing',curationReason:preference.reason,priority:preference.boost+Number(distinctive)*2+Number(photos.length>=4)*3+Number(item.price<=35)+Number(item.condition!=='good')};
+  return {reason:'research_candidate',candidate:{type,reason:'model_reference_missing',curationReason:preference.reason,priority:preference.boost+Number(distinctive)*2+Number(photos.length>=4)*3+Number(item.price<=35)+Number(item.condition!=='good')}};
+}
+export function researchCandidate(item,config,now=Date.now(),options={}) {
+  return researchAssessment(item,config,now,options).candidate;
 }
 
 export function researchText(item,screen,candidate={}) {

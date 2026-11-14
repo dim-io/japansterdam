@@ -1,3 +1,4 @@
+import {brandDiagnostics,summarizeDiagnostics} from './diagnostics.mjs';
 import {curation} from './curation.mjs';
 import {queueBestBundle,checkNextBundle} from './bundles.mjs';
 import {readCatalog} from './catalog.mjs';
@@ -71,7 +72,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
       const items = expectedBrand?source.items.filter((item) => identifyBrand(item.brand,config) === expectedBrand):[];
       const freshness = boundedMode(policy) && reservation.attempts === 1
         ? await compareCatalog(brandId,items,fetcher,itemPriceLimit(brand,config)) : null;
-      results.push({...source,items,brand,freshness});
+      results.push({...source,normalizedCount:source.items.length,items,brand,freshness});
     } catch { throw new Error('RADAR_PROVIDER_FAILED'); }
   }
   const result = {runId:results.map((r)=>r.runId).join(',')};
@@ -81,6 +82,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   // In the bundle pilot, keep the limited model-reading budget for paired label checks.
   let photoChecksLeft=policy.bundleChecks?.reservePhotoChecks?0:1;
   const research=new Map();
+  let allResearch=research;
   const ids=items.map((item)=>/\/items\/(\d+)/.exec(item.url)?.[1]).filter(Boolean);
   const seenIds=new Set();
   if(ids.length) {
@@ -107,11 +109,12 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
       return research.get(item.url)?.priority||0;
     };
     items.sort((a,b)=>priority(b)-priority(a));
+    allResearch=new Map(research);
     const selected=new Set([...research].sort((a,b)=>b[1].priority-a[1].priority).slice(0,5).map(([url])=>url));
     for(const url of research.keys())if(!selected.has(url))research.delete(url);
   }
   const bundlesQueued=await queueBestBundle(env,items,researchConfig,policy,now);
-  const queuedResearch=await queueResearchBatch(env,items.filter(item=>research.has(item.url)).map(item=>({item,candidate:research.get(item.url)})),policy,now);
+  const queuedResearch=await queueResearchBatch(env,items.filter(item=>allResearch.has(item.url)).map(item=>({item,candidate:allResearch.get(item.url)})),policy,now);
   const decisions = [];
   for (const item of items) {
     const id = /\/items\/(\d+)/.exec(item.url)?.[1];
@@ -124,7 +127,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     let photoScreen = null;
     // Only spend GPU quota on financially interesting, otherwise valid candidates.
     // AI screening never writes a trusted authentication approval.
-    if (preference.allowed && deal.authenticity?.state === 'unreviewed' && valuation && env.VISION_FREE_CONFIRMED === 'true') {
+    if (preference.allowed && !deal.eligible && deal.authenticity?.state === 'unreviewed' && valuation && env.VISION_FREE_CONFIRMED === 'true') {
       const preliminary = assess({ ...item, valuation }, { ...config, authenticityRequiredBrands: [], authenticityReviews }, now);
       if (preliminary.eligible && photoChecksLeft>0) {
         const ready = await sql(env, 'SELECT smoke_ok FROM radar_vision_control WHERE id=?', pilotId).first();
@@ -152,13 +155,14 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
       if(outcome.photo)photoScreen=outcome.photo;
     }
     if (deal.reason === 'Geen passende prijsreferentie: flipwaarde blijft onbekend') deal.reason = missingReferenceReason(item, products, config);
-    decisions.push({ photoScreening: photoScreen?.state || null, authenticity: deal.authenticity?.state || 'not_assessed', photoCount: item.photoUrls?.length || 0, title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
+    decisions.push({ itemId:id, photoScreening: photoScreen?.state || null, photoReason:photoScreen?.reason||null, authenticity: deal.authenticity?.state || 'not_assessed', photoCount: item.photoUrls?.length || 0, title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
     if (!deal.eligible || sent+photoReviewSent+researchSent>=2 || !inWindow(clock(), policy)) continue;
     if(policy.requireVisualBrandEvidence&&deal.authenticity?.state!=='reviewed_supported') {
       if(!photoScreen&&photoChecksLeft>0&&env.VISION_FREE_CONFIRMED==='true') {
         photoChecksLeft--;
         photoScreen=await screenPhotos(env,item,researchConfig,policy,{now,fetcher,clock});
       }
+      Object.assign(decisions[decisions.length-1],{photoScreening:photoScreen?.state||null,photoReason:photoScreen?.reason||'photo_check_not_run'});
       if(photoScreen?.state!=='visually_consistent')continue;
     }
     // Reserve delivery before sending. An ambiguous failure is not retried automatically.
@@ -175,6 +179,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     sent, photoReviewSent, researchQueued, researchSent, bundlesQueued, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
   await sql(env, 'UPDATE radar_control SET last_scan_at=?, last_report=?, last_error=NULL, error_at=NULL WHERE id=?',
     now, JSON.stringify(report), pilotId).run();
+  if(policy.enableDiagnostics)await sql(env,'INSERT OR IGNORE INTO radar_scan_reports (pilot_id,slot,report) VALUES (?,?,?)',pilotId,slot,JSON.stringify(brandDiagnostics(results,decisions,researchConfig,now))).run();
   console.log(JSON.stringify({scheduler:report.scheduler,attempts:report.attempts,checked:report.checked,newListings,sent,photoReviewSent,researchQueued,researchSent}));
   return report;
 }
@@ -226,6 +231,7 @@ export async function status(env, now = Date.now(), policy = settings) {
     priceLimits:Object.fromEntries(Object.keys(policy.brands).map(brand=>[brand,itemPriceLimit(brand,config)])),
     brandSchedule:policy.brandGroups||null,scanIntervalHours:policy.mode==='rotating-brands'?policy.brandGroups.length:policy.mode==='both-brands'?1:Object.keys(policy.brands).length,
     byBrand:report?.byBrand || [],
+    trialDiagnostics:policy.enableDiagnostics?summarizeDiagnostics((await sql(env,'SELECT report FROM radar_scan_reports WHERE pilot_id=? ORDER BY slot',pilotId).all()).results):[],
     researchTest:researchTest?.report?JSON.parse(researchTest.report):researchTest?{state:researchTest.state}:null,
     researchEnabled:policy.researchEnabled===true,researchStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
     bundleCheck: policy.bundleChecks?.enabled?'bounded_idle_wake_lookup':'inactive',bundleCheckLimit:policy.bundleChecks?.maxAttempts||0,bundleChecksUsed:bundleBudget?.attempts||0,bundleStates, active: inWindow(now,policy), endsAt: policy.endsAt,

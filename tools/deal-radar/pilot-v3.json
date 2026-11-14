@@ -1,41 +1,27 @@
 {
   "enabled": true,
-  "id": "pilot-2026-11-12",
-  "previousPilotId": "pilot-2026-11-11",
-  "startsAt": "2026-11-12T22:37:07.910646+00:00",
-  "endsAt": "2026-11-13T22:37:07.910646+00:00",
+  "id": "pilot-2026-11-14",
+  "previousPilotId": "pilot-2026-11-12",
+  "startsAt": "2026-11-14T21:39:05.758231+00:00",
+  "endsAt": "2026-11-15T21:39:05.758231+00:00",
   "maxAttempts": 24,
   "brands": {
+    "Nonnative": "355385",
+    "Wacko Maria": "614622",
+    "Auralee": "2053426",
+    "Visvim": "276225",
+    "Fullcount": "742239",
+    "Momotaro": "358913",
+    "Iron Heart": "492896",
     "BEAMS Plus": "7373680",
-    "Nonnative": {
-      "searchText": "Nonnative"
-    },
-    "Remi Relief": {
-      "searchText": "Remi Relief"
-    },
     "Nanamica": "596562",
-    "Ordinary Fits": {
-      "searchText": "Ordinary Fits"
-    },
-    "Sage de Cret": {
-      "searchText": "Sage de Cret"
-    },
     "Kaptain Sunshine": "2588542",
     "White Mountaineering": "605090",
-    "Uniform Experiment": {
-      "searchText": "Uniform Experiment"
-    },
     "SOPHNET.": "352670",
     "Neighborhood": "330747",
     "WTAPS": "320615",
     "South2 West8": "2901292",
-    "Haversack": {
-      "searchText": "Haversack"
-    },
     "Blue Blue Japan": "360813",
-    "Ts(s)": {
-      "searchText": "Ts(s)"
-    },
     "Kapital": "576107",
     "Needles": "360271",
     "Engineered Garments": "609050",
@@ -47,19 +33,19 @@
       "Nonnative"
     ],
     [
-      "Remi Relief",
+      "Wacko Maria",
       "Nanamica"
     ],
     [
-      "Ordinary Fits",
-      "Sage de Cret"
+      "Auralee",
+      "Visvim"
     ],
     [
       "Kaptain Sunshine",
       "White Mountaineering"
     ],
     [
-      "Uniform Experiment",
+      "Fullcount",
       "SOPHNET."
     ],
     [
@@ -68,11 +54,11 @@
     ],
     [
       "South2 West8",
-      "Haversack"
+      "Momotaro"
     ],
     [
       "Blue Blue Japan",
-      "Ts(s)"
+      "Iron Heart"
     ],
     [
       "Kapital",
@@ -83,7 +69,7 @@
       "orSlow"
     ]
   ],
-  "revision": "japanese-brand-label-gate-v7",
+  "revision": "verified-brands-and-diagnostics-v8",
   "mode": "rotating-brands",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
@@ -95,9 +81,9 @@
     "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
     "plan": "free",
     "source": "dashboard_current_plan",
-    "confirmedAt": "2026-11-12T22:16:45.087575+00:00",
-    "authorizedAt": "2026-11-12T22:37:07.910646+00:00",
-    "validUntil": "2026-11-13T22:37:07.910646+00:00"
+    "confirmedAt": "2026-11-14T21:39:05.758231+00:00",
+    "authorizedAt": "2026-11-14T21:39:05.758231+00:00",
+    "validUntil": "2026-11-15T21:39:05.758231+00:00"
   },
   "reviewBacklog": false,
   "bundleChecks": {
@@ -108,7 +94,16 @@
   "sourceBudget": {
     "allowPaidIncludedCredits": true,
     "maxMonthlyUsageUsd": 19,
-    "authorizedAt": "2026-11-12T22:37:07.910646+00:00"
+    "authorizedAt": "2026-11-14T21:39:05.758231+00:00"
   },
-  "requireVisualBrandEvidence": true
+  "requireVisualBrandEvidence": true,
+  "enableDiagnostics": true,
+  "pausedBrands": {
+    "Remi Relief": "Exact Vinted brand filter unavailable during UI verification on 2026-11-14",
+    "Ordinary Fits": "Exact Vinted brand filter unavailable during UI verification on 2026-11-14",
+    "Sage de Cret": "Exact Vinted brand filter unavailable during UI verification on 2026-11-14",
+    "Uniform Experiment": "Exact Vinted brand filter unavailable during UI verification on 2026-11-14",
+    "Haversack": "Exact Vinted brand filter unavailable during UI verification on 2026-11-14",
+    "Ts(s)": "Exact Vinted brand filter unavailable during UI verification on 2026-11-14"
+  }
 }

@@ -150,3 +150,11 @@ test('non-selected brands returned by the scraper never reach photo checks or Te
  const out=await scan(ctx.env,options(ctx,{policy:{...policy,requireVisualBrandEvidence:true},probeFn:async()=>({runId:'fixture',returned:3,items:['Zara','Superdry','Unknown'].map((brand,i)=>({...item,brand,title:brand+' Japan style jacket',url:`https://www.vinted.nl/items/${800+i}-test`}))})}));
  assert.equal(out.checked,0);assert.equal(out.byBrand[0].sourceReturned,3);assert.equal(out.byBrand[0].excludedByBrand,3);assert.equal(ctx.calls(),0);assert.equal(ctx.messages.length,0);ctx.db.close();
 });
+
+test('manual queue retains all valid research candidates beyond the five photo-priority items',async()=>{
+ const ctx=setup();const items=Array.from({length:12},(_,i)=>({...item,url:`https://www.vinted.nl/items/${9000+i}-candidate`}));
+ await scan(ctx.env,options(ctx,{policy:{...policy,requireVisualBrandEvidence:true},probeFn:async()=>({runId:'fixture',items})}));
+ assert.equal(ctx.db.prepare('SELECT COUNT(*) n FROM radar_research').get().n,12);
+ assert(ctx.db.prepare("SELECT COUNT(*) n FROM radar_research WHERE state='queued'").get().n>=7);
+ assert(ctx.messages.length<=2);ctx.db.close();
+});

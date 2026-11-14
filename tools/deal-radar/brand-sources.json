@@ -43,5 +43,47 @@
     "id": "360813",
     "source": "https://www.vinted.com/brand/360813-blue-blue-japan",
     "checkedAt": "2026-11-13"
+  },
+  "Nonnative": {
+    "id": "355385",
+    "source": "https://www.vinted.nl/catalog",
+    "method": "Exact brand name and checkbox value read in Vinted brand filter UI",
+    "checkedAt": "2026-11-14T21:39:05.758231+00:00"
+  },
+  "Wacko Maria": {
+    "id": "614622",
+    "source": "https://www.vinted.nl/catalog",
+    "method": "Exact brand name and checkbox value read in Vinted brand filter UI",
+    "checkedAt": "2026-11-14T21:39:05.758231+00:00"
+  },
+  "Auralee": {
+    "id": "2053426",
+    "source": "https://www.vinted.nl/catalog",
+    "method": "Exact brand name and checkbox value read in Vinted brand filter UI",
+    "checkedAt": "2026-11-14T21:39:05.758231+00:00"
+  },
+  "Visvim": {
+    "id": "276225",
+    "source": "https://www.vinted.nl/catalog",
+    "method": "Exact brand name and checkbox value read in Vinted brand filter UI",
+    "checkedAt": "2026-11-14T21:39:05.758231+00:00"
+  },
+  "Fullcount": {
+    "id": "742239",
+    "source": "https://www.vinted.nl/catalog",
+    "method": "Exact brand name and checkbox value read in Vinted brand filter UI",
+    "checkedAt": "2026-11-14T21:39:05.758231+00:00"
+  },
+  "Momotaro": {
+    "id": "358913",
+    "source": "https://www.vinted.nl/catalog",
+    "method": "Exact brand name and checkbox value read in Vinted brand filter UI",
+    "checkedAt": "2026-11-14T21:39:05.758231+00:00"
+  },
+  "Iron Heart": {
+    "id": "492896",
+    "source": "https://www.vinted.nl/catalog",
+    "method": "Exact brand name and checkbox value read in Vinted brand filter UI",
+    "checkedAt": "2026-11-14T21:39:05.758231+00:00"
   }
 }

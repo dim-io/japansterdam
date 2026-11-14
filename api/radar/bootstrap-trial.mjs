@@ -1,3 +1,4 @@
+import {DIAGNOSTIC_SCHEMA} from './diagnostics.mjs';
 import {BUNDLE_SCHEMA} from './bundles.mjs';
 import {pathToFileURL} from 'node:url';
 import {client,TARGET,SOURCE} from './account-migration.mjs';
@@ -7,6 +8,7 @@ import policy from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
 export async function bootstrapTrial(query,p=policy,now=Date.now()){
   if(!/^pilot-\d{4}-\d{2}-\d{2}$/.test(p.id)||p.id===p.previousPilotId)throw Error('Ongeldig proefvenster');
   if((await query('SELECT verified FROM radar_transfer WHERE id=?',[SOURCE.database]))[0]?.verified!==1)throw Error('Accountoverdracht niet geverifieerd');
+  if(p.enableDiagnostics)await query(DIAGNOSTIC_SCHEMA);
   if(p.bundleChecks?.enabled)for(const schema of BUNDLE_SCHEMA)await query(schema);
   if((await query('SELECT id FROM radar_control WHERE id=?',[p.id])).length)return {alreadyInitialized:true};
   if(p.maxAttempts!==24||!inWindow(Date.parse(p.startsAt),p)||now>=Date.parse(p.endsAt)||Date.parse(p.startsAt)-now>3600000)throw Error('Ongeldig proefvenster');
