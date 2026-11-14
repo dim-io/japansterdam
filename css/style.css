@@ -429,8 +429,9 @@ img[data-fade]{opacity:1}
 .about__headline{font-size:clamp(28px,2.8vw,42px);line-height:1.06;letter-spacing:-.02em;max-width:26ch}
 .about__img{grid-area:portrait;align-self:start;overflow:hidden}
 .about__img img{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:center 40%}
-.about__body{grid-area:body;min-width:0;max-width:62ch}
-.about__body>p:not(.about__sig){margin-bottom:24px;font-size:17px;line-height:1.75}
+.about__body{grid-area:body;min-width:0;max-width:52ch}
+.about__body>p:not(.about__sig){margin-bottom:22px;font-family:var(--body);font-size:16px;font-weight:400;line-height:1.65;letter-spacing:0;color:#333;text-wrap:pretty}
+.about__body>p:last-of-type{margin-bottom:0}
 .about__signature{margin-top:20px}
 .about__sig{margin-top:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;line-height:1.6}
 .about-pair{display:grid;gap:32px;margin-top:72px;align-items:center}
@@ -447,7 +448,7 @@ img[data-fade]{opacity:1}
   .about{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"portrait intro" "portrait body";grid-template-rows:auto 1fr;gap:24px clamp(40px,6vw,80px);align-items:start}
   .about__intro .eyebrow{margin-bottom:18px}
   .about__headline{font-size:clamp(26px,2.5vw,36px);line-height:1.08;max-width:28ch}
-  .about__body>p:not(.about__sig){font-size:15px;line-height:1.65;margin-bottom:18px}
+  .about__body>p:not(.about__sig){font-size:clamp(16px,1.05vw,17px);line-height:1.6;margin-bottom:20px}
   .about__body>p:last-of-type{margin-bottom:0}
   .about__signature{margin-top:18px}
   .about__img{position:sticky;top:calc(var(--header-h) + 24px)}
@@ -463,7 +464,8 @@ img[data-fade]{opacity:1}
   .about{row-gap:18px}
   .about__intro .eyebrow{margin-bottom:14px}
   .about__headline{font-size:clamp(24px,2.2vw,30px)}
-  .about__body>p:not(.about__sig){font-size:14px;line-height:1.6;margin-bottom:14px}
+  .about__body{max-width:60ch}
+  .about__body>p:not(.about__sig){font-size:14.5px;line-height:1.55;margin-bottom:16px}
   .about__body>p:last-of-type{margin-bottom:0}
   .about__signature{margin-top:14px}
 }
