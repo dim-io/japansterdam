@@ -12,7 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Instrument+Serif:ital@0;1&display=swap">
-<link rel="stylesheet" href="css/style.css?v=checkout-1">
+<link rel="stylesheet" href="css/style.css?v=brand-filter-1-checkout-1">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -35,7 +35,16 @@
   <div class="filters" role="search" aria-label="Filter products">
     <div class="chips" id="f-chips" role="group" aria-label="Category"></div>
     <div class="selects">
-      <div class="field-sel"><label for="f-brand">Brand</label><select class="sel" id="f-brand"></select></div>
+      <div class="field-sel brand-filter" id="brand-filter">
+        <span class="filter-label" id="f-brand-label">Brand</span>
+        <select id="f-brand" hidden aria-label="Brand"></select>
+        <button class="sel brand-toggle" type="button" id="brand-toggle" aria-expanded="false" aria-controls="brand-panel" aria-labelledby="f-brand-label brand-value"><span id="brand-value">All brands</span></button>
+        <div class="brand-panel" id="brand-panel" hidden>
+          <input class="brand-search" id="brand-search" type="search" placeholder="Find a brand…" aria-label="Find a brand" autocomplete="off">
+          <ul class="brand-options" id="brand-options" aria-label="Brands"></ul>
+          <p class="brand-no-results" id="brand-no-results" role="status" hidden>No brands found.</p>
+        </div>
+      </div>
       <div class="field-sel"><label for="f-size">Fits like</label><select class="sel" id="f-size"></select></div>
       <div class="field-sel"><label for="f-sort">Sort</label><select class="sel" id="f-sort"></select></div>
     </div>
@@ -73,7 +82,7 @@
   <p class="ft__bottom">© 2026 Japansterdam · Amsterdam · KVK 42217083</p>
 </div></footer>
 <noscript><p style="padding:24px">Please enable JavaScript to view this site.</p></noscript>
-<script type="module" src="js/shop.js?v=checkout-1"></script>
+<script type="module" src="js/shop.js?v=brand-filter-1"></script>
 <!-- Cloudflare Web Analytics: Japansterdam owner account -->
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"1784cb82ee28489fa33398b4f940cf43"}'></script>
 </body>

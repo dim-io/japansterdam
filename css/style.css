@@ -526,3 +526,20 @@ img[data-fade]{opacity:1}
 .co-legal summary{cursor:pointer;color:var(--ink)}
 .order-reference{overflow-wrap:anywhere;font-size:12px;letter-spacing:.03em}
 .withdrawal-form{max-width:640px;margin:36px 0}
+
+/* Searchable brand filter: short parent brands, full credits remain on each piece. */
+.filter-label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.brand-filter{position:relative;min-width:0}
+.brand-toggle{text-align:left;cursor:pointer;min-height:42px}
+.brand-toggle span{display:block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brand-panel{position:absolute;left:0;top:100%;margin-top:8px;width:300px;max-width:calc(100vw - 40px);padding:12px;background:var(--paper);border:1px solid var(--line);box-shadow:0 8px 24px #0000000d;z-index:40}
+.brand-search{display:block;width:100%;min-width:0;border:0;border-bottom:1px solid var(--line);padding:10px 8px 12px;background:transparent;font-size:14px;border-radius:0}
+.brand-search:focus-visible{outline:1px solid var(--ink);outline-offset:2px}
+.brand-options{list-style:none;margin:8px 0 0;padding:0;max-height:280px;max-height:min(280px,45dvh);overflow-y:auto;overscroll-behavior:contain}
+.brand-option{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;border:0;background:transparent;text-align:left;padding:10px 8px;font-size:14px;line-height:1.4;cursor:pointer}
+.brand-option:hover,.brand-option:focus-visible{background:var(--stone)}
+.brand-option:focus-visible{outline:1px solid var(--ink);outline-offset:-1px}
+.brand-option[aria-pressed="true"]{font-weight:600;background:var(--stone)}
+.brand-option__count{color:var(--muted);font-size:12px;font-weight:400;font-variant-numeric:tabular-nums}
+.brand-no-results{padding:8px;color:var(--muted);font-size:13px}
+@media(min-width:900px){.selects .brand-filter{width:190px;max-width:220px}}

@@ -1,3 +1,4 @@
+import { brandOptions, brandCounts, matchesBrand, shortBrand, brandSearchKey } from './brands.js';
 import { FIT_SIZES, productFitsLike, matchesFit } from './sizing.js';
 import './layout.js?v=checkout-1';
 import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from './data.js';
@@ -16,7 +17,7 @@ const chipsEl = document.getElementById('f-chips');
 const grid = document.getElementById('shop-grid');
 const countEl = document.getElementById('shop-count');
 
-const brands = [...new Set(products.map((p) => p.brand))].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+const brands = brandOptions(products);
 const sizes = FIT_SIZES.filter(size => products.some(p => productFitsLike(p).includes(size)));
 
 brandSel.innerHTML = '<option value="">All brands</option>' + brands.map((b) => `<option value="${esc(b)}">${esc(b)}</option>`).join('');
@@ -52,6 +53,53 @@ mqWide.addEventListener('change', paintDensity);
 mqMid.addEventListener('change', paintDensity);
 
 const state = readState();
+const brandFilter = document.getElementById('brand-filter');
+const brandToggle = document.getElementById('brand-toggle');
+const brandPanel = document.getElementById('brand-panel');
+const brandSearch = document.getElementById('brand-search');
+const brandList = document.getElementById('brand-options');
+function paintBrands() {
+  const counts=brandCounts(products,p=>(!state.category||p.category===state.category)&&(!state.size||matchesFit(p,state.size)));
+  const query=brandSearchKey(brandSearch.value);
+  const choices=[['','All brands'],...brands.map(b=>[b,b])].filter(([value,label])=>!value||brandSearchKey(label).includes(query));
+  if(state.brand&&!brands.includes(state.brand)&&(!query||brandSearchKey(state.brand).includes(query)))choices.push([state.brand,state.brand]);
+  const total=products.filter(p=>!p.sold&&(!state.category||p.category===state.category)&&(!state.size||matchesFit(p,state.size))).length;
+  brandList.innerHTML=choices.map(([value,label])=>{
+    const count=!value?total:brands.includes(value)?(counts.get(value)||0):products.filter(p=>!p.sold&&matchesBrand(p,value)&&(!state.category||p.category===state.category)&&(!state.size||matchesFit(p,state.size))).length;
+    return `<li><button class="brand-option" type="button" data-brand="${esc(value)}" aria-pressed="${value===state.brand}"><span>${esc(label)}</span><span class="brand-option__count" aria-label="${count} available pieces">${count}</span></button></li>`;
+  }).join('');
+  document.getElementById('brand-no-results').hidden=choices.some(([value])=>value);
+}
+function closeBrands(restoreFocus=false) {
+  brandPanel.hidden=true;
+  brandToggle.setAttribute('aria-expanded','false');
+  if(restoreFocus)brandToggle.focus();
+}
+brandToggle.addEventListener('click',()=>{
+  if(!brandPanel.hidden){closeBrands();return;}
+  brandSearch.value='';paintBrands();brandPanel.hidden=false;
+  brandToggle.setAttribute('aria-expanded','true');brandSearch.focus();
+});
+brandSearch.addEventListener('input',paintBrands);
+brandList.addEventListener('click',event=>{
+  const button=event.target.closest('[data-brand]');if(!button)return;
+  brandSel.value=button.dataset.brand;
+  brandSel.dispatchEvent(new Event('change'));
+  closeBrands(true);
+});
+brandFilter.addEventListener('keydown',event=>{
+  if(brandPanel.hidden)return;
+  if(event.key==='Escape'){event.preventDefault();closeBrands(true);return;}
+  const buttons=Array.from(brandList.querySelectorAll('button'));
+  if(['ArrowDown','ArrowUp'].includes(event.key)){
+    event.preventDefault();const at=buttons.indexOf(document.activeElement);
+    const next=at<0?(event.key==='ArrowDown'?0:buttons.length-1):(at+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;
+    buttons[next]?.focus();
+  }
+});
+document.addEventListener('click',event=>{if(!brandFilter.contains(event.target))closeBrands();});
+brandFilter.addEventListener('focusout',event=>{if(!brandFilter.contains(event.relatedTarget))closeBrands();});
+
 function readState() {
   const q = new URLSearchParams(location.search);
   const cat = q.get('category') || '';
@@ -60,7 +108,7 @@ function readState() {
   const sort = q.get('sort') || 'curated';
   return {
     category: CATS.includes(cat) ? cat : '',
-    brand: brands.includes(brand) ? brand : '',
+    brand: brands.includes(shortBrand(brand)) ? shortBrand(brand) : products.some(p=>p.brand===brand) ? brand : '',
     size: sizes.includes(size) ? size : '',
     sort: Object.hasOwn(SORTS, sort) ? sort : 'curated',
   };
@@ -77,14 +125,17 @@ function writeUrl() {
 
 function render() {
   chipsEl.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cat === state.category)));
+  if(state.brand&&!brands.includes(state.brand)&&!Array.from(brandSel.options).some(o=>o.value===state.brand))brandSel.add(new Option(state.brand,state.brand));
   brandSel.value = state.brand;
+  document.getElementById('brand-value').textContent = state.brand || 'All brands';
+  paintBrands();
   sizeSel.value = state.size;
   sortSel.value = state.sort;
-  const other = (p) => (!state.brand || p.brand === state.brand) && (!state.size || matchesFit(p, state.size));
+  const other = (p) => (!state.brand || matchesBrand(p, state.brand)) && (!state.size || matchesFit(p, state.size));
   const counts = { '': products.filter(other).length };
   for (const cat of CATS) counts[cat] = products.filter((p) => other(p) && p.category === cat).length;
   chipsEl.querySelectorAll('.chip').forEach((b) => { b.querySelector('.chip__n').textContent = counts[b.dataset.cat]; });
-  let list = products.filter((p) => (!state.category || p.category === state.category) && (!state.brand || p.brand === state.brand) && (!state.size || matchesFit(p, state.size)));
+  let list = products.filter((p) => (!state.category || p.category === state.category) && (!state.brand || matchesBrand(p, state.brand)) && (!state.size || matchesFit(p, state.size)));
   // Filtering keeps the CMS order. Stable sorting only moves sold pieces down
   // unless the visitor explicitly chooses a date or price order.
   const cmp = state.sort === 'price-asc' ? (a, b) => a.price - b.price : state.sort === 'price-desc' ? (a, b) => b.price - a.price : state.sort === 'newest' ? byNewest : () => 0;
