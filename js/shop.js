@@ -1,4 +1,4 @@
-import { brandOptions, brandCounts, matchesBrand, shortBrand, brandSearchKey } from './brands.js';
+import { brandOptions, brandCounts, matchesBrand, shortBrand, brandSearchKey } from './brands.js?v=brand-filter-2';
 import { FIT_SIZES, productFitsLike, matchesFit } from './sizing.js';
 import './layout.js?v=checkout-1';
 import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from './data.js';
