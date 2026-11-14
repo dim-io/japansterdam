@@ -93,3 +93,23 @@ Then put the Worker URL (for example `https://japansterdam-api.<account>.workers
 ### Maatfilter en labelmaat
 
 In Products → Edit staan **Label size** (de originele maat, bijvoorbeeld JP 4) en **Fits like — shop filters**. Vink meerdere passende internationale maten aan, bijvoorbeeld L en XL. De shop filtert op die vinkjes; de productpagina toont de originele maat én de toegewezen pasvorm. Alleen expliciete internationale lettermaten worden bij bestaande producten herkend. Japanse nummers, EU-nummers en taillelabels worden niet automatisch omgerekend. Via **Set fit** in het productoverzicht vind je producten zonder filtermaat; ze blijven zichtbaar onder All sizes totdat je hun pasvorm hebt beoordeeld. Het invullen vereist geen wijziging van de oorspronkelijke labelmaat.
+
+### SEO and sitemap maintenance
+
+Page metadata and canonical URLs use `https://japansterdam.com/`. Detail pages
+preserve their `p` or `story` identifier while dropping tracking parameters;
+product rendering resolves legacy IDs to the current friendly URL.
+
+`robots.txt` advertises two XML sitemaps:
+
+- `/sitemap.xml` lists the fixed, public pages.
+- `https://japansterdam-api.japansterdam-api.workers.dev/public/sitemap.xml`
+  reads products and Journal articles directly from the CMS on each request.
+  It excludes inactive products and unpublished stories, uses the shop's shared
+  product URL builder, and retains active sold archive pages. Cross-site
+  submission is authorized by the main domain's robots.txt. No scheduled
+  rebuild, separate service or manual catalogue export is needed.
+
+When adding a fixed page, update both `sitemap.xml` and `staticPaths` in
+`api/src/sitemap.mjs`. Run `node --test scripts/*.test.mjs tests/product-urls.mjs
+api/scripts/test-*.mjs` and `node scripts/sync-chrome.mjs --check` to validate.

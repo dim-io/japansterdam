@@ -306,6 +306,17 @@ async function handle(request, env, ctx) {
   }
 
   // public
+  if (method === 'GET' && path === '/public/sitemap.xml') {
+    const { sitemapXML } = await import('./sitemap.mjs');
+    const [products, row] = await Promise.all([
+      listProducts(env),
+      env.DB.prepare("SELECT data FROM content WHERE id = 'main'").first(),
+    ]);
+    if (!row) throw new HttpError(503, 'Content unavailable');
+    return new Response(sitemapXML(products, JSON.parse(row.data)), {
+      headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
+  }
   if (method === 'GET' && path === '/public/products') {
     return json((await listProducts(env)).filter((p) => p.active !== false), 200, { 'Cache-Control': 'no-store' });
   }

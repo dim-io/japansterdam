@@ -3,9 +3,9 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 export function renderChrome(page = 'index.html') {
 // Static defaults so the chrome renders at once; content.json refines them later (data-site hooks).
 const site = {
-  instagram: 'https://www.instagram.com/japansterdam',
+  instagram: 'https://www.instagram.com/japansterdam_store/',
   grailed: 'https://www.grailed.com/Japansterdam',
-  substack: 'https://substack.com/japansterdam',
+  substack: 'https://japansterdam.substack.com/',
 };
 
 const ICON_INSTA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".8" fill="currentColor" stroke="none"/></svg>';

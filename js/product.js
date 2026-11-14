@@ -18,7 +18,7 @@ if (!p) {
   root.innerHTML = `<div class="wrap notfound"><h1 class="page-title">Piece not found</h1><p>This piece does not exist or is no longer listed.</p><a class="btn btn--primary" href="shop.html">Back to the shop</a></div>`;
 } else {
   // Old shared links still resolve; display and publish the garment's current URL.
-  const canonical = new URL(productUrl(p.slug), location.href);
+  const canonical = new URL(productUrl(p.slug), 'https://japansterdam.com/');
   const current = new URL(location.href);
   if (current.searchParams.get('p') !== canonical.searchParams.get('p')) {
     current.searchParams.set('p', canonical.searchParams.get('p'));
@@ -49,7 +49,7 @@ if (!p) {
     title: `${p.name} — ${p.brand} — Japansterdam`,
     description: `${p.brand} ${p.name}, size ${p.size}, ${formatPrice(p.price)}. ${desc}`.slice(0, 200),
     image: p.images[0],
-    url: new URL(productUrl(p.slug), location.href).href,
+    url: new URL(productUrl(p.slug), 'https://japansterdam.com/').href,
   });
   jsonLd({
     '@context': 'https://schema.org',
@@ -62,7 +62,7 @@ if (!p) {
     image: p.images.map((i) => new URL(i, location.href).href),
     offers: {
       '@type': 'Offer',
-      url: new URL(productUrl(p.slug), location.href).href,
+      url: new URL(productUrl(p.slug), 'https://japansterdam.com/').href,
       price: Number(p.price).toFixed(2),
       priceCurrency: 'EUR',
       itemCondition: p.condition === 'New / unworn' ? 'https://schema.org/NewCondition' : 'https://schema.org/UsedCondition',

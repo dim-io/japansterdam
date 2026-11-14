@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Fixed pages and a live CMS sitemap. This explicitly authorizes the API host
+# to serve the sitemap for japansterdam.com (cross-site sitemap submission).
+Sitemap: https://japansterdam.com/sitemap.xml
+Sitemap: https://japansterdam-api.japansterdam-api.workers.dev/public/sitemap.xml
