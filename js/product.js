@@ -46,11 +46,12 @@ if (!p) {
   const descriptionHTML = descriptionDoc.body.innerHTML;
   const desc = stripHtml(p.description).slice(0, 155);
   setMeta({
-    title: `${p.name} — ${p.brand} — Japansterdam`,
+    title: `${p.name}${p.name.toLowerCase().includes(p.brand.toLowerCase()) ? '' : ' — ' + p.brand} — Japansterdam`,
     description: `${p.brand} ${p.name}, size ${p.size}, ${formatPrice(p.price)}. ${desc}`.slice(0, 200),
     image: p.images[0],
     url: new URL(productUrl(p.slug), 'https://japansterdam.com/').href,
   });
+  document.querySelector('[data-ssr-schema]')?.remove();
   jsonLd({
     '@context': 'https://schema.org',
     '@type': 'Product',

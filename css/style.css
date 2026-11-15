@@ -552,3 +552,17 @@ img[data-fade]{opacity:1}
 /* Quiet, readable context under the existing collection heading. */
 .collection__intro{margin:18px auto 0;color:var(--muted);font-size:14px;line-height:1.6;text-wrap:balance}
 .collection__origin{white-space:nowrap}
+
+/* Permanent brand destinations, sharing the shop's product cards. */
+.brand-landing{padding-top:clamp(40px,6vw,88px);padding-bottom:72px}
+.brand-intro{max-width:760px;margin-bottom:56px}
+.brand-intro .eyebrow{color:var(--muted);margin-bottom:20px}
+.brand-deck{max-width:54ch;margin-top:28px;font-size:clamp(16px,1.3vw,19px);line-height:1.65;color:#333;text-wrap:pretty}
+.brand-toolbar{display:flex;align-items:baseline;justify-content:space-between;gap:20px;border-top:1px solid var(--line);padding-top:24px;margin-bottom:28px}
+.brand-toolbar h2,.brand-details h2,#brand-journal>h2{font-size:clamp(20px,2.4vw,30px)}
+#brand-count{color:var(--muted);font-size:13px;white-space:nowrap}
+.brand-details{max-width:58ch;margin:64px 0}
+.brand-details p{margin-top:20px;line-height:1.65;color:#333}
+#brand-journal{margin:64px 0}#brand-journal>h2{margin-bottom:28px}
+.brand-explore{display:flex;flex-wrap:wrap;gap:20px 28px;border-top:1px solid var(--line);padding-top:28px;font-size:13px}
+.brand-empty{grid-column:1/-1;padding:30px 0;color:var(--muted)}

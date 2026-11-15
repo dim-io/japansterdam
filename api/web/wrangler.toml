@@ -1,0 +1,11 @@
+name = "japansterdam-web"
+account_id = "81a93f1ef55a892620ab77cf0f8163f6"
+main = "worker.mjs"
+compatibility_date = "2026-10-30"
+workers_dev = true
+
+[assets]
+directory = "../../.site-dist"
+binding = "ASSETS"
+run_worker_first = true
+not_found_handling = "404-page"

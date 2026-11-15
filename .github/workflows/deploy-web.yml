@@ -1,0 +1,26 @@
+name: SEO server preview on Sam's account
+on:
+  push:
+    branches: [main]
+    paths: ['api/web/**', 'js/**', 'css/**', '*.html', 'assets/**', '.github/workflows/deploy-web.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency: deploy-web-preview
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.RADAR_CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: api
+      - run: node --test api/web/*.test.mjs
+      - run: node api/web/build.mjs
+      - run: npx wrangler deploy --config web/wrangler.toml
+        working-directory: api

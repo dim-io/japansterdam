@@ -113,3 +113,25 @@ product rendering resolves legacy IDs to the current friendly URL.
 When adding a fixed page, update both `sitemap.xml` and `staticPaths` in
 `api/src/sitemap.mjs`. Run `node --test scripts/*.test.mjs tests/product-urls.mjs
 api/scripts/test-*.mjs` and `node scripts/sync-chrome.mjs --check` to validate.
+
+### SEO server review (not yet the main domain)
+
+`api/web/` serves the existing public website with request-time product HTML and
+live product grids on Needles, Kapital and Wacko Maria pages. It reads the public
+CMS on every request, does not cache product HTML, and returns 404 for hidden or
+unknown products and 503 when the catalogue is unavailable. Old product IDs
+redirect to the same friendly URLs already used by the shop. The interactive
+shop and authenticated admin continue to use the existing API.
+
+The `deploy-web.yml` workflow publishes this review server to Sam's Cloudflare
+account using the existing owner-account deployment secret. The workers.dev
+review address sends `X-Robots-Tag: noindex, nofollow`; canonicals refer to the
+main domain. The main domain still uses GitHub Pages until its DNS/Cloudflare
+hosting is explicitly connected. No DNS records or mail settings are changed
+by the deployment workflow. Do not claim SSR is active on the main domain until
+that connection has been completed and checked.
+
+Build with `node api/web/build.mjs` and test with
+`node --test api/web/*.test.mjs`. The build includes only public frontend files,
+the existing admin frontend, no private backend code, and no product-data
+snapshot. Unpublished Journal articles are omitted from the fallback content.

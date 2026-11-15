@@ -1,3 +1,4 @@
+import { brandPage } from './brand-pages.js';
 // Data loading, caching and shared helpers.
 import { imageFrameStyle } from './image-frames.js';
 import { inBag } from './bag.js';
@@ -56,7 +57,7 @@ export const esc = (s) =>
 export const stripHtml = (h) => String(h || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
 export const productUrl = (slug) => productRoutes ? productRoutes.urlFor(slug) : productPath(slug);
-export const brandUrl = (brand) => 'shop.html?brand=' + encodeURIComponent(brand);
+export const brandUrl = (brand) => brandPage(brand) ? brandPage(brand).slug + '.html' : 'shop.html?brand=' + encodeURIComponent(brand);
 
 export const byNewest = (a, b) => b.addedOn - a.addedOn;
 // available pieces first, then newest
