@@ -8,8 +8,29 @@ export function suggestedFitsLike(label) {
   return FIT_SIZES.filter(s => found.has(s));
 }
 export function productFitsLike(product) {
+  if (product.category === 'Footwear') return [];
   return Array.isArray(product.fitsLike)
     ? FIT_SIZES.filter(size => product.fitsLike.includes(size))
     : suggestedFitsLike(product.size);
 }
-export const matchesFit = (product, size) => !size || productFitsLike(product).includes(size);
+// Shoe labels stay in their stated sizing system; never convert UK/US/JP to EU.
+export function footwearSize(label) {
+  const text = String(label || '').trim().replace(/½/g,'.5').replace(/(\d),(\d)/g,'$1.$2');
+  const eu = text.match(/\b(?:EU|EUR)\s*(\d{2}(?:\.5)?)\b/i);
+  if (eu) return 'EU ' + Number(eu[1]);
+  if (/^\d{2}(?:\.5)?$/.test(text) && Number(text) >= 15 && Number(text) <= 55) return 'EU ' + Number(text);
+  const system = text.match(/\b(UK|US|JP|CM)\s*(\d{1,2}(?:\.\d+)?)\b/i);
+  if (system) return system[1].toUpperCase() + ' ' + Number(system[2]);
+  return text ? 'Shoe size ' + text : '';
+}
+export function productFilterSizes(product) {
+  if (product.category !== 'Footwear') return productFitsLike(product);
+  const size = footwearSize(product.size);
+  return size ? [size] : [];
+}
+export function filterSizes(products, category = '') {
+  const relevant = products.filter(p => p.active !== false && (!category || p.category === category));
+  const found = new Set(relevant.flatMap(productFilterSizes));
+  return [...FIT_SIZES.filter(s => found.has(s)), ...[...found].filter(s => !FIT_SIZES.includes(s)).sort((a,b) => a.localeCompare(b,'en',{numeric:true}))];
+}
+export const matchesFit = (product, size) => !size || productFilterSizes(product).includes(size);

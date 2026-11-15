@@ -35,7 +35,11 @@ export function formatMeasurement(cm, unit = 'cm') {
   return `${Number(value.toFixed(1))} ${unit}`;
 }
 
-export function measurementsBlock(measurements = {}, category = 'Tops') {
+export function hasMeasurements(measurements = {}, category = 'Tops') {
+  return measurementGroups(measurements || {}, category).some(g => g.fields.some(([key]) => typeof g.values[key] === 'number' && Number.isFinite(g.values[key]) && g.values[key] > 0));
+}
+
+export function measurementsBlock(measurements = {}, category = 'Tops', {name = 'this piece', email = 'hello@japansterdam.com'} = {}) {
   if (category === 'Footwear') return document.createDocumentFragment();
   measurements = measurements || {};
   const section = document.createElement('section');
@@ -46,6 +50,17 @@ export function measurementsBlock(measurements = {}, category = 'Tops') {
   const title = document.createElement('h2');
   title.className = 'measurements__title';
   title.textContent = 'Measurements';
+  if (!hasMeasurements(measurements, category)) {
+    const note = document.createElement('p');
+    note.className = 'measurements__note';
+    note.textContent = 'Measurements are available on request.';
+    const link = document.createElement('a');
+    link.className = 'u';
+    link.href = 'mailto:' + email + '?subject=' + encodeURIComponent('Measurements for ' + name);
+    link.textContent = 'Request measurements';
+    section.append(title, note, link);
+    return section;
+  }
   const toggle = document.createElement('div');
   toggle.className = 'measurements__units';
   toggle.setAttribute('role', 'group');

@@ -1,9 +1,9 @@
 import { commerceView } from './commerce.js?v=stripe-1';
-import { FIT_SIZES, productFitsLike, suggestedFitsLike } from '../js/sizing.js';
+import { FIT_SIZES, productFitsLike, suggestedFitsLike } from '../js/sizing.js?v=footwear-filter-1';
 import { imageFrameStyle } from '../js/image-frames.js';
 import { API_BASE } from '../js/config.js';
 import { createProductRoutes } from '../js/product-urls.js';
-import { TOP_MEASUREMENT_FIELDS, BOTTOM_MEASUREMENT_FIELDS, measurementGroups, formatMeasurement, measurementsBlock } from '../js/measurements.js?v=footwear-1';
+import { TOP_MEASUREMENT_FIELDS, BOTTOM_MEASUREMENT_FIELDS, measurementGroups, formatMeasurement, measurementsBlock } from '../js/measurements.js?v=ready-measurements-1';
 
 const TOKEN_KEY = 'jp_admin_token';
 const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Footwear', 'Accessories'];
@@ -282,7 +282,7 @@ async function viewProducts() {
     const filtering = !!q || listState.filter !== 'all';
     const canReorder = !filtering && !savingOrder;
     seg.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.f === listState.filter));
-    const rows = products.filter((p) => (listState.filter === 'all' || (listState.filter === 'needs-fit' ? !productFitsLike(p).length : listState.filter === 'active' ? p.active !== false : listState.filter === 'inactive' ? p.active === false : p.active !== false && (listState.filter === 'sold') === !!p.sold)) && (!q || (p.name + ' ' + p.brand).toLowerCase().includes(q)));
+    const rows = products.filter((p) => (listState.filter === 'all' || (listState.filter === 'needs-fit' ? p.category !== 'Footwear' && !productFitsLike(p).length : listState.filter === 'active' ? p.active !== false : listState.filter === 'inactive' ? p.active === false : p.active !== false && (listState.filter === 'sold') === !!p.sold)) && (!q || (p.name + ' ' + p.brand).toLowerCase().includes(q)));
     count.textContent = `${rows.length} of ${products.length}`;
     $('#reorder-hint').textContent = savingOrder ? 'Saving shop order…' : filtering ? 'Clear the search and filter to change the order.' : 'Drag the ⋮⋮ handle, use ⇡ to move to the top, or use the arrows. This order is the default in the shop.';
     list.replaceChildren(
@@ -300,7 +300,7 @@ async function viewProducts() {
           h('span', { class: 'prow__no' }, noLabel(nums.get(p.slug))),
           h('span', { class: 'prow__name', title: p.name }, p.name, p.active === false ? h('small', { class: 'inactive-label' }, 'Inactive · hidden') : ''),
           h('span', { class: 'prow__brand' }, p.brand),
-          h('span', { class: 'prow__size' }, p.size, h('small', { class: 'fit-summary' }, productFitsLike(p).length ? 'Fits ' + productFitsLike(p).join(' / ') : 'Set fit')),
+          h('span', { class: 'prow__size' }, p.size, h('small', { class: 'fit-summary' }, p.category === 'Footwear' ? 'Shoe size' : productFitsLike(p).length ? 'Fits ' + productFitsLike(p).join(' / ') : 'Set fit')),
           h('span', { class: 'prow__price' }, formatPrice(p.price)),
           h('button', { type: 'button', class: 'pill' + (p.sold ? ' pill--sold' : ''), title: 'Click to mark as ' + (p.sold ? 'available' : 'sold'), onclick: (e) => { e.stopPropagation(); toggleSold(p, e.currentTarget); } }, p.sold ? 'Sold' : 'Available'));
         const open = () => { location.hash = '#/products/' + encodeURIComponent(p.slug); };

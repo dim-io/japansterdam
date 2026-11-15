@@ -55,6 +55,17 @@ test('set measurements, metadata and safe schema preserve real product facts',()
  assert.ok(!jsonScript({name:'</script><script>alert(1)</script>'}).includes('</script>'));
  assert.ok(!publishedDescription('<p>From the Journal: <a href="journal.html?story=secret">Secret</a></p>',content).includes('secret'));
 });
+test('missing measurements offer a product-specific request without empty tables or invented numbers',()=>{
+ const p={...piece,measurements:{}};
+ const html=productHTML(p,[p],content);
+ assert.ok(html.includes('Measurements are available on request.'));
+ assert.ok(html.includes('subject=Measurements%20for%20Needles%20Archive%20Shirt'));
+ assert.ok(!html.includes('measurements__list'));
+ const shoe={...p,category:'Footwear',size:'EU 36',fitsLike:['M']};
+ const footwear=productHTML(shoe,[shoe],content);
+ assert.ok(!footwear.includes('<dt>Fits like</dt>'));
+ assert.ok(!footwear.includes('Garment measurements'));
+});
 
 test('main-domain sitemap includes current products and the permanent brand pages',async()=>{
  const r=await worker.fetch(new Request('https://japansterdam.com/sitemap.xml'),env());

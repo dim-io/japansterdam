@@ -5,6 +5,7 @@ const source=await readFile(new URL('../src/index.js',import.meta.url),'utf8');
 const {cleanProduct}=await import('data:text/javascript;base64,'+Buffer.from(source+'\nexport {cleanProduct};').toString('base64'));
 const sizeSource=await readFile(new URL('../../js/sizing.js',import.meta.url),'utf8');
 const {FIT_SIZES,suggestedFitsLike,productFitsLike,matchesFit}=await import('data:text/javascript;base64,'+Buffer.from(sizeSource).toString('base64'));
+const {footwearSize,filterSizes}=await import('data:text/javascript;base64,'+Buffer.from(sizeSource).toString('base64'));
 const input={name:'Archive jacket',brand:'orSlow',category:'Jackets & Outerwear',price:100,condition:'Very good',conditionNotes:'Light wear.',images:[]};
 const clean=patch=>cleanProduct({...input,...patch},'jacket',123);
 test('original Japanese label survives saving while multiple independently assigned filter sizes match',()=>{
@@ -32,4 +33,13 @@ test('fits-like filtering composes with category and brand, including ambiguous 
  assert.equal(products.filter(p=>matchesFit(p,'XL')).length,2);
  assert.equal(products.filter(p=>p.brand==='orSlow'&&matchesFit(p,'XL')).length,1);
  assert.equal(products.filter(p=>matchesFit(p,'')).length,4);
+});
+test('shoe filters use label systems without clothing fits or guessed international conversions',()=>{
+ const shoes=[{category:'Footwear',size:'36',fitsLike:['M']},{category:'Footwear',size:'EU 36½'},{category:'Footwear',size:'UK 8 / EU 42'},{category:'Footwear',size:'US 9'},{category:'Footwear',size:'EU 37',active:false}];
+ assert.equal(footwearSize('36'),'EU 36');assert.equal(footwearSize('EU 36,5'),'EU 36.5');
+ assert.equal(footwearSize('UK 8'),'UK 8');assert.equal(footwearSize('JP 23'),'JP 23');
+ assert.deepEqual(filterSizes(shoes,'Footwear'),['EU 36','EU 36.5','EU 42','US 9']);
+ assert(matchesFit(shoes[0],'EU 36'));assert(!matchesFit(shoes[0],'M'));
+ assert.deepEqual(productFitsLike(shoes[0]),[]);
+ assert.deepEqual(filterSizes([...shoes,{category:'Tops',size:'M',fitsLike:['M']}],'Tops'),['M']);
 });

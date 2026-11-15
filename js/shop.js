@@ -1,5 +1,5 @@
 import { brandOptions, brandCounts, matchesBrand, shortBrand, brandSearchKey } from './brands.js?v=brand-filter-2';
-import { FIT_SIZES, productFitsLike, matchesFit } from './sizing.js';
+import { filterSizes, matchesFit } from './sizing.js?v=footwear-filter-1';
 import './layout.js?v=checkout-1';
 import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from './data.js';
 import { onBagChange } from './bag.js';
@@ -18,7 +18,7 @@ const grid = document.getElementById('shop-grid');
 const countEl = document.getElementById('shop-count');
 
 const brands = brandOptions(products);
-const sizes = FIT_SIZES.filter(size => products.some(p => productFitsLike(p).includes(size)));
+const sizes = filterSizes(products);
 
 brandSel.innerHTML = '<option value="">All brands</option>' + brands.map((b) => `<option value="${esc(b)}">${esc(b)}</option>`).join('');
 sizeSel.innerHTML = '<option value="">All sizes</option>' + sizes.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
@@ -124,6 +124,10 @@ function writeUrl() {
 }
 
 function render() {
+  const availableSizes = filterSizes(products, state.category);
+  if (state.size && !availableSizes.includes(state.size)) { state.size = ''; writeUrl(); }
+  sizeSel.innerHTML = '<option value="">All sizes</option>' + availableSizes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  document.querySelector('label[for="f-size"]').textContent = state.category === 'Footwear' ? 'Shoe size' : state.category ? 'Fits like' : 'Size / fit';
   chipsEl.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cat === state.category)));
   if(state.brand&&!brands.includes(state.brand)&&!Array.from(brandSel.options).some(o=>o.value===state.brand))brandSel.add(new Option(state.brand,state.brand));
   brandSel.value = state.brand;
