@@ -45,3 +45,9 @@ test('set measurements, metadata and safe schema preserve real product facts',()
  assert.ok(!jsonScript({name:'</script><script>alert(1)</script>'}).includes('</script>'));
  assert.ok(!publishedDescription('<p>From the Journal: <a href="journal.html?story=secret">Secret</a></p>',content).includes('secret'));
 });
+
+test('main-domain sitemap includes current products and the permanent brand pages',async()=>{
+ const r=await worker.fetch(new Request('https://japansterdam.com/sitemap.xml'),env());
+ assert.equal(r.status,200);assert.match(r.headers.get('Content-Type'),/application\/xml/);
+ const xml=await r.text();assert.ok(xml.includes('needles.html'));assert.ok(xml.includes('needles-archive-shirt'));assert.ok(!xml.includes('private-garment'));
+});

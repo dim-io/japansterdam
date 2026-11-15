@@ -1,5 +1,6 @@
 import { createProductRoutes } from '../../js/product-urls.js';
 import { BRAND_PAGES } from '../../js/brand-pages.js';
+import { sitemapXML } from '../src/sitemap.mjs';
 import { ORIGIN,productMeta,productSchema,withMeta,productHTML,brandCards } from './render.mjs';
 const API='https://japansterdam-api.japansterdam-api.workers.dev';
 async function catalog(env){
@@ -17,7 +18,12 @@ export default {async fetch(request,env){
  if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405,headers:{Allow:'GET, HEAD'}});
  const brand=BRAND_PAGES.find(b=>u.pathname==='/'+b.slug+'.html');
  let response;
- if(u.pathname==='/product.html'||brand){
+ if(u.pathname==='/sitemap.xml'){
+  try{
+   const [products,content]=await catalog(env);
+   response=new Response(sitemapXML(products,content),{headers:{'Content-Type':'application/xml; charset=utf-8','Cache-Control':'no-store'}});
+  }catch{return errorPage(503);}
+ }else if(u.pathname==='/product.html'||brand){
   try{
    const [products,content]=await catalog(env);
    const asset=await env.ASSETS.fetch(new Request(u.origin+u.pathname));
