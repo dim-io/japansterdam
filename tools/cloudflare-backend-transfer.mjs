@@ -1,6 +1,8 @@
 // Private account transfer runner. Never log tokens, SQL, rows, images or signed URLs.
 import {pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
+import {readFile,writeFile,unlink} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
 export const SOURCE={account:'0e3359947b78095a7afd9ce36f5cac6f',database:'4e52cd67-a370-400b-b79b-ca1527cc03de',kv:'8a168c9f3c4f4594a08248a29656d8dc'};
 export const TARGET={account:'81a93f1ef55a892620ab77cf0f8163f6'};
 export const OLD_ORIGIN='https://japansterdam-api.japansterdam-api.workers.dev';
@@ -98,10 +100,51 @@ async function copy(source,target){
  await query(target,db,'INSERT OR REPLACE INTO backend_account_transfer VALUES (?,?,?)',[SOURCE.database,new Date().toISOString(),JSON.stringify({database:before,images})]);
  console.log(JSON.stringify({verified:true,targetDatabase:db,targetImages:ns,tables:Object.fromEntries(Object.entries(before.tables).map(([k,v])=>[k,v.rows])),images:images.count}));
 }
+async function verifiedResources(source,target,{compare=true}={}){
+ const db=(await target('/d1/database')).result.find(x=>x.name==='japansterdam')?.uuid;
+ const ns=(await target('/storage/kv/namespaces')).result.find(x=>x.title==='japansterdam-images')?.id;
+ if(!db||!ns)throw Error('target_storage_missing');
+ const marker=await query(target,db,'SELECT manifest FROM backend_account_transfer WHERE source=?',[SOURCE.database]);
+ if(marker.length!==1)throw Error('copy_not_verified');
+ const manifest=JSON.parse(marker[0].manifest);
+ if(compare){
+  const a=await snapshot(source,SOURCE.database,true),b=await snapshot(target,db);
+  if(JSON.stringify(a)!==JSON.stringify(b)||JSON.stringify(a)!==JSON.stringify(manifest.database))throw Error('database_changed_since_copy');
+ }
+ return {db,ns,manifest};
+}
+async function publish(source,target){
+ const {db,ns}=await verifiedResources(source,target);
+ let config=await readFile('api/wrangler.toml','utf8');
+ config=config.replace(SOURCE.account,TARGET.account).replace(SOURCE.database,db).replace(SOURCE.kv,ns).replace(/crons = \[[^\]]*\]/,'crons = []');
+ if(!config.includes('STRIPE_TEST_ACCOUNT_ID'))config=config.replace('[vars]','[vars]\nSTRIPE_TEST_ACCOUNT_ID = "acct_1Ubp6ACt5Jg0Obb0"');
+ const path='api/owner-transfer.toml';
+ await writeFile(path,config);
+ try{execFileSync('node_modules/.bin/wrangler',['deploy','--config','owner-transfer.toml'],{cwd:'api',env:{...process.env,CLOUDFLARE_API_TOKEN:process.env.TARGET_CLOUDFLARE_API_TOKEN},stdio:'inherit'});}finally{await unlink(path);}
+ await verifyPublic();console.log('target_backend_published_and_verified');
+}
+async function verifyPublic(){
+ for(const path of ['/public/products','/public/content']){
+  const [oldResponse,newResponse]=await Promise.all([fetch(OLD_ORIGIN+path),fetch(NEW_ORIGIN+path)]);
+  if(!oldResponse.ok||!newResponse.ok)throw Error('public_backend_unavailable');
+  const a=rewrite(await oldResponse.text()),b=await newResponse.text();
+  if(digest(a)!==digest(b))throw Error('public_content_mismatch');
+ }
+}
+async function stopOld(source,target){
+ await verifiedResources(source,target,{compare:false});await verifyPublic();
+ const settings=(await target('/workers/scripts/japansterdam-api/settings')).result;
+ if(!settings.bindings?.some(x=>x.name==='DB'&&x.id==='5b7c3ad6-954b-451e-80ab-ce205e1543a4'))throw Error('target_binding_not_confirmed');
+ await source('/workers/scripts/japansterdam-api/schedules',{method:'PUT',body:'[]'});
+ console.log('old_backend_schedule_stopped_source_storage_retained');
+}
 async function main(){
  const source=connection(SOURCE.account,process.env.SOURCE_CLOUDFLARE_API_TOKEN),target=connection(TARGET.account,process.env.TARGET_CLOUDFLARE_API_TOKEN);
  const phase=process.env.TRANSFER_PHASE||'plan';
  if(phase==='copy'){await copy(source,target);return;}
+ if(phase==='publish'){await publish(source,target);return;}
+ if(phase==='verify'){await verifiedResources(source,target);await verifyPublic();console.log('private_and_public_copy_verified');return;}
+ if(phase==='stop-old'){await stopOld(source,target);return;}
  if(phase!=='plan')throw Error('invalid_phase');
  const result=await plan(source,target);console.log(JSON.stringify(result,null,2));
  if(Object.values(result).some(x=>!x.ok))process.exitCode=1;
