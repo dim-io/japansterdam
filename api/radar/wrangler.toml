@@ -19,3 +19,7 @@ database_id = "41d7b993-8791-4b19-b8fa-5a5db6eeda7e"
 
 [ai]
 binding = "AI"
+
+[[services]]
+binding = "SHOP_API"
+service = "japansterdam-api"

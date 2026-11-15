@@ -6,7 +6,7 @@ import { sitemapXML } from '../src/sitemap.mjs';
 import { ORIGIN,productMeta,productSchema,withMeta,productHTML,brandCards,esc,jsonScript } from './render.mjs';
 const API='https://japansterdam-api.sam-jesse.workers.dev';
 async function catalog(env){
- const source=env.SOURCE_FETCH||fetch;
+ const source=env.SOURCE_FETCH||(env.API_BACKEND?env.API_BACKEND.fetch.bind(env.API_BACKEND):fetch);
  const results=await Promise.all(['/public/products','/public/content'].map(async path=>{
   const r=await source(API+path,{signal:AbortSignal.timeout(5000),headers:{Accept:'application/json'}});
   if(!r.ok)throw Error('Catalogue unavailable');return r.json();

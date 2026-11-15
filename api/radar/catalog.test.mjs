@@ -10,3 +10,8 @@ test('unavailable or malformed public inventory stops assessment; no stale fallb
   for(const response of [new Response('',{status:503}),Response.json([]),Response.json([{name:'Invalid',brand:'Needles',price:null}])])await assert.rejects(readCatalog({SHOP_CATALOG_URL},async()=>response),/RADAR_INVENTORY_FAILED/);
   await assert.rejects(readCatalog({SHOP_CATALOG_URL:'https://untrusted.example'}),/RADAR_INVENTORY_FAILED/);
 });
+
+test('same-account radar uses the shop service without broadening the returned fields',async()=>{
+ let calls=0;const refs=await readCatalog({SHOP_CATALOG_URL,SHOP_API:{fetch:async url=>{assert.equal(url,SHOP_CATALOG_URL);calls++;return Response.json([{name:'Kapital coat',brand:'Kapital',price:300,description:'not needed'}]);}}});
+ assert.equal(calls,1);assert.deepEqual(refs,[{name:'Kapital coat',brand:'Kapital',price:300}]);
+});

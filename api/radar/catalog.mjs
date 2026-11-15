@@ -1,6 +1,6 @@
 // The isolated radar reads only the same public fields as storefront visitors.
 // No product-admin credentials or shop database binding cross account boundaries.
-export async function readCatalog(env, fetcher = fetch) {
+export async function readCatalog(env, fetcher = env.SHOP_API ? env.SHOP_API.fetch.bind(env.SHOP_API) : fetch) {
   if (!env.SHOP_CATALOG_URL) {
     return (await env.RADAR_DB.prepare("SELECT json_extract(data,'$.name') AS name, json_extract(data,'$.brand') AS brand, json_extract(data,'$.price') AS price FROM products").all()).results;
   }

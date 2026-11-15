@@ -12,3 +12,8 @@ directory = "../../.site-dist"
 binding = "ASSETS"
 run_worker_first = true
 not_found_handling = "404-page"
+
+# Direct connection now that website and backend share Sams account.
+[[services]]
+binding = "API_BACKEND"
+service = "japansterdam-api"

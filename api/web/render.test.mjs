@@ -111,3 +111,9 @@ test('checkout responses restrict scripts and framing and never cache order page
  assert.match(r.headers.get('Content-Security-Policy'),/frame-ancestors 'none'/);
  assert.match(r.headers.get('Content-Security-Policy'),/script-src 'self' https:\/\/static.cloudflareinsights.com/);
 });
+
+test('same-account website reads its catalogue through the backend service binding',async()=>{
+ const e=env(),calls=[];e.API_BACKEND={fetch:async url=>{calls.push(url);return Response.json(url.endsWith('/products')?products:content);}};delete e.SOURCE_FETCH;
+ const r=await worker.fetch(new Request('https://japansterdam.com/product.html?p=needles-archive-shirt'),e);
+ assert.equal(r.status,200);assert.equal(calls.length,2);assert.ok((await r.text()).includes('Needles Archive Shirt'));
+});
