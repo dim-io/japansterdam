@@ -4,7 +4,7 @@ import { createProductRoutes } from '../../js/product-urls.js';
 import { BRAND_PAGES } from '../../js/brand-pages.js';
 import { sitemapXML } from '../src/sitemap.mjs';
 import { ORIGIN,productMeta,productSchema,withMeta,productHTML,brandCards,esc,jsonScript } from './render.mjs';
-const API='https://japansterdam-api.japansterdam-api.workers.dev';
+const API='https://japansterdam-api.sam-jesse.workers.dev';
 async function catalog(env){
  const source=env.SOURCE_FETCH||fetch;
  const results=await Promise.all(['/public/products','/public/content'].map(async path=>{
@@ -78,7 +78,7 @@ export default {async fetch(request,env){
    }
    const publicContent={...content,home:{...content.home,testimonials:[]},journal:{...content.journal,articles:liveStories(content).map(a=>({...a,bodyHtml:articleBody(a.bodyHtml)}))}};
    html=html.replace('</body>',()=>'<script type="application/json" id="jp-page-data">'+jsonScript({content:publicContent,products})+'</script></body>');
-   html=html.replace(/<link rel="preload" href="https:\/\/japansterdam-api\.japansterdam-api\.workers\.dev\/public\/(?:content|products)"[^>]*>/g,'');
+   html=html.replace(/<link rel="preload" href="https:\/\/japansterdam-api\.sam-jesse\.workers\.dev\/public\/(?:content|products)"[^>]*>/g,'');
    html=html.replace(/<noscript>[\s\S]*?<\/noscript>/,'<noscript><p style="padding:24px">Enable JavaScript for interactive filters, the bag and measurement units.</p></noscript>');
    response=new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
   }catch{return errorPage(503);}
@@ -87,7 +87,7 @@ export default {async fetch(request,env){
  if(u.pathname==='/checkout.html'){
   out.headers.set('Cache-Control','no-store');
   out.headers.set('Referrer-Policy','no-referrer');
-  out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://japansterdam-api.japansterdam-api.workers.dev; connect-src 'self' https://japansterdam-api.japansterdam-api.workers.dev https://cloudflareinsights.com; frame-src https://*.stripe.com https://*.link.com; object-src 'none'; base-uri 'self'; form-action 'self' mailto:; frame-ancestors 'none'");
+  out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://japansterdam-api.sam-jesse.workers.dev; connect-src 'self' https://japansterdam-api.sam-jesse.workers.dev https://cloudflareinsights.com; frame-src https://*.stripe.com https://*.link.com; object-src 'none'; base-uri 'self'; form-action 'self' mailto:; frame-ancestors 'none'");
  }
  if(!['japansterdam.com','www.japansterdam.com'].includes(u.hostname))out.headers.set('X-Robots-Tag','noindex, nofollow');
  return out;

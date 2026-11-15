@@ -13,7 +13,7 @@ export async function initialRound(env,{query,now=Date.now(),run=wake,testPolicy
   if(!control)throw Error('Trial is niet geïnitialiseerd');
   if(control.attempts>0)return {initialRound:'already_started'};
   if(!freePlanDecision({},testPolicy,now).allowed)throw Error('Gratis account niet bevestigd');
-  const result=await run({...env,VISION_FREE_CONFIRMED:'true',SHOP_CATALOG_URL:'https://japansterdam-api.japansterdam-api.workers.dev/public/products',RADAR_DB:databaseAdapter(query),AI:aiAdapter(env.CLOUDFLARE_API_TOKEN)},{now,clock:Date.now,policy:testPolicy});
+  const result=await run({...env,VISION_FREE_CONFIRMED:'true',SHOP_CATALOG_URL:'https://japansterdam-api.sam-jesse.workers.dev/public/products',RADAR_DB:databaseAdapter(query),AI:aiAdapter(env.CLOUDFLARE_API_TOKEN)},{now,clock:Date.now,policy:testPolicy});
   // Public output contains only aggregate operational results, never listings.
   return {initialRound:result.skipped?'already_reserved':'completed',checked:result.checked||0,sent:result.sent||0,researchSent:result.researchSent||0,photoReviewSent:result.photoReviewSent||0};
 }

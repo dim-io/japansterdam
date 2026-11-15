@@ -100,7 +100,7 @@ test('Journal stories have unique server metadata, safe content and real draft 4
 test('new image uploads fall back to originals; unrelated optimized paths do not redirect',async()=>{
  const e=env();e.ASSETS.fetch=async()=>new Response('Missing',{status:404});
  const r=await worker.fetch(new Request('https://japansterdam.com/assets/optimized/uploads/new-photo.jpg-480.webp'),e);
- assert.equal(r.status,302);assert.equal(r.headers.get('Location'),'https://japansterdam-api.japansterdam-api.workers.dev/img/products/new-photo.jpg');
+ assert.equal(r.status,302);assert.equal(r.headers.get('Location'),'https://japansterdam-api.sam-jesse.workers.dev/img/products/new-photo.jpg');
  assert.equal((await worker.fetch(new Request('https://japansterdam.com/assets/optimized/arbitrary.example.webp'),e)).status,404);
 });
 

@@ -14,7 +14,7 @@ The integration uses Stripe-hosted Checkout Sessions (SDK 23.0.0, API 2026-09-30
    Never put keys in Git, this document, chat, page text or browser storage. A Stripe MCP connection does not install application credentials in Cloudflare.
 3. The restricted API key needs read access to its own account, write/read Checkout Sessions and the inline product/price/shipping resources Stripe requires, and read access to PaymentIntents and Charges. No refund-write, payout-write, bank-account-write or Connect permissions are needed. Test permissions in the sandbox; add a missing permission only when a verified 403 requires it.
 4. Create a Stripe webhook/event destination at:
-   `https://japansterdam-api.japansterdam-api.workers.dev/checkout/stripe-webhook`
+   `https://japansterdam-api.sam-jesse.workers.dev/checkout/stripe-webhook`
    Use snapshot events, API version **2026-09-30.endive**, and these events:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`

@@ -10,7 +10,7 @@ workers_dev = true
 crons = ["*/5 * * * *"]
 
 [vars]
-SHOP_CATALOG_URL = "https://japansterdam-api.japansterdam-api.workers.dev/public/products"
+SHOP_CATALOG_URL = "https://japansterdam-api.sam-jesse.workers.dev/public/products"
 
 [[d1_databases]]
 binding = "RADAR_DB"

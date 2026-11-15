@@ -9,7 +9,7 @@
   "resaleFeeReserve": 0.15,
   "buyingCostReserve": 10,
   "packingReserve": 2,
-  "inventoryUrl": "https://japansterdam-api.japansterdam-api.workers.dev/public/products",
+  "inventoryUrl": "https://japansterdam-api.sam-jesse.workers.dev/public/products",
   "coreBrands": [
     "Kapital",
     "Needles",

@@ -76,6 +76,17 @@ Run measurement validation and conversion checks from the repository root with `
 
 ### Deploy
 
+Production runs in Sam's Cloudflare account (`81a93f1ef55a892620ab77cf0f8163f6`).
+The backend, website and Radar deployments use the existing GitHub secret
+`RADAR_CLOUDFLARE_API_TOKEN`, scoped to that account. Its permissions include
+Workers Scripts, D1 and Workers KV Storage write. The old `CLOUDFLARE_API_TOKEN`
+is retained solely for explicit migration checks against Dimitri's account;
+normal deployments must not use it.
+
+The following commands are for a **new installation only**. Do not seed or
+re-create storage on the production account: its authoritative CMS database
+and uploaded photos have been migrated in full.
+
 ```
 cd api
 npx wrangler login
@@ -103,7 +114,7 @@ product rendering resolves legacy IDs to the current friendly URL.
 `robots.txt` advertises two XML sitemaps:
 
 - `/sitemap.xml` lists the fixed, public pages.
-- `https://japansterdam-api.japansterdam-api.workers.dev/public/sitemap.xml`
+- `https://japansterdam-api.sam-jesse.workers.dev/public/sitemap.xml`
   reads products and Journal articles directly from the CMS on each request.
   It excludes inactive products and unpublished stories, uses the shop's shared
   product URL builder, and retains active sold archive pages. Cross-site

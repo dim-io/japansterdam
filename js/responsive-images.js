@@ -5,7 +5,7 @@ export function imageVariant(src, width) {
     const u = new URL(src, 'https://japansterdam.com/');
     if (u.pathname.endsWith('/header-logo.png')) return null;
     if (u.search || !/\.(?:jpe?g|png|webp)$/i.test(u.pathname)) return null;
-    if (u.origin === 'https://japansterdam-api.japansterdam-api.workers.dev' && /^\/img\/products\/[\w.-]+$/.test(u.pathname))
+    if (u.origin === 'https://japansterdam-api.sam-jesse.workers.dev' && /^\/img\/products\/[\w.-]+$/.test(u.pathname))
       return '/assets/optimized/uploads/' + u.pathname.split('/').pop() + '-' + width + '.webp';
     if (u.origin === 'https://japansterdam.com' && /^\/assets\/img\/[\w./-]+$/.test(u.pathname) && !u.pathname.includes('..'))
       return '/assets/optimized/local/' + u.pathname.slice('/assets/img/'.length) + '-' + width + '.webp';

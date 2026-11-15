@@ -3,7 +3,7 @@ import concurrent.futures, io, json, pathlib, subprocess
 from PIL import Image, ImageOps
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 OUT=ROOT/'.site-dist/assets/optimized'
-API='https://japansterdam-api.japansterdam-api.workers.dev'
+API='https://japansterdam-api.sam-jesse.workers.dev'
 def download(url):
     return subprocess.check_output(['curl','--fail','--silent','--show-error','--location','--max-time','25','--max-filesize','12582912',url])
 sources={}

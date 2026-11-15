@@ -42,7 +42,7 @@ test('sitemap reads current CMS data on every request and responds as XML', asyn
 });
 test('robots delegates the live sitemap and the fixed sitemap matches public static pages',async()=>{
   const robots=await readFile(new URL('../../robots.txt',import.meta.url),'utf8');
-  assert.ok(robots.includes('Sitemap: https://japansterdam-api.japansterdam-api.workers.dev/public/sitemap.xml'));
+  assert.ok(robots.includes('Sitemap: https://japansterdam-api.sam-jesse.workers.dev/public/sitemap.xml'));
   const xml=await readFile(new URL('../../sitemap.xml',import.meta.url),'utf8');
   for(const path of staticPaths) assert.ok(xml.includes('<loc>https://japansterdam.com/'+path+'</loc>'));
   for(const path of ['checkout.html','returns.html','admin/','404.html']) assert.ok(!xml.includes('<loc>https://japansterdam.com/'+path+'</loc>'));
