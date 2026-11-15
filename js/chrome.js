@@ -54,7 +54,7 @@ function footerHTML() {
   </div>
   <div class="ft__news">
     <div class="ft__news-copy">
-      <h2>Get the latest deep dives into Japanese clothing, craft &amp; culture.</h2>
+      <h2><span>Get the latest deep dives into</span> <span>Japanese clothing, craft &amp; culture.</span></h2>
     </div>
     <a class="btn btn--light" href="${esc(site.substack)}" data-site="substack" target="_blank" rel="noopener">Subscribe on Substack</a>
   </div>
