@@ -55,7 +55,7 @@ export const BRAND_PAGES = [
     "title": "Pre-Owned Uniform Experiment Clothing",
     "description": "Discover pre-owned Uniform Experiment clothing and collaborations at Japansterdam. Explore individual pieces curated in Amsterdam.",
     "intro": "A considered uniform with room for something unexpected. Our Uniform Experiment selection looks for expressive details in familiar shapes, from distinctive outerwear to pieces made in collaboration with other labels.",
-    "detail": "The selection includes available Uniform Experiment collaborations, with the full brand credit retained on each product page. Check the original label size, condition notes and measurements where supplied to find the piece that works for you."
+    "detail": "Check the original label size, condition notes and measurements where supplied to find the piece that works for you."
   },
   {
     "slug": "ts-s",
@@ -110,7 +110,7 @@ export const BRAND_PAGES = [
     "brand": "Fragment Design",
     "title": "Pre-Owned Fragment Design Clothing",
     "description": "Explore pre-owned Fragment Design clothing at Japansterdam. Discover the current selection, individually curated in Amsterdam, with product-specific condition and sizing details.",
-    "intro": "Small details can change the feel of a familiar garment. Our Fragment Design selection brings together available collaborations, selected for their design and individual character. Each listing retains the full collaboration credit.",
+    "intro": "Small details can change the feel of a familiar garment. Our Fragment Design selection brings together available collaborations, selected for their design and individual character.",
     "detail": "Read the individual condition notes, original label size and measurements where supplied before ordering. Our collection changes as pieces find new owners; the available garments below update with the shop."
   },
   {
@@ -190,7 +190,7 @@ export const BRAND_PAGES = [
     "brand": "SOPHNET.",
     "title": "Pre-Owned SOPHNET. Clothing",
     "description": "Explore pre-owned SOPHNET. clothing at Japansterdam. Discover the current selection, individually curated in Amsterdam, with product-specific condition and sizing details.",
-    "intro": "Understated everyday clothing alongside distinctive collaborations. Our SOPHNET. selection is chosen for pieces that bring something individual to a familiar wardrobe. Collaborations are included with their complete brand credit.",
+    "intro": "Understated everyday clothing alongside distinctive collaborations. Our SOPHNET. selection is chosen for pieces that bring something individual to a familiar wardrobe.",
     "detail": "Read the individual condition notes, original label size and measurements where supplied before ordering. Our collection changes as pieces find new owners; the available garments below update with the shop."
   },
   {
@@ -198,7 +198,7 @@ export const BRAND_PAGES = [
     "brand": "Visvim",
     "title": "Pre-Owned Visvim Clothing",
     "description": "Explore pre-owned Visvim clothing at Japansterdam. Discover the current selection, individually curated in Amsterdam, with product-specific condition and sizing details.",
-    "intro": "Texture, pattern and attention to detail guide our Visvim selection. Explore the available garments and collaborations below, with their full brand credits retained on the individual product pages.",
+    "intro": "Texture, pattern and attention to detail guide our Visvim selection. Explore the available garments and collaborations below.",
     "detail": "Read the individual condition notes, original label size and measurements where supplied before ordering. Our collection changes as pieces find new owners; the available garments below update with the shop."
   },
   {
