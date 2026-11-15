@@ -35,7 +35,7 @@ export function publishedDescription(html,content){
   return draft?'':block;
  });
 }
-export function measurementHTML(p){return `<section class="measurements" aria-label="Garment measurements"><h2 class="measurements__title">Measurements</h2>${measurementGroups(p.measurements||{},p.category).map(g=>`${p.category==='Sets'?'<h3 class="measurements__subtitle">'+esc(g.title)+'</h3>':''}<dl class="measurements__list">${g.fields.map(([key,label])=>`<div><dt>${esc(label)}</dt><dd>${esc(formatMeasurement(g.values?.[key]))}</dd></div>`).join('')}</dl>`).join('')}<p class="measurements__note">Measured flat in centimeters; widths are not doubled. Approximate measurements; — indicates unavailable.</p></section>`;}
+export function measurementHTML(p){if(p.category==='Footwear')return '';return `<section class="measurements" aria-label="Garment measurements"><h2 class="measurements__title">Measurements</h2>${measurementGroups(p.measurements||{},p.category).map(g=>`${p.category==='Sets'?'<h3 class="measurements__subtitle">'+esc(g.title)+'</h3>':''}<dl class="measurements__list">${g.fields.map(([key,label])=>`<div><dt>${esc(label)}</dt><dd>${esc(formatMeasurement(g.values?.[key]))}</dd></div>`).join('')}</dl>`).join('')}<p class="measurements__note">Measured flat in centimeters; widths are not doubled. Approximate measurements; — indicates unavailable.</p></section>`;}
 export function productHTML(p,products,content){
  const numbered=[...products].sort((a,b)=>a.addedOn-b.addedOn||String(a.slug).localeCompare(b.slug));
  const n='No. '+String(numbered.findIndex(x=>x.slug===p.slug)+1).padStart(3,'0');

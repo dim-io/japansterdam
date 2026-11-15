@@ -37,3 +37,13 @@ test('public frame styles match preview and accept only safe CSS values',async()
   assert.equal(imageFrameStyle({imageFrames:[{url,x:20,y:0,fit:'contain'}]},url),'object-fit:contain;object-position:20% 0%');
   assert.equal(imageFrameStyle({imageFrames:[{url,x:'url(evil)',y:200,fit:'bad'}]},url),'object-fit:cover;object-position:50% 100%');
 });
+
+test('footwear keeps its label size and has no clothing measurement groups', async () => {
+  const saved = clean({category:'Footwear', size:'EU 43', fitsLike:[]});
+  assert.equal(saved.category, 'Footwear');
+  assert.equal(saved.size, 'EU 43');
+  assert.deepEqual(saved.fitsLike, []);
+  const source = await readFile(new URL('../../js/measurements.js', import.meta.url), 'utf8');
+  const {measurementGroups} = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
+  assert.deepEqual(measurementGroups({}, saved.category), []);
+});

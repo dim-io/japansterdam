@@ -19,6 +19,7 @@ export const BOTTOM_MEASUREMENT_FIELDS = [
 ];
 
 export function measurementGroups(measurements = {}, category = 'Tops') {
+  if (category === 'Footwear') return [];
   const top = { key: '', title: 'Top', fields: TOP_MEASUREMENT_FIELDS, values: measurements };
   const bottom = { key: '', title: 'Bottoms', fields: BOTTOM_MEASUREMENT_FIELDS, values: measurements };
   if (category === 'Bottoms') return [bottom];
@@ -35,6 +36,7 @@ export function formatMeasurement(cm, unit = 'cm') {
 }
 
 export function measurementsBlock(measurements = {}, category = 'Tops') {
+  if (category === 'Footwear') return document.createDocumentFragment();
   measurements = measurements || {};
   const section = document.createElement('section');
   section.className = 'measurements';

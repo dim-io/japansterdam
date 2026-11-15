@@ -3,7 +3,7 @@ import { productFitsLike } from './sizing.js';
 import { productStoriesHTML } from './journal-shared.js?v=inline-links-1';
 import { imageFrameStyle } from './image-frames.js';
 import './layout.js?v=checkout-1';
-import { measurementsBlock } from './measurements.js?v=unit-note';
+import { measurementsBlock } from './measurements.js?v=footwear-1';
 import { getContent, getProducts, getProduct, formatPrice, esc, stripHtml, productUrl, brandUrl, altFor, cardHTML, catNo, related, setMeta, jsonLd } from './data.js';
 import { inBag, addToBag, onBagChange } from './bag.js';
 

@@ -5,7 +5,7 @@ function publicContent(data) {
   return { ...data, journal: { ...data.journal, articles: (data.journal.articles || []).filter((article) => article.published === true) } };
 }
 
-const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Accessories'];
+const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Footwear', 'Accessories'];
 const CONDITIONS = ['New / unworn', 'Excellent', 'Very good', 'Good', 'Fair'];
 const SESSION_MS = 30 * 24 * 3600 * 1000;
 const MAX_FAILS = 8;

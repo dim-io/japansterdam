@@ -5,7 +5,7 @@ import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from
 import { onBagChange } from './bag.js';
 
 const [c, products] = await Promise.all([getContent(), getProducts()]);
-const CATS = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets'];
+const CATS = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Footwear'];
 const SORTS = { curated: 'Curated selection', newest: 'Newest', 'price-asc': 'Price: low to high', 'price-desc': 'Price: high to low' };
 
 document.getElementById('shop-title').textContent = c.shop.title;

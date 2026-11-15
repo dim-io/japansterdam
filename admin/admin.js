@@ -3,10 +3,10 @@ import { FIT_SIZES, productFitsLike, suggestedFitsLike } from '../js/sizing.js';
 import { imageFrameStyle } from '../js/image-frames.js';
 import { API_BASE } from '../js/config.js';
 import { createProductRoutes } from '../js/product-urls.js';
-import { TOP_MEASUREMENT_FIELDS, BOTTOM_MEASUREMENT_FIELDS, measurementGroups, formatMeasurement, measurementsBlock } from '../js/measurements.js?v=unit-note';
+import { TOP_MEASUREMENT_FIELDS, BOTTOM_MEASUREMENT_FIELDS, measurementGroups, formatMeasurement, measurementsBlock } from '../js/measurements.js?v=footwear-1';
 
 const TOKEN_KEY = 'jp_admin_token';
-const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Accessories'];
+const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Footwear', 'Accessories'];
 const CONDITIONS = ['New / unworn', 'Excellent', 'Very good', 'Good', 'Fair'];
 const SECTION_NAMES = {
   site: 'General', home: 'Home page', shop: 'Shop', about: 'About', contact: 'Contact', shipping: 'Shipping & returns',
@@ -441,6 +441,7 @@ async function viewEditor(slugParam) {
     h('div', { class: 'fit-options' }, fitInputs.map((input, index) => h('label', {}, input, FIT_SIZES[index]))),
     h('p', { class: 'hint' }, 'Select all sizes this garment fits. Keep the original label above. Japanese numbers and waist sizes are not automatically converted; use measurements and your assessment.'),
     h('button', { type: 'button', class: 'btn btn--sm', onclick: () => { fitEdited = false; suggestFit(); } }, 'Suggest from label size'), fitStatus);
+  fitEditor.hidden = d.category === 'Footwear';
   updateFitStatus();
   const condition = h('select', { required: true, 'aria-label': 'Condition' },
     h('option', { value: '', selected: !d.condition, disabled: true }, 'Choose condition'),
@@ -461,6 +462,7 @@ async function viewEditor(slugParam) {
       Object.assign(d.measurements, d.measurements.bottom || {});
     }
     d.category = cat.value;
+    fitEditor.hidden = d.category === 'Footwear';
     drawMeasurementInputs();
     mark();
   });
