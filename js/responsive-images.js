@@ -13,6 +13,7 @@ export function imageVariant(src, width) {
   return null;
 }
 export function responsiveAttrs(src, sizes = '(min-width:1100px) 24vw, (min-width:640px) 32vw, 50vw') {
+  if (typeof document !== 'undefined' && !document.getElementById('jp-page-data')) return '';
   if (typeof location !== 'undefined' && location.hostname === 'dim-io.github.io') return '';
   const small = imageVariant(src, 480), large = imageVariant(src, 960);
   return small && large ? ` srcset="${small} 480w, ${large} 960w" sizes="${sizes}"` : '';

@@ -52,7 +52,7 @@ export function safeArticleHTML(html) {
       if (node.tagName === 'IMG') {
         node.setAttribute('loading', 'lazy'); node.setAttribute('decoding', 'async');
         const small=imageVariant(node.getAttribute('src'),480),large=imageVariant(node.getAttribute('src'),960);
-        if(small&&large){node.setAttribute('srcset',small+' 480w, '+large+' 960w');node.setAttribute('sizes','(min-width:900px) 800px, 100vw');}
+        if(small&&large&&responsiveAttrs(node.getAttribute('src'))){node.setAttribute('srcset',small+' 480w, '+large+' 960w');node.setAttribute('sizes','(min-width:900px) 800px, 100vw');}
       }
     }
   };
