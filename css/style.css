@@ -138,7 +138,7 @@ img[data-fade]{opacity:1}
   .ft__brand{grid-column:auto}
   .ft__news{flex-direction:row;justify-content:space-between;align-items:center;gap:40px}
   .ft__news-copy{flex:1;min-width:0;max-width:none}
-  .ft__news-copy h2{max-width:none;font-size:clamp(20px,2.15vw,32px)}
+  .ft__news-copy h2{max-width:none;font-size:clamp(18px,2.15vw,32px)}
   .ft__news-copy h2 span{display:block;white-space:nowrap}
 }
 
