@@ -38,6 +38,7 @@ async function exportSQL(api,db){
   current_bookmark=d.at_bookmark;await pause(1000);
  }throw Error('export_timeout');
 }
+export function classifyImportError(d){const s=JSON.stringify(d).toLowerCase();return ['already exists','foreign key','not authorized','too large','too long','syntax','internal','no such table','transaction','unauthorized','maximum','100kb','limit','unique constraint','check constraint','reserved','success'].filter(x=>s.includes(x)).map(x=>x.replaceAll(' ','_')).join('_')||'unknown';}
 async function importSQL(api,db,sql){
  const etag=createHash('md5').update(sql).digest('hex'),path=`/d1/database/${db}/import`;
  let d=(await post(api,path,{action:'init',etag})).result;
@@ -48,7 +49,7 @@ async function importSQL(api,db,sql){
  }
  for(let i=0;i<120;i++){
   if(d.status==='complete')return;
-  if(d.status==='error'||d.success===false)throw Error('database_import_failed');
+  if(d.status==='error'||d.success===false)throw Error('database_import_failed_'+classifyImportError(d));
   await pause(1000);d=(await post(api,path,{action:'poll',current_bookmark:d.at_bookmark})).result;
  }throw Error('import_timeout');
 }
