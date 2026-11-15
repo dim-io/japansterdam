@@ -38,6 +38,7 @@ test('paid callbacks are verified, idempotent, mark stock sold and send one rece
  const p=payments.get('tr_1');p.status='paid';p.amount.value='1.00';await assert.rejects(syncOrder(env,o.id),/verification failed/);assert.equal(JSON.parse(db.prepare("SELECT data FROM products WHERE slug='one'").get().data).sold,false);
  p.amount.value='106.95';await syncOrder(env,o.id);await syncOrder(env,o.id);await sendMessages(env);await sendMessages(env);
  assert.equal(JSON.parse(db.prepare("SELECT data FROM products WHERE slug='one'").get().data).sold,true);assert.equal(mails.length,2);assert(mails[0].body.text.includes('14-day withdrawal'));assert(mails[0].body.text.includes('€106.95'));
+ assert(mails[0].body.html.includes('Thank you for your order.'));assert(mails[0].body.html.includes('14-day withdrawal'));assert.equal(mails[0].body.reply_to,'owner@example.test');assert.equal(mails[1].body.reply_to,customer.email);assert(mails[1].body.html.includes('A new order, paid.'));
  p.status='expired';await syncOrder(env,o.id);assert.equal(db.prepare('SELECT status FROM orders WHERE id=?').get(o.id).status,'paid');assert.equal(db.prepare('SELECT COUNT(*) AS n FROM stock_reservations').get().n,1);
 });
 test('only verified terminal status releases a reservation; ambiguous provider failure keeps it locked',async()=>{
@@ -82,3 +83,12 @@ test('a busy reconciliation stays within the Cloudflare Free 50-request limit',a
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status='paid'").get().n,4);
  assert(env.requests+network<=50,`Used ${env.requests+network} requests`);
 });
+
+ test('the admin email test uses the receipt design but cannot create an order or sell stock',async()=>{
+ provider();const {db,env}=setup();
+ await commerceRoute(req('/admin/checkout/email-test',{}),env,{}, {admin:true});
+ assert.equal(mails.length,1);assert.deepEqual(mails[0].body.to,['owner@example.test']);
+ assert(mails[0].body.html.includes('TEST EMAIL — NO PURCHASE'));assert(mails[0].body.text.includes('no payment received'));
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n,0);
+ assert.equal(JSON.parse(db.prepare("SELECT data FROM products WHERE slug='one'").get().data).sold,false);
+ });

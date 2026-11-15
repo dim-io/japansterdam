@@ -41,3 +41,16 @@ For automatic Stripe Tax, first confirm applicability to this inventory and the 
 - The automated tests use real SDK serialization/signature verification against mocked Stripe HTTP and SQLite transactions; they do not constitute a completed hosted sandbox payment.
 
 Only after these checks, complete business/tax/provider review, configure live credentials and webhook, select Live mode, and enable checkout. Confirm a real low-value payment and refund through the owner's normal Stripe interface. A production financial transaction is performed by the owner.
+
+## Order confirmation email
+
+Paid live orders enqueue two separate messages: the customer's confirmation and the owner's fulfillment notification. Both contain a self-contained HTML layout plus a plain-text fallback. They use the immutable order snapshot (items, condition, prices, shipping, address and purchase policies). Customer replies go to the saved shop contact email; replies from the owner notification go to the customer. Only the owner notification includes the customer's order note.
+
+The existing resend queue and idempotency keys remain unchanged. Sandbox payments never enqueue buyer messages. The admin email-test button sends a clearly marked sample using the same layout to the saved shop contact address; it creates no order and changes no stock.
+
+To finish activation:
+
+1. Sign in to the owner's Resend account. Verify an owned sending domain using the exact DNS records shown by Resend. Keep existing mailbox MX/SPF records intact; do not replace the root mailbox configuration with sending-only records.
+2. Store a sending-only Resend API key as `RESEND_API_KEY` in the owner's `japansterdam-api` Worker. Restrict it to the verified sending domain. Store `ORDER_EMAIL_FROM` as `Japansterdam <orders@VERIFIED-DOMAIN>` using that actual domain. Do not commit credentials or paste them into chat.
+3. In `/admin/` → Checkout settings, verify the contact email and use **Send test email to my saved contact address**. Provider acceptance alone does not prove inbox delivery: confirm the email actually arrived and test Reply.
+4. Keep live checkout disabled until the remaining payment and tax launch checks above are complete.
