@@ -1,4 +1,4 @@
-import { brandOptions, brandCounts, matchesBrand, shortBrand, brandSearchKey } from './brands.js?v=individual-labels-1';
+import { brandOptions, brandCounts, matchesBrand, shortBrand, brandSearchKey } from './brands.js?v=individual-labels-2';
 import { filterSizes, matchesFit } from './sizing.js?v=footwear-filter-1';
 import './layout.js?v=checkout-1';
 import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from './data.js';

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {productBrands,matchesBrand,brandOptions,brandCounts} from '../js/brands.js';
 test('collaborations match each participant while preserving the original credit',()=>{
  const p={brand:'Uniform Experiment x Fragment Design x Carhartt'};
- assert.deepEqual(productBrands(p),['Uniform Experiment','Fragment Design','Carhartt']);
- for(const brand of ['Uniform Experiment','Fragment Design','Carhartt',p.brand])assert(matchesBrand(p,brand));
+ assert.deepEqual(productBrands(p),['Uniform Experiment','Fragment Design']);
+ for(const brand of ['Uniform Experiment','Fragment Design',p.brand])assert(matchesBrand(p,brand));
  assert(!matchesBrand(p,'Needles'));assert.equal(p.brand,'Uniform Experiment x Fragment Design x Carhartt');
  assert.deepEqual(productBrands({brand:'Denim by Vanquish & Fragment'}),['Denim by Vanquish & Fragment']);
  assert.deepEqual(productBrands({brand:'SOPHNET. × VISVIM'}),['SOPHNET.','Visvim']);
@@ -25,4 +25,13 @@ test('separate SOPHNET and Visvim entries share the collaboration while Denim re
  assert.equal(brandCounts(products).get('SOPHNET.'),2);
  assert.equal(brandCounts(products).get('Visvim'),1);
  assert(!matchesBrand(products[2],'Fragment Design'));
+});
+
+test('omitted labels leave navigation while collaborations remain discoverable',()=>{
+ const products=[{brand:'Nike x Fragment Design'},{brand:'Uniform Experiment x Fragment Design x Carhartt'},{brand:'The Changes'}];
+ assert.deepEqual(brandOptions(products),['Fragment Design','Uniform Experiment']);
+ assert.deepEqual(productBrands(products[2]),[]);
+ assert(matchesBrand(products[0],'Fragment Design'));
+ assert(matchesBrand(products[1],'Uniform Experiment'));
+ assert.equal(products[2].brand,'The Changes');
 });

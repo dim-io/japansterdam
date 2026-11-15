@@ -1,4 +1,4 @@
-import { productBrands } from './brands.js?v=individual-labels-1';
+import { productBrands } from './brands.js?v=individual-labels-2';
 import { imageFrameStyle } from './image-frames.js';
 import { publishedStories, storyCard } from './journal-shared.js';
 import './layout.js?v=checkout-1';

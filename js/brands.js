@@ -7,6 +7,7 @@ const names = new Map(Object.entries({
   'sage de cret':'Sage de Cret','wislom':'WISLOM','wtaps':'WTAPS',
   'denim by vanquish fragment':'Denim by Vanquish & Fragment',
 }));
+const omittedBrands = new Set(['carhartt', 'nike', 'the changes']);
 export const shortBrand = value => names.get(key(value)) || String(value || '').trim();
 export function productBrands(product) {
   const raw = String(product.brand || '').trim();
@@ -14,7 +15,7 @@ export function productBrands(product) {
   // This is a joint label in its own right, not two independent filter entries.
   if (key(raw) === 'denim by vanquish fragment') return ['Denim by Vanquish & Fragment'];
   const parts = raw.split(/\s+[x×]\s+/i);
-  return [...new Set(parts.map(shortBrand).filter(Boolean))];
+  return [...new Set(parts.map(shortBrand).filter(brand => brand && !omittedBrands.has(key(brand))))];
 }
 export function matchesBrand(product, brand) {
   return !brand || productBrands(product).includes(shortBrand(brand)) || product.brand === brand;
