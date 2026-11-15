@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       phase:
-        description: Controle; kopieren wordt pas beschikbaar na geslaagde voorbereiding
+        description: Controle of volledige privekopie naar Sams account
         type: choice
-        options: [plan]
+        options: [plan, copy]
         default: plan
 permissions:
   contents: read
