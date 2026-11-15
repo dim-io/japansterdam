@@ -1,5 +1,5 @@
 import { responsiveAttrs } from './responsive-images.js';
-import { brandPage } from './brand-pages.js?v=all-featured-1';
+import { brandPage } from './brand-pages.js?v=complete-list-1';
 // Data loading, caching and shared helpers.
 import { imageFrameStyle } from './image-frames.js';
 import { inBag } from './bag.js';
