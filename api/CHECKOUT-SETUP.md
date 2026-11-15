@@ -1,5 +1,7 @@
 # Japansterdam checkout setup
 
+Stripe is now also supported. For the new Stripe setup, see [STRIPE-SETUP.md](STRIPE-SETUP.md). The instructions below describe the existing Mollie integration.
+
 The Mollie integration is deployed **disabled**. Public checkout keeps the existing email request until live setup is complete. No bank account, provider subscription or payment method is opened/activated by this code.
 
 1. Register and verify the merchant business and payout account in Mollie. Activate the intended payment methods there.

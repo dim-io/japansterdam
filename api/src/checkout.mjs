@@ -1,4 +1,6 @@
-// Hosted Mollie payments. Prices, stock and payment state are always server-owned.
+// Hosted payments. Prices, stock and payment state are always server-owned.
+import {stripeCredentials,stripeSigningSecret,stripeAccountId,stripeSessionPayload,startStripePayment,readStripePayment,stripeWebhookEvent,webhookOrderId,verifyStripeAccount,STRIPE_EVENTS} from './stripe-payments.mjs';
+const orderProvider=o=>JSON.parse(o.policy).provider||'mollie';
 export class CheckoutError extends Error { constructor(status,message){super(message);this.name='CheckoutError';this.status=status;} }
 const fail=(status,message)=>{throw new CheckoutError(status,message);};
 const sql=(env,q,...v)=>env.DB.prepare(q).bind(...v);
@@ -13,7 +15,7 @@ const response=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Con
 async function body(req){const text=await req.text();if(text.length>18000)fail(413,'Request too large');try{return JSON.parse(text);}catch{fail(400,'Invalid request');}}
 const str=(v,max=200)=>typeof v==='string'?v.trim().slice(0,max):'';
 export function cleanSettings(input={}){
- const s={enabled:input.enabled===true,mode:input.mode==='live'?'live':'test',company:str(input.company),kvk:str(input.kvk,20),vat:str(input.vat,30),address:str(input.address,500),email:str(input.email),returnAddress:str(input.returnAddress,500),taxNote:str(input.taxNote,500),deliveryText:str(input.deliveryText,3000),returnsText:str(input.returnsText,5000),privacyText:str(input.privacyText,5000),termsText:str(input.termsText,5000),reviewed:input.reviewed===true,shipping:[],methods:[]};
+ const s={provider:input.provider==='stripe'?'stripe':'mollie',taxMode:input.taxMode==='manual_confirmed'?'manual_confirmed':'pending',enabled:input.enabled===true,mode:input.mode==='live'?'live':'test',company:str(input.company),kvk:str(input.kvk,20),vat:str(input.vat,30),address:str(input.address,500),email:str(input.email),phone:str(input.phone,50),returnAddress:str(input.returnAddress,500),taxNote:str(input.taxNote,500),deliveryText:str(input.deliveryText,3000),returnsText:str(input.returnsText,5000),privacyText:str(input.privacyText,5000),termsText:str(input.termsText,5000),reviewed:input.reviewed===true,shipping:[],methods:[]};
  for(const r of Array.isArray(input.shipping)?input.shipping.slice(0,80):[]){
   const country=str(r.country,2).toUpperCase(),cents=Number(r.cents);
   if(!/^[A-Z]{2}$/.test(country)||!Number.isInteger(cents)||cents<0||cents>100000||s.shipping.some(x=>x.country===country))fail(400,'Use unique two-letter country codes and valid shipping prices.');
@@ -24,14 +26,16 @@ export function cleanSettings(input={}){
  return s;
 }
 export async function settings(env){const row=await sql(env,"SELECT data FROM commerce_settings WHERE id='main'").first();return cleanSettings(row?JSON.parse(row.data):{});}
-function credentials(env,mode){return new RegExp('^'+mode+'_[A-Za-z0-9]+$').test(env.MOLLIE_API_KEY||'');}
+function mollieCredentials(env,mode){return new RegExp('^'+mode+'_[A-Za-z0-9]+$').test(env.MOLLIE_API_KEY||'');}
+function credentials(env,mode,provider='mollie'){return provider==='stripe'?stripeCredentials(env,mode):mollieCredentials(env,mode);}
 export function readiness(env,s){
  const missing=[];
  for(const k of ['company','kvk','address','email','returnAddress','taxNote','deliveryText','returnsText','privacyText','termsText'])if(!s[k])missing.push(k);
  if(!/^\d{8}$/.test(s.kvk))missing.push('valid_kvk');
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email))missing.push('valid_email');
- if(!s.shipping.length)missing.push('shipping');if(!s.methods.length)missing.push('payment_methods');if(!s.reviewed)missing.push('legal_review');
- if(!credentials(env,s.mode))missing.push('MOLLIE_API_KEY ('+s.mode+')');
+ if(!s.shipping.length)missing.push('shipping');if(s.provider!=='stripe'&&!s.methods.length)missing.push('payment_methods');if(!s.reviewed)missing.push('legal_review');
+ if(!credentials(env,s.mode,s.provider))missing.push((s.provider==='stripe'?'STRIPE_'+s.mode.toUpperCase()+'_API_KEY':'MOLLIE_API_KEY')+' ('+s.mode+')');
+ if(s.provider==='stripe'){if(!stripeSigningSecret(env,s.mode))missing.push('STRIPE_'+s.mode.toUpperCase()+'_WEBHOOK_SECRET');if(!/^acct_[A-Za-z0-9]+$/.test(stripeAccountId(env,s.mode)))missing.push('STRIPE_'+s.mode.toUpperCase()+'_ACCOUNT_ID');if(s.taxMode!=='manual_confirmed')missing.push('confirmed_tax_treatment');}
  if(s.mode==='live'&&(!env.RESEND_API_KEY||!env.ORDER_EMAIL_FROM))missing.push('verified_confirmation_email');
  return {ready:missing.length===0,missing};
 }
@@ -42,7 +46,7 @@ async function mollie(env,mode,path,options={}){
  return r.json();
 }
 const rowById=(env,id)=>sql(env,'SELECT * FROM orders WHERE id=?',id).first();
-function publicOrder(o){return {id:o.id,number:'JPN-'+o.id,mode:o.mode,status:o.status,items:JSON.parse(o.items),subtotal:o.subtotal,shipping:o.shipping,total:o.total,fulfillment:o.fulfillment,tracking:o.tracking,refunded:o.refunded,chargeback:o.chargeback,checkoutUrl:['open','pending','authorized'].includes(o.status)?o.checkout_url:null};}
+function publicOrder(o){return {provider:orderProvider(o),id:o.id,number:'JPN-'+o.id,mode:o.mode,status:o.status,items:JSON.parse(o.items),subtotal:o.subtotal,shipping:o.shipping,total:o.total,fulfillment:o.fulfillment,tracking:o.tracking,refunded:o.refunded,chargeback:o.chargeback,checkoutUrl:['open','pending','authorized'].includes(o.status)?o.checkout_url:null};}
 export function customer(input){
  const c={};for(const k of ['name','email','street','zip','city','country','note'])c[k]=str(input?.[k],k==='note'?1000:200);
  c.email=c.email.toLowerCase();c.country=c.country.toUpperCase();
@@ -71,9 +75,10 @@ async function createPayment(env,o){
  if(o.payment_id)return o;
  if(now()-o.created_at>50*60000)fail(409,'Payment setup needs a manual check. Please contact Japansterdam.');
  try{
-  const p=await mollie(env,o.mode,'/payments',{method:'POST',headers:{'Idempotency-Key':o.id},body:o.payment_request});
-  const link=p._links?.checkout?.href;let u;try{u=new URL(link);}catch{fail(502,'Missing payment link');}
-  if(!PAYMENT.test(p.id||'')||u.protocol!=='https:'||!(u.hostname==='mollie.com'||u.hostname.endsWith('.mollie.com'))||p.mode!==o.mode)fail(502,'Invalid payment response');
+  const stripe=orderProvider(o)==='stripe';
+  const p=stripe?await startStripePayment(env,o):await mollie(env,o.mode,'/payments',{method:'POST',headers:{'Idempotency-Key':o.id},body:o.payment_request});
+  const link=stripe?p.url:p._links?.checkout?.href;let u;try{u=new URL(link);}catch{fail(502,'Missing payment link');}
+  if((stripe?!/^cs_(test|live)_[A-Za-z0-9]+$/.test(p.id||''):!PAYMENT.test(p.id||''))||u.protocol!=='https:'||(stripe?u.hostname!=='checkout.stripe.com':!(u.hostname==='mollie.com'||u.hostname.endsWith('.mollie.com')))||(stripe?p.livemode!==(o.mode==='live'):p.mode!==o.mode))fail(502,'Invalid payment response');
   await sql(env,"UPDATE orders SET payment_id=?,checkout_url=?,status='open',updated_at=?,setup_error=NULL WHERE id=? AND payment_id IS NULL",p.id,link,now(),o.id).run();
  }catch(e){
   if(e.definitive)await env.DB.batch([sql(env,"UPDATE orders SET status='failed',setup_error='provider_rejected',updated_at=? WHERE id=? AND payment_id IS NULL",now(),o.id),sql(env,'DELETE FROM stock_reservations WHERE order_id=?',o.id)]);
@@ -84,7 +89,9 @@ async function createPayment(env,o){
 }
 export async function createOrder(req,env,{test=false}={}){
  const s=await settings(env);if(!test&&(!s.enabled||s.mode!=='live'||!readiness(env,s).ready))fail(503,'Direct payment is not available yet.');
- const mode=test?'test':'live';if(!credentials(env,mode))fail(503,'Add the matching Mollie API key first.');
+ const mode=test?'test':'live';if(!credentials(env,mode,s.provider))fail(503,'Add the matching '+(s.provider==='stripe'?'Stripe':'Mollie')+' API key first.');
+ if(s.provider==='stripe'&&(!stripeSigningSecret(env,mode)||!stripeAccountId(env,mode)))fail(503,'Configure the Stripe account ID and webhook signing secret first.');
+ if(!test&&s.provider==='stripe'&&s.taxMode!=='manual_confirmed')fail(503,'Confirm the applicable tax treatment before starting a payment.');
  const b=await body(req),c=customer(b.customer);
  if(!ID.test(b.requestId||'')||!TOKEN.test(b.accessToken||''))fail(400,'Invalid checkout identifier');
  if(!test&&b.accepted!==true)fail(400,'Please accept the purchase terms.');
@@ -98,7 +105,7 @@ export async function createOrder(req,env,{test=false}={}){
  if(!test&&(b.expectedTotal!==q.total||b.policyVersion!==await hash(JSON.stringify(s))))fail(409,'Prices or purchase information changed. Refresh checkout and review the total before paying.');
  const origin=req.headers.get('Origin');
  const site=['https://japansterdam.com','https://www.japansterdam.com','https://dim-io.github.io'].includes(origin)?origin+(origin==='https://dim-io.github.io'?'/japansterdam':''):'https://japansterdam.com';
- const payload=JSON.stringify({amount:{currency:'EUR',value:money(q.total)},description:'Japansterdam JPN-'+id,redirectUrl:site+'/checkout.html#order='+id,webhookUrl:new URL('/checkout/webhook',req.url).href,method:s.methods,metadata:{order_id:id}});
+ const payload=JSON.stringify(s.provider==='stripe'?stripeSessionPayload({id,time,items:q.items,shipping:q.shipping,customer:c,site}):{amount:{currency:'EUR',value:money(q.total)},description:'Japansterdam JPN-'+id,redirectUrl:site+'/checkout.html#order='+id,webhookUrl:new URL('/checkout/webhook',req.url).href,method:s.methods,metadata:{order_id:id}});
  const statements=[sql(env,"INSERT INTO orders(id,access_hash,request_hash,mode,status,customer,items,policy,subtotal,shipping,total,payment_request,created_at,updated_at) VALUES (?,?,?,?,'creating',?,?,?,?,?,?,?,?,?)",id,accessHash,requestHash,mode,JSON.stringify(c),JSON.stringify(q.items),JSON.stringify(s),q.subtotal,q.shipping,q.total,payload,time,time)];
  if(!test)for(const item of q.items)statements.push(sql(env,'INSERT INTO stock_reservations(slug,order_id,expected_cents) VALUES (?,?,?)',item.slug,id,item.cents));
  try{await env.DB.batch(statements);}catch{const previous=await rowById(env,id);if(previous&&previous.access_hash===accessHash&&previous.request_hash===requestHash)return response(publicOrder(await createPayment(env,previous)));fail(409,'A piece was just reserved by another customer. Refresh your bag and try again.');}
@@ -108,7 +115,7 @@ async function enqueue(env,o,kind,to,subject,text){
  if(o.mode!=='live')return;
  await sql(env,"INSERT OR IGNORE INTO order_messages(order_id,kind,payload,created_at) VALUES (?,?,?,?)",o.id,kind,JSON.stringify({from:env.ORDER_EMAIL_FROM,to:[to],subject,text}),now()).run();
 }
-function receipt(o){const s=JSON.parse(o.policy),c=JSON.parse(o.customer);return ['Japansterdam — order JPN-'+o.id,'Payment received. Thank you, '+c.name+'.','',...JSON.parse(o.items).map(p=>`${p.brand} ${p.name} / Size ${p.size} / €${money(p.cents)}\nCondition: ${p.condition}. ${p.conditionNotes||''}`),'',`Subtotal: €${money(o.subtotal)}`,`Shipping: €${money(o.shipping)}`,`Total paid: €${money(o.total)}`,s.taxNote,'',c.name,c.street,c.zip+' '+c.city,c.country,'',s.company,s.address,'KvK '+s.kvk,s.vat?'VAT ID '+s.vat:'',s.email,'',s.deliveryText,'',s.termsText,'',s.returnsText,'Return address: '+s.returnAddress,'Withdraw online: https://japansterdam.com/returns.html','',s.privacyText].join('\n');}
+function receipt(o){const s=JSON.parse(o.policy),c=JSON.parse(o.customer);return ['Japansterdam — order JPN-'+o.id,'Payment received. Thank you, '+c.name+'.','',...JSON.parse(o.items).map(p=>`${p.brand} ${p.name} / Size ${p.size} / €${money(p.cents)}\nCondition: ${p.condition}. ${p.conditionNotes||''}`),'',`Subtotal: €${money(o.subtotal)}`,`Shipping: €${money(o.shipping)}`,`Total paid: €${money(o.total)}`,s.taxNote,'',c.name,c.street,c.zip+' '+c.city,c.country,'',s.company,s.address,'KvK '+s.kvk,s.vat?'VAT ID '+s.vat:'',s.email,s.phone||'','',s.deliveryText,'',s.termsText,'',s.returnsText,'Return address: '+s.returnAddress,'Withdraw online: https://japansterdam.com/returns.html','',s.privacyText].join('\n');}
 async function queuePaidMail(env,o){
  const s=JSON.parse(o.policy),c=JSON.parse(o.customer);
  await enqueue(env,o,'receipt',c.email,'Your Japansterdam order — JPN-'+o.id,receipt(o));
@@ -116,13 +123,14 @@ async function queuePaidMail(env,o){
 }
 export async function syncOrder(env,id){
  let o=await rowById(env,id);if(!o||!o.payment_id)return o;
- const p=await mollie(env,o.mode,'/payments/'+o.payment_id);
+ const p=orderProvider(o)==='stripe'?await readStripePayment(env,o):await mollie(env,o.mode,'/payments/'+o.payment_id);
  if(p.id!==o.payment_id||p.metadata?.order_id!==o.id||p.mode!==o.mode||p.amount?.currency!=='EUR'||p.amount?.value!==money(o.total))fail(502,'Payment verification failed.');
  if(!['open','pending','authorized','paid','canceled','expired','failed'].includes(p.status))fail(502,'Unrecognized payment status');
  const refunded=p.amountRefunded?.currency==='EUR'?Math.round(Number(p.amountRefunded.value)*100)||0:0;
  const chargeback=p.amountChargedBack?.currency==='EUR'?Math.round(Number(p.amountChargedBack.value)*100)||0:0;
  if(p.status==='paid'){
   const batch=[];
+  if(p.delivery)batch.push(sql(env,'UPDATE orders SET customer=? WHERE id=?',JSON.stringify({...JSON.parse(o.customer),...p.delivery}),id));
   if(o.mode==='live'){
    // An older paid webhook must never modify inventory belonging to another order.
    for(const item of JSON.parse(o.items))batch.push(sql(env,"UPDATE products SET data=json_set(data,'$.sold',json('true')),updated_at=? WHERE slug=? AND EXISTS(SELECT 1 FROM stock_reservations WHERE slug=? AND order_id=?)",now(),item.slug,item.slug,id));
@@ -158,11 +166,13 @@ export async function guardProduct(env,slug,input){
 export async function commerceRoute(req,env,ctx,{admin=false}={}){
  const u=new URL(req.url),path=u.pathname.replace(/\/$/,''),method=req.method;
  if(admin){
-  if(path==='/admin/checkout'&&method==='GET'){const s=await settings(env);return response({settings:s,...readiness(env,s),keyMode:env.MOLLIE_API_KEY?.startsWith('live_')?'live':env.MOLLIE_API_KEY?.startsWith('test_')?'test':'missing',emailConfigured:!!(env.RESEND_API_KEY&&env.ORDER_EMAIL_FROM)});}
+  if(path==='/admin/checkout'&&method==='GET'){const s=await settings(env);return response({settings:s,...readiness(env,s),keyMode:credentials(env,s.mode,s.provider)?s.mode:'missing',stripeWebhookConfigured:!!stripeSigningSecret(env,s.mode),stripeAccountId:stripeAccountId(env,s.mode),stripeEvents:STRIPE_EVENTS,emailConfigured:!!(env.RESEND_API_KEY&&env.ORDER_EMAIL_FROM)});}
   if(path==='/admin/checkout'&&method==='PUT'){
    const s=cleanSettings(await body(req));if(s.enabled&&(s.mode!=='live'||!readiness(env,s).ready))fail(400,'Finish setup before enabling live checkout: '+readiness(env,s).missing.join(', '));
+   if(s.enabled&&s.provider==='stripe'){const account=await verifyStripeAccount(env,'live');if(!account.chargesEnabled||!account.payoutsEnabled||!account.detailsSubmitted)fail(400,'Complete Stripe business verification and payout setup before enabling checkout.');}
    await sql(env,"INSERT INTO commerce_settings(id,data,updated_at) VALUES ('main',?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at",JSON.stringify(s),now()).run();return response({settings:s,...readiness(env,s)});
   }
+  if(path==='/admin/checkout/stripe-check'&&method==='GET'){const s=await settings(env);return response({account:await verifyStripeAccount(env,s.mode)});}
   if(path==='/admin/checkout/test'&&method==='POST')return createOrder(req,env,{test:true});
   if(path==='/admin/checkout/email-test'&&method==='POST'){
    const s=await settings(env);if(!env.RESEND_API_KEY||!env.ORDER_EMAIL_FROM||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email))fail(400,'Configure the verified sender and save your contact email first.');
@@ -183,12 +193,19 @@ export async function commerceRoute(req,env,ctx,{admin=false}={}){
   }
   return null;
  }
- if(path==='/checkout/config'&&method==='GET'){const s=await settings(env);return response({enabled:s.enabled&&s.mode==='live'&&readiness(env,s).ready,policyVersion:await hash(JSON.stringify(s)),shipping:s.shipping,company:s.company,kvk:s.kvk,vat:s.vat,address:s.address,email:s.email,returnAddress:s.returnAddress,taxNote:s.taxNote,deliveryText:s.deliveryText,returnsText:s.returnsText,privacyText:s.privacyText,termsText:s.termsText});}
+ if(path==='/checkout/config'&&method==='GET'){const s=await settings(env);return response({enabled:s.enabled&&s.mode==='live'&&readiness(env,s).ready,provider:s.provider,policyVersion:await hash(JSON.stringify(s)),shipping:s.shipping,company:s.company,kvk:s.kvk,vat:s.vat,address:s.address,email:s.email,phone:s.phone,returnAddress:s.returnAddress,taxNote:s.taxNote,deliveryText:s.deliveryText,returnsText:s.returnsText,privacyText:s.privacyText,termsText:s.termsText});}
  if(path==='/checkout/quote'&&method==='POST'){const s=await settings(env);if(!s.enabled||!readiness(env,s).ready)fail(503,'Direct payment is not available yet.');const b=await body(req);return response(await quote(env,b.slugs,str(b.country,2).toUpperCase(),s));}
  if(path==='/checkout/orders'&&method==='POST')return createOrder(req,env);
  if(path==='/checkout/status'&&method==='POST'){
   const b=await body(req);if(!ID.test(b.id||'')||!TOKEN.test(b.accessToken||''))fail(404,'Order not found');let o=await rowById(env,b.id);if(!o||o.access_hash!==await hash(b.accessToken))fail(404,'Order not found');
   if(o.payment_id&&now()-(o.last_sync_at||0)>10000)o=await syncOrder(env,o.id);ctx?.waitUntil?.(sendMessages(env));return response(publicOrder(o));
+ }
+ if(path==='/checkout/stripe-webhook'&&method==='POST'){
+  const {event,mode}=await stripeWebhookEvent(req,env);const id=await webhookOrderId(env,mode,event);
+  if(id&&ID.test(id)){const o=await rowById(env,id);if(o&&o.mode===mode&&orderProvider(o)==='stripe'){
+   if(o.status==='creating')await createPayment(env,o);
+   await syncOrder(env,id);ctx?.waitUntil?.(sendMessages(env));
+  }}return response({received:true});
  }
  if(path==='/checkout/webhook'&&method==='POST'){
   const text=await req.text();if(text.length>1000)fail(413,'Request too large');const id=new URLSearchParams(text).get('id');if(!PAYMENT.test(id||''))fail(400,'Invalid payment id');const o=await sql(env,'SELECT id FROM orders WHERE payment_id=?',id).first();if(o){await syncOrder(env,o.id);ctx?.waitUntil?.(sendMessages(env));}return new Response('OK');

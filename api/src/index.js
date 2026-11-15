@@ -1,4 +1,4 @@
-// japansterdam-api: Cloudflare Worker (D1 + R2). No dependencies.
+// japansterdam-api: Cloudflare Worker (D1 + uploaded images + hosted payments).
 // Draft stories stay in the authenticated editor, never in the public feed.
 function publicContent(data) {
   if (!data.journal) return data;

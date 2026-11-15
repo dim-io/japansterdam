@@ -91,3 +91,11 @@ test('new image uploads fall back to originals; unrelated optimized paths do not
  assert.equal(r.status,302);assert.equal(r.headers.get('Location'),'https://japansterdam-api.japansterdam-api.workers.dev/img/products/new-photo.jpg');
  assert.equal((await worker.fetch(new Request('https://japansterdam.com/assets/optimized/arbitrary.example.webp'),e)).status,404);
 });
+
+test('checkout responses restrict scripts and framing and never cache order pages',async()=>{
+ const r=await worker.fetch(new Request('https://japansterdam.com/checkout.html'),env());
+ assert.equal(r.headers.get('Cache-Control'),'no-store');
+ assert.equal(r.headers.get('Referrer-Policy'),'no-referrer');
+ assert.match(r.headers.get('Content-Security-Policy'),/frame-ancestors 'none'/);
+ assert.match(r.headers.get('Content-Security-Policy'),/script-src 'self' https:\/\/static.cloudflareinsights.com/);
+});

@@ -1,4 +1,4 @@
-import { commerceView } from './commerce.js?v=checkout-1';
+import { commerceView } from './commerce.js?v=stripe-1';
 import { FIT_SIZES, productFitsLike, suggestedFitsLike } from '../js/sizing.js';
 import { imageFrameStyle } from '../js/image-frames.js';
 import { API_BASE } from '../js/config.js';

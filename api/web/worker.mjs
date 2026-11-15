@@ -84,6 +84,11 @@ export default {async fetch(request,env){
   }catch{return errorPage(503);}
  }else response=await env.ASSETS.fetch(request);
  const out=new Response(request.method==='HEAD'?null:response.body,response);
+ if(u.pathname==='/checkout.html'){
+  out.headers.set('Cache-Control','no-store');
+  out.headers.set('Referrer-Policy','no-referrer');
+  out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://japansterdam-api.japansterdam-api.workers.dev; connect-src 'self' https://japansterdam-api.japansterdam-api.workers.dev https://cloudflareinsights.com; frame-src https://*.stripe.com https://*.link.com; object-src 'none'; base-uri 'self'; form-action 'self' mailto:; frame-ancestors 'none'");
+ }
  if(!['japansterdam.com','www.japansterdam.com'].includes(u.hostname))out.headers.set('X-Robots-Tag','noindex, nofollow');
  return out;
 }};
