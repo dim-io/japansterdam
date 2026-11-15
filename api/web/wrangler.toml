@@ -3,10 +3,9 @@ account_id = "81a93f1ef55a892620ab77cf0f8163f6"
 main = "worker.mjs"
 compatibility_date = "2026-10-30"
 workers_dev = true
-routes = [
-  { pattern = "japansterdam.com/*", zone_name = "japansterdam.com" },
-  { pattern = "www.japansterdam.com/*", zone_name = "japansterdam.com" }
-]
+# Routes are managed in Cloudflare's zone dashboard:
+# japansterdam.com/* and www.japansterdam.com/* -> japansterdam-web.
+# Omit routes here so deployments preserve them without requiring zone-edit access.
 
 [assets]
 directory = "../../.site-dist"
