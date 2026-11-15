@@ -29,30 +29,6 @@ export async function plan(source,target){
  return result;
 }
 export function signedURL(value){const u=new URL(value);if(u.protocol!=='https:'||!u.hostname.endsWith('.r2.cloudflarestorage.com')||u.username||u.password)throw Error('untrusted_signed_url');return u.href;}
-async function exportSQL(api,db){
- let current_bookmark;
- for(let i=0;i<120;i++){
-  const d=(await post(api,`/d1/database/${db}/export`,{output_format:'polling',dump_options:{compatibility:'d1'},current_bookmark})).result;
-  if(d.status==='error'||d.success===false)throw Error('database_export_failed');
-  if(d.status==='complete'){const r=await fetch(signedURL(d.result.signed_url),{redirect:'error',signal:AbortSignal.timeout(120000)});if(!r.ok)throw Error('export_download_failed');return await r.text();}
-  current_bookmark=d.at_bookmark;await pause(1000);
- }throw Error('export_timeout');
-}
-export function classifyImportError(d){const s=JSON.stringify(d).toLowerCase();return ['already exists','foreign key','not authorized','too large','too long','syntax','internal','no such table','transaction','unauthorized','maximum','100kb','limit','unique constraint','check constraint','reserved','success'].filter(x=>s.includes(x)).map(x=>x.replaceAll(' ','_')).join('_')||'unknown';}
-async function importSQL(api,db,sql){
- const etag=createHash('md5').update(sql).digest('hex'),path=`/d1/database/${db}/import`;
- let d=(await post(api,path,{action:'init',etag})).result;
- if(d.upload_url){
-  const r=await fetch(signedURL(d.upload_url),{method:'PUT',body:sql,redirect:'error',signal:AbortSignal.timeout(120000)});
-  if(!r.ok||r.headers.get('etag')?.replaceAll('"','')!==etag)throw Error('import_upload_failed');
-  d=(await post(api,path,{action:'ingest',etag,filename:d.filename})).result;
- }
- for(let i=0;i<120;i++){
-  if(d.status==='complete')return;
-  if(d.status==='error'||d.success===false)throw Error('database_import_failed_'+classifyImportError(d));
-  await pause(1000);d=(await post(api,path,{action:'poll',current_bookmark:d.at_bookmark})).result;
- }throw Error('import_timeout');
-}
 const ident=s=>{if(!/^[A-Za-z_][A-Za-z_0-9]*$/.test(s))throw Error('invalid_identifier');return '"'+s+'"';};
 async function query(api,db,sql,params=[]){const d=await post(api,`/d1/database/${db}/query`,{sql,params});if(d.result.some(x=>x.success===false))throw Error('query_failed');return d.result[0].results;}
 export async function snapshot(api,db,normalize=false){
@@ -64,6 +40,26 @@ export async function snapshot(api,db,normalize=false){
   tables[t.name]={rows:hashes.length,hash:digest(JSON.stringify(hashes.sort()))};
  }
  return {schema:digest(JSON.stringify(schema)),tables};
+}
+export function rowInserts(table,columns,rows){
+ const queries=[],size=Math.max(1,Math.floor(90/columns.length));
+ for(let i=0;i<rows.length;i+=size){const batch=rows.slice(i,i+size);queries.push({sql:`INSERT OR IGNORE INTO ${ident(table)} (${columns.map(ident).join(',')}) VALUES ${batch.map(()=>`(${columns.map(()=>'?').join(',')})`).join(',')}`,params:batch.flatMap(r=>columns.map(c=>rewrite(r[c])))});}
+ return queries;
+}
+async function copyDatabase(source,target,db){
+ const schema=await query(source,SOURCE.database,"SELECT type,name,sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY type,name");
+ const tables=schema.filter(x=>x.type==='table'),dependencies=new Map();
+ for(const t of tables){dependencies.set(t.name,(await query(source,SOURCE.database,`PRAGMA foreign_key_list(${ident(t.name)})`)).map(x=>x.table).filter(x=>x!==t.name));await query(target,db,t.sql.replace(/^CREATE TABLE\s+(?:IF NOT EXISTS\s+)?/i,'CREATE TABLE IF NOT EXISTS '));}
+ const copied=new Set();
+ while(copied.size<tables.length){
+  const t=tables.find(t=>!copied.has(t.name)&&dependencies.get(t.name).every(x=>copied.has(x)));
+  if(!t)throw Error('cyclic_database_dependencies');
+  const columns=(await query(source,SOURCE.database,`PRAGMA table_info(${ident(t.name)})`)).filter(x=>x.hidden===undefined||x.hidden===0).map(x=>x.name);
+  for(let offset=0;;offset+=250){const rows=await query(source,SOURCE.database,`SELECT * FROM ${ident(t.name)} LIMIT 250 OFFSET ${offset}`);for(const q of rowInserts(t.name,columns,rows))await query(target,db,q.sql,q.params);if(rows.length<250)break;}
+  copied.add(t.name);
+ }
+ for(const obj of schema.filter(x=>x.type!=='table')){const existing=await query(target,db,'SELECT sql FROM sqlite_master WHERE name=?',[obj.name]);if(!existing.length)await query(target,db,obj.sql);else if(existing[0].sql!==obj.sql)throw Error('target_schema_conflict');}
+ if((await query(source,SOURCE.database,"SELECT name FROM sqlite_master WHERE name='sqlite_sequence'")).length){const rows=await query(source,SOURCE.database,'SELECT * FROM sqlite_sequence');for(const row of rows){await query(target,db,'DELETE FROM sqlite_sequence WHERE name=?',[row.name]);await query(target,db,'INSERT INTO sqlite_sequence(name,seq) VALUES (?,?)',[row.name,row.seq]);}}
 }
 async function keys(api,ns){let cursor;const all=[];do{const d=await api(`/storage/kv/namespaces/${ns}/keys?limit=1000`+(cursor?'&cursor='+encodeURIComponent(cursor):''));all.push(...d.result);cursor=d.result_info?.cursor;}while(cursor);return all.sort((a,b)=>a.name.localeCompare(b.name));}
 export async function copyImages(source,target,ns){
@@ -92,8 +88,7 @@ async function copy(source,target){
  if(!ns)ns=(await post(target,'/storage/kv/namespaces',{title:'japansterdam-images'})).result.id;
  console.log(JSON.stringify({targetDatabase:db,targetImages:ns}));
  const before=await snapshot(source,SOURCE.database,true);
- const targetSchema=await query(target,db,"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'");
- if(!targetSchema.length){console.log('database_copy_started');await importSQL(target,db,rewrite(await exportSQL(source,SOURCE.database)));}
+ console.log('database_copy_started');await copyDatabase(source,target,db);
  const copied=await snapshot(target,db);
  if(JSON.stringify(before)!==JSON.stringify(copied))throw Error('database_copy_mismatch');
  console.log('database_verified');

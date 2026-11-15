@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {rewrite,signedURL,OLD_ORIGIN,NEW_ORIGIN,copyImages,SOURCE,snapshot} from './cloudflare-backend-transfer.mjs';
+import {rewrite,signedURL,OLD_ORIGIN,NEW_ORIGIN,copyImages,SOURCE,snapshot,rowInserts} from './cloudflare-backend-transfer.mjs';
 test('only source image origin changes; numeric measurements and text survive',()=>{assert.equal(rewrite(52),52);assert.equal(rewrite(`prefix ${OLD_ORIGIN}/images/a.jpg suffix`),`prefix ${NEW_ORIGIN}/images/a.jpg suffix`);});
 test('private SQL cannot be uploaded to a foreign or insecure host',()=>{for(const u of ['http://x.r2.cloudflarestorage.com/a','https://evil.test/a','https://x.r2.cloudflarestorage.com.evil.test/a'])assert.throws(()=>signedURL(u));assert.equal(signedURL('https://x.r2.cloudflarestorage.com/a'),'https://x.r2.cloudflarestorage.com/a');});
 test('binary photos and their metadata are preserved and independently verified',async()=>{
@@ -18,3 +18,5 @@ test('database verification covers hidden rows and schema as well as origin rewr
  const api=async(path,{body})=>{const {sql}=JSON.parse(body);let rows;if(sql.includes('sqlite_master'))rows=[{type:'table',name:'products',tbl_name:'products',sql:'CREATE TABLE products(data TEXT)'}];else rows=[{data:OLD_ORIGIN+'/images/hidden.jpg',active:0}];return {result:[{results:rows,success:true}]};};
  const a=await snapshot(api,SOURCE.database,true),b=await snapshot(api,SOURCE.database,false);assert.equal(a.tables.products.rows,1);assert.notEqual(a.tables.products.hash,b.tables.products.hash);assert.equal(a.schema,b.schema);
 });
+
+test('large journal data uses bound parameters rather than oversized SQL statements',()=>{const content='x'.repeat(200000);const [q]=rowInserts('content',['id','data'],[{id:'journal',data:content}]);assert.ok(q.sql.length<200);assert.deepEqual(q.params,['journal',content]);assert.ok(!q.sql.includes(content));});
