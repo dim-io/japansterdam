@@ -1,3 +1,4 @@
+import { responsiveAttrs, imageVariant } from './responsive-images.js';
 import { esc, productUrl } from './data.js';
 
 export const storyUrl = (slug) => 'journal.html?story=' + encodeURIComponent(slug);
@@ -7,7 +8,7 @@ export const storyDate = (date) => /^\d{4}-\d{2}-\d{2}$/.test(date || '') ? new 
 
 export function storyCard(article, index = 0) {
   return `<a class="story-card" href="${storyUrl(article.slug)}">
-    <div class="story-card__image"><img src="${esc(article.cover)}" alt="${esc(article.coverAlt || article.title)}" width="1200" height="900" loading="lazy" decoding="async"></div>
+    <div class="story-card__image"><img src="${esc(article.cover)}"${responsiveAttrs(article.cover)} alt="${esc(article.coverAlt || article.title)}" width="1200" height="900" loading="lazy" decoding="async"></div>
     <div class="story-card__copy"><p class="eyebrow">${String(index + 1).padStart(2, '0')} / ${esc(article.category || 'Journal')}</p>
     <h2>${esc(article.title)}</h2><p class="story-card__summary">${esc(article.subtitle)}</p>
     <p class="story-card__meta">${esc(storyDate(article.date))} <span aria-hidden="true">·</span> ${readingMinutes(article.bodyHtml)} min read</p>
@@ -48,7 +49,11 @@ export function safeArticleHTML(html) {
         } else if (!(node.tagName === 'IMG' && ['alt','width','height'].includes(name))) node.removeAttribute(name);
       }
       if (node.tagName === 'A' && /^https?:\/\//i.test(node.getAttribute('href') || '')) node.setAttribute('rel', 'noopener');
-      if (node.tagName === 'IMG') { node.setAttribute('loading', 'lazy'); node.setAttribute('decoding', 'async'); }
+      if (node.tagName === 'IMG') {
+        node.setAttribute('loading', 'lazy'); node.setAttribute('decoding', 'async');
+        const small=imageVariant(node.getAttribute('src'),480),large=imageVariant(node.getAttribute('src'),960);
+        if(small&&large){node.setAttribute('srcset',small+' 480w, '+large+' 960w');node.setAttribute('sizes','(min-width:900px) 800px, 100vw');}
+      }
     }
   };
   walk(doc.body);

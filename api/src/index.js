@@ -325,7 +325,7 @@ async function handle(request, env, ctx) {
     if (!row) throw new HttpError(404, 'No content yet');
     return json(publicContent(JSON.parse(row.data)), 200, { 'Cache-Control': 'public, max-age=30' });
   }
-  if (method === 'GET' && seg[0] === 'img' && seg.length > 1) {
+  if ((method === 'GET' || method === 'HEAD') && seg[0] === 'img' && seg.length > 1) {
     const key = decodeURIComponent(seg.slice(1).join('/'));
     if (!key.startsWith('products/') || key.includes('..')) throw new HttpError(404, 'Not found');
     const { value, metadata } = await env.IMAGES.getWithMetadata(key, { type: 'stream' });
@@ -335,7 +335,7 @@ async function handle(request, env, ctx) {
     h.set('Cache-Control', 'public, max-age=31536000, immutable');
     h.set('Cross-Origin-Resource-Policy', 'cross-origin');
     h.set('X-Content-Type-Options', 'nosniff');
-    return new Response(value, { headers: h });
+    return new Response(method === 'HEAD' ? null : value, { headers: h });
   }
 
   if (method === 'POST' && path === '/auth/login') return login(request, env);

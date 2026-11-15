@@ -1,9 +1,12 @@
+import { responsiveAttrs } from './responsive-images.js';
 import { brandPage } from './brand-pages.js';
 // Data loading, caching and shared helpers.
 import { imageFrameStyle } from './image-frames.js';
 import { inBag } from './bag.js';
 import { API_BASE } from './config.js';
 import { createProductRoutes, productPath } from './product-urls.js';
+let snapshot;
+try { snapshot=JSON.parse(document.getElementById('jp-page-data')?.textContent||'null'); } catch {}
 let _content, _products;
 let productRoutes;
 
@@ -29,9 +32,9 @@ async function load(apiPath, staticUrl) {
   }
   return fetchJson(staticUrl);
 }
-export const getContent = () => (_content ??= load('/public/content', 'data/content.json'));
+export const getContent = () => (_content ??= (snapshot?.content ? Promise.resolve(snapshot.content) : load('/public/content', 'data/content.json')));
 // Do not resurrect hidden products from an outdated static catalogue during an outage.
-export const getProducts = () => (_products ??= (API_BASE ? fetchJson(API_BASE.replace(/\/+$/, '') + '/public/products', 4000).catch(() => []) : fetchJson('data/products.json')).then((items) => {
+export const getProducts = () => (_products ??= (Array.isArray(snapshot?.products) ? Promise.resolve(snapshot.products) : API_BASE ? fetchJson(API_BASE.replace(/\/+$/, '') + '/public/products', 4000).catch(() => []) : fetchJson('data/products.json')).then((items) => {
   const list = items.filter((p) => p.active !== false);
   productRoutes = createProductRoutes(list);
   return numberProducts(list);
@@ -72,8 +75,8 @@ export function cardHTML(p) {
   return `<a class="card${p.sold ? ' card--sold' : ''}" href="${productUrl(p.slug)}">
   <div class="card__media">
     ${p.sold ? '<span class="tag-sold">Sold</span>' : inBag(p.slug) ? '<span class="tag-bag">In bag</span>' : ''}
-    <img style="${imageFrameStyle(p, img1)}" src="${esc(img1)}" alt="${esc(altFor(p, 0))}" width="960" height="1200" loading="lazy" decoding="async" data-fade>
-    ${img2 ? `<img class="alt" style="${imageFrameStyle(p, img2)}" src="${esc(img2)}" alt="" width="960" height="1200" loading="lazy" decoding="async">` : ''}
+    <img style="${imageFrameStyle(p, img1)}" src="${esc(img1)}"${responsiveAttrs(img1)} alt="${esc(altFor(p, 0))}" width="960" height="1200" loading="lazy" decoding="async" data-fade>
+    ${img2 ? `<img class="alt" style="${imageFrameStyle(p, img2)}" src="${esc(img2)}"${responsiveAttrs(img2)} alt="" width="960" height="1200" loading="lazy" decoding="async">` : ''}
   </div>
   <div class="card__body">
     <div class="card__top"><p class="card__brand">${esc(p.brand)}</p><p class="card__no">${catNo(p)}</p></div>

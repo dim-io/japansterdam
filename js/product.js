@@ -1,3 +1,4 @@
+import { responsiveAttrs } from './responsive-images.js';
 import { productFitsLike } from './sizing.js';
 import { productStoriesHTML } from './journal-shared.js?v=inline-links-1';
 import { imageFrameStyle } from './image-frames.js';
@@ -72,7 +73,7 @@ if (!p) {
   });
 
   const n = p.images.length;
-  const slides = p.images.map((src, i) => `<figure class="gallery__slide"><button class="gallery__open" type="button" data-i="${i}" aria-label="Enlarge photo ${i + 1} of ${n}" aria-haspopup="dialog"><img style="${imageFrameStyle(p, src)}" src="${esc(src)}" alt="${esc(altFor(p, i))}" width="960" height="1200" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" data-fade></button></figure>`).join('');
+  const slides = p.images.map((src, i) => `<figure class="gallery__slide"><button class="gallery__open" type="button" data-i="${i}" aria-label="Enlarge photo ${i + 1} of ${n}" aria-haspopup="dialog"><img style="${imageFrameStyle(p, src)}" src="${esc(src)}"${responsiveAttrs(src, '(min-width:900px) 25vw, 100vw')} alt="${esc(altFor(p, i))}" width="960" height="1200" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" data-fade></button></figure>`).join('');
   const dots = p.images.length > 1 ? `<div class="gallery__dots" aria-hidden="true">${p.images.map((_, i) => `<span${i === 0 ? ' class="is-active"' : ''}></span>`).join('')}</div>` : '';
   const subject = encodeURIComponent('Question about ' + p.name);
 

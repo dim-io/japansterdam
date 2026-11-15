@@ -157,10 +157,5 @@ if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
 document.getElementById('quote-text').textContent = '“' + h.quote + '”';
 document.getElementById('quote-by').textContent = h.quoteBy;
 
-// testimonials
-document.getElementById('testi-title').textContent = h.testimonialsTitle;
-document.getElementById('testi-grid').innerHTML = h.testimonials
-  .map((t) => `<figure class="testi"><span class="testi__mark" aria-hidden="true">“</span><blockquote>${esc(t.text)}</blockquote><figcaption>${esc(t.name)}</figcaption></figure>`)
-  .join('');
-
+// Customer reviews will return when verified feedback is available.
 initHomeMotion();

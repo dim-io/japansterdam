@@ -3,6 +3,7 @@ import { getContent, getProducts, esc, cardHTML, setMeta, jsonLd } from './data.
 import { publishedStories, storyUrl, storyCard, storyDate, readingMinutes, matchesProduct, safeArticleHTML } from './journal-shared.js';
 
 const root = document.getElementById('journal-root');
+document.querySelector('[data-ssr-schema]')?.remove();
 const content = await getContent();
 const journal = content.journal || {};
 const stories = publishedStories(journal);

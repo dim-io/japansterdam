@@ -61,3 +61,33 @@ test('main-domain sitemap includes current products and the permanent brand page
  assert.equal(r.status,200);assert.match(r.headers.get('Content-Type'),/application\/xml/);
  const xml=await r.text();assert.ok(xml.includes('needles.html'));assert.ok(xml.includes('needles-archive-shirt'));assert.ok(!xml.includes('private-garment'));
 });
+
+test('home and shop expose current product links in their initial HTML',async()=>{
+ const templates={
+  '/':await readFile(new URL('../../index.html',import.meta.url),'utf8'),
+  '/shop.html':await readFile(new URL('../../shop.html',import.meta.url),'utf8')
+ };
+ for(const path of Object.keys(templates)){
+  const e=env();e.ASSETS.fetch=async req=>new Response(templates[new URL(req.url).pathname]);
+  const r=await worker.fetch(new Request('https://japansterdam.com'+path),e),html=await r.text();
+  assert.equal(r.status,200);assert.ok(html.includes('href="product.html?p=needles-archive-shirt"'));
+  assert.ok(!html.includes('private-garment'));assert.ok(!html.includes('Daan V.'));assert.ok(html.includes('id="jp-page-data"'));
+ }
+});
+test('Journal stories have unique server metadata, safe content and real draft 404s',async()=>{
+ const original=content;
+ content={...content,journal:{articles:[{slug:'published',published:true,title:'A real story',subtitle:'A closer look',cover:'assets/img/site/about-sam.jpg',bodyHtml:'<h2>Craft</h2><p>Actual editorial content.</p><img src="javascript:alert(1)" onerror="alert(1)"><script>bad()</script>',date:'2026-11-01'},{slug:'private',published:false,title:'Private draft'}]}};
+ try{
+  const e=env();e.ASSETS.fetch=async()=>new Response(await readFile(new URL('../../journal.html',import.meta.url),'utf8'));
+  const r=await worker.fetch(new Request('https://japansterdam.com/journal.html?story=published'),e),html=await r.text();
+  assert.equal(r.status,200);assert.ok(html.includes('<h1>A real story</h1>'));assert.ok(html.includes('Actual editorial content.'));assert.ok(html.includes('"@type":"Article"'));
+  assert.ok(html.includes('rel="canonical" href="https://japansterdam.com/journal.html?story=published"'));assert.ok(!html.includes('javascript:'));assert.ok(!html.includes('onerror'));assert.ok(!html.includes('bad()'));assert.ok(!html.includes('Private draft'));
+  assert.equal((await worker.fetch(new Request('https://japansterdam.com/journal.html?story=private'),e)).status,404);
+ }finally{content=original;}
+});
+test('new image uploads fall back to originals; unrelated optimized paths do not redirect',async()=>{
+ const e=env();e.ASSETS.fetch=async()=>new Response('Missing',{status:404});
+ const r=await worker.fetch(new Request('https://japansterdam.com/assets/optimized/uploads/new-photo.jpg-480.webp'),e);
+ assert.equal(r.status,302);assert.equal(r.headers.get('Location'),'https://japansterdam-api.japansterdam-api.workers.dev/img/products/new-photo.jpg');
+ assert.equal((await worker.fetch(new Request('https://japansterdam.com/assets/optimized/arbitrary.example.webp'),e)).status,404);
+});
