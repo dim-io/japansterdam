@@ -53,7 +53,10 @@ function footerHTML() {
       <li>${ext('substack', 'Substack')}</li></ul></div>
   </div>
   <div class="ft__news">
-    <p>Sign up to receive news and updates.</p>
+    <div class="ft__news-copy">
+      <h2>The stories behind the pieces.</h2>
+      <p>Explore Japanese clothing, craftsmanship and culture. Subscribe to receive new stories in your inbox.</p>
+    </div>
     <a class="btn btn--light" href="${esc(site.substack)}" data-site="substack" target="_blank" rel="noopener">Subscribe on Substack</a>
   </div>
   <p class="ft__bottom">© 2026 Japansterdam · Amsterdam · KVK 42217083</p>
