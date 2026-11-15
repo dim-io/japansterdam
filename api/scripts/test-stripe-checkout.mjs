@@ -58,6 +58,7 @@ test('Stripe sessions use server prices, dynamic methods, fixed EUR and an ident
  const f=setup(),id=crypto.randomUUID();const first=await f.order({id}),second=await f.order({id});
  assert.equal(first.checkoutUrl,second.checkoutUrl);assert.equal(first.provider,'stripe');assert.equal(f.sessions.size,1);
  const create=f.requests.find(r=>r.method==='POST'),body=new URLSearchParams(create.body);
+ assert.equal(body.get('ui_mode'),'hosted_page');
  assert.equal(body.get('line_items[0][price_data][unit_amount]'),'10000');
  assert.equal(body.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'795');
  assert.equal(body.get('automatic_tax[enabled]'),'false');assert.equal(body.get('adaptive_pricing[enabled]'),'false');

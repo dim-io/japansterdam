@@ -20,7 +20,7 @@ export async function verifyStripeAccount(env, mode) {
 export function stripeSessionPayload({id, time, items, shipping, customer, site}) {
   // Store this complete payload before the first request; retries use identical parameters.
   const suffix = Array.from(crypto.getRandomValues(new Uint8Array(8)), n=>String.fromCharCode(97+n%26)).join('');
-  return {mode:'payment',ui_mode:'hosted',client_reference_id:id,metadata:{order_id:id},
+  return {mode:'payment',ui_mode:'hosted_page',client_reference_id:id,metadata:{order_id:id},
     integration_identifier:'japansterdam_'+suffix,
     success_url:site+'/checkout.html#order='+id,cancel_url:site+'/checkout.html#order='+id,
     customer_email:customer.email,shipping_address_collection:{allowed_countries:[customer.country]},
