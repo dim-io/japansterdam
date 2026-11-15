@@ -1,3 +1,4 @@
+import { productBrands } from './brands.js?v=individual-labels-1';
 import { imageFrameStyle } from './image-frames.js';
 import { publishedStories, storyCard } from './journal-shared.js';
 import './layout.js?v=checkout-1';
@@ -79,12 +80,14 @@ document.getElementById('collection-grid').innerHTML = pick.map(cardHTML).join('
 document.getElementById('brands-title').textContent = h.brandsTitle || 'Brands';
 const byBrand = new Map();
 for (const p of newest) {
-  const e = byBrand.get(p.brand);
-  if (e) e.n++; else byBrand.set(p.brand, { brand: p.brand, n: 1, img: p.images[0], frame: imageFrameStyle(p, p.images[0]) }); // newest piece comes first
+  for (const brand of productBrands(p)) {
+    const e = byBrand.get(brand);
+    if (e) e.n++; else byBrand.set(brand, { brand, n: 1, img: p.images[0], frame: imageFrameStyle(p, p.images[0]) });
+  }
 }
 // The owner's curated shop order also selects the featured brands. Available
 // pieces take priority; retain all other brands in the expandable index.
-const featured = [...new Set(products.filter((p) => !p.sold).map((p) => p.brand))].slice(0, 10);
+const featured = [...new Set(products.filter((p) => !p.sold).flatMap(productBrands))].slice(0, 10);
 const allBrands = [...byBrand.values()].sort((a, b) => a.brand.localeCompare(b.brand, 'en', { sensitivity: 'base' }));
 const rows = [...featured.map((brand) => byBrand.get(brand)), ...allBrands.filter((r) => !featured.includes(r.brand))];
 const visibleCount = Math.min(10, rows.length);

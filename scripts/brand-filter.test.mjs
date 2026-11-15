@@ -6,7 +6,7 @@ test('collaborations match each participant while preserving the original credit
  assert.deepEqual(productBrands(p),['Uniform Experiment','Fragment Design','Carhartt']);
  for(const brand of ['Uniform Experiment','Fragment Design','Carhartt',p.brand])assert(matchesBrand(p,brand));
  assert(!matchesBrand(p,'Needles'));assert.equal(p.brand,'Uniform Experiment x Fragment Design x Carhartt');
- assert.deepEqual(productBrands({brand:'Denim by Vanquish & Fragment'}),['Vanquish','Fragment Design']);
+ assert.deepEqual(productBrands({brand:'Denim by Vanquish & Fragment'}),['Denim by Vanquish & Fragment']);
  assert.deepEqual(productBrands({brand:'SOPHNET. × VISVIM'}),['SOPHNET.','Visvim']);
  assert.deepEqual(productBrands({brand:'H&M'}),['H&M']);
 });
@@ -15,4 +15,14 @@ test('short labels and available counts do not double-count a collaboration or e
  assert(!brandOptions(products).includes('Secret'));assert(brandOptions(products).includes('Nulabel'));
  assert.equal(brandCounts(products).get('Fragment Design'),2);assert.equal(brandCounts(products,p=>p.category==='Tops').get('Nulabel'),undefined);
  assert.equal(brandCounts(products).get('Needles'),undefined);
+});
+
+test('separate SOPHNET and Visvim entries share the collaboration while Denim remains its own label',()=>{
+ const products=[{slug:'polo',brand:'SOPHNET. x VISVIM'},{slug:'solo',brand:'SOPHNET.'},{slug:'denim',brand:'Denim by Vanquish & Fragment'}];
+ assert.deepEqual(brandOptions(products),['Denim by Vanquish & Fragment','SOPHNET.','Visvim']);
+ assert.deepEqual(products.filter(p=>matchesBrand(p,'Visvim')).map(p=>p.slug),['polo']);
+ assert.deepEqual(products.filter(p=>matchesBrand(p,'SOPHNET.')).map(p=>p.slug),['polo','solo']);
+ assert.equal(brandCounts(products).get('SOPHNET.'),2);
+ assert.equal(brandCounts(products).get('Visvim'),1);
+ assert(!matchesBrand(products[2],'Fragment Design'));
 });

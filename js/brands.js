@@ -5,13 +5,15 @@ const names = new Map(Object.entries({
   'sophnet':'SOPHNET.','visvim':'Visvim','nulabel':'Nulabel','nulabel cm1y0k42':'Nulabel',
   'ts s':'Ts(s)','tss':'Ts(s)','kapital':'KAPITAL','orslow':'orSlow','or slow':'orSlow',
   'sage de cret':'Sage de Cret','wislom':'WISLOM','wtaps':'WTAPS',
+  'denim by vanquish fragment':'Denim by Vanquish & Fragment',
 }));
 export const shortBrand = value => names.get(key(value)) || String(value || '').trim();
 export function productBrands(product) {
   const raw = String(product.brand || '').trim();
   if (!raw) return [];
-  // This established collaboration uses '&' rather than the normal 'x'.
-  const parts = key(raw) === 'denim by vanquish fragment' ? ['Vanquish','Fragment Design'] : raw.split(/\s+[x×]\s+/i);
+  // This is a joint label in its own right, not two independent filter entries.
+  if (key(raw) === 'denim by vanquish fragment') return ['Denim by Vanquish & Fragment'];
+  const parts = raw.split(/\s+[x×]\s+/i);
   return [...new Set(parts.map(shortBrand).filter(Boolean))];
 }
 export function matchesBrand(product, brand) {
