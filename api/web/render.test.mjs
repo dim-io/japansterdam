@@ -8,6 +8,16 @@ let products=[piece,{...piece,slug:'hidden',name:'Private garment',active:false}
 const template=await readFile(new URL('../../product.html',import.meta.url),'utf8');
 const brandTemplate=await readFile(new URL('../../needles.html',import.meta.url),'utf8');
 function env(){return {SOURCE_FETCH:async url=>Response.json(url.endsWith('/products')?products:content),ASSETS:{fetch:async req=>new Response(new URL(req.url).pathname==='/needles.html'?brandTemplate:template)}};}
+test('main domain redirects preserve paths and queries without redirecting previews',async()=>{
+ for(const [input,expected] of [
+  ['http://www.japansterdam.com/product.html?p=needles-archive-shirt','https://japansterdam.com/product.html?p=needles-archive-shirt'],
+  ['https://www.japansterdam.com/shop.html?brand=Needles','https://japansterdam.com/shop.html?brand=Needles'],
+  ['https://japansterdam.com/index.html?source=home','https://japansterdam.com/?source=home']
+ ]){
+  const r=await worker.fetch(new Request(input),env());assert.equal(r.status,301);assert.equal(r.headers.get('Location'),expected);
+ }
+ const r=await worker.fetch(new Request('https://japansterdam-web.sam-jesse.workers.dev/index.html'),env());assert.equal(r.status,200);assert.match(r.headers.get('X-Robots-Tag'),/noindex/);
+});
 test('initial HTML contains the actual garment, current price, measurements and one Product schema',async()=>{
  const r=await worker.fetch(new Request('https://japansterdam.com/product.html?p=needles-archive-shirt'),env());
  assert.equal(r.status,200);const html=await r.text();

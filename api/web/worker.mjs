@@ -16,6 +16,10 @@ function errorPage(status){return new Response(`<!doctype html><html lang="en"><
 export default {async fetch(request,env){
  const u=new URL(request.url);
  if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405,headers:{Allow:'GET, HEAD'}});
+ if(['japansterdam.com','www.japansterdam.com'].includes(u.hostname)&&(u.protocol!=='https:'||u.hostname==='www.japansterdam.com'||u.pathname==='/index.html')){
+  u.protocol='https:';u.hostname='japansterdam.com';if(u.pathname==='/index.html')u.pathname='/';
+  return Response.redirect(u.href,301);
+ }
  const brand=BRAND_PAGES.find(b=>u.pathname==='/'+b.slug+'.html');
  let response;
  if(u.pathname==='/sitemap.xml'){

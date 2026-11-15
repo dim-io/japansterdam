@@ -1,4 +1,4 @@
-name: SEO server preview on Sam's account
+name: Website on Sam's Cloudflare account
 on:
   push:
     branches: [main]

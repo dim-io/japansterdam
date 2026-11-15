@@ -3,6 +3,10 @@ account_id = "81a93f1ef55a892620ab77cf0f8163f6"
 main = "worker.mjs"
 compatibility_date = "2026-10-30"
 workers_dev = true
+routes = [
+  { pattern = "japansterdam.com/*", zone_name = "japansterdam.com" },
+  { pattern = "www.japansterdam.com/*", zone_name = "japansterdam.com" }
+]
 
 [assets]
 directory = "../../.site-dist"
