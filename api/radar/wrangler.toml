@@ -6,7 +6,7 @@ workers_dev = true
 
 [triggers]
 # The fresh-only trial reserves one group of 2–3 brands per five-minute slot.
-# All 34 brands are checked each hour; the fixed two-hour window gates every scan.
+# All 34 brands are checked each hour; a fixed window and charge cap gate every scan.
 crons = ["*/5 * * * *"]
 
 [vars]

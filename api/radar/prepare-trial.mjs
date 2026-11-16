@@ -1,3 +1,4 @@
+import {sourceReserve} from './trial-limits.mjs';
 import {validOwnerConfirmation} from './free-plan.mjs';
 import readinessPolicy from './owner-readiness.json' with {type:'json'};
 import {readCatalog} from './catalog.mjs';
@@ -11,7 +12,7 @@ import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
 export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testPolicy=policy,readiness=check,budget=preflight}={}) {
   if((await query('SELECT id FROM radar_control WHERE id=?',[testPolicy.id])).length)return {alreadyInitialized:true};
   if(!testPolicy.enabled||now>=Date.parse(testPolicy.endsAt))throw Error('trial_window_closed');
-  const source=await budget(env.APIFY_TOKEN,fetcher,testPolicy.mode==='fresh-rotation'?2.16:testPolicy.bundleChecks?.enabled?1.81:1.69,testPolicy.sourceBudget);
+  const source=await budget(env.APIFY_TOKEN,fetcher,sourceReserve(testPolicy),testPolicy.sourceBudget);
   if(!(source.includedPlanConfirmed??source.freePlanConfirmed))throw Error('source_budget_not_confirmed:plan_unconfirmed');
   if(!source.enoughCredit)throw Error('source_budget_not_confirmed:insufficient_included_credit');
   // Reuse the actual same-account blank-image test, retaining global daily AI usage.

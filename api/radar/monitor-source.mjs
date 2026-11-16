@@ -15,7 +15,7 @@ export function monitorInput(selection){
   const u=new URL('https://www.vinted.nl/catalog');u.search=new URLSearchParams({search_text:brand,price_to:String(itemPriceLimit(brand,config)),currency:'EUR',order:'newest_first'});
   if(typeof id==='string'&&/^\d+$/.test(id))u.searchParams.append('brand_ids[]',id);
   return u.href;
- }),brands:names,includeKeywords:names,country:'nl',order:'newest_first',maxItems:selection.length*10,maxItemsPerSearch:10,includeDetails:true,includeSellerDetails:false,includeSellerReviews:false,language:'en',catalogIds:['5','1904'],monitorMode:true,monitorStoreName:monitorStore(names),skipFirstRun:true,resetMonitor:false,alertOnPriceDrop:false};
+ }),brands:names,includeKeywords:names,priceTo:Math.max(...names.map(b=>itemPriceLimit(b,config))),country:'nl',order:'newest_first',maxItems:selection.length*10,maxItemsPerSearch:10,includeDetails:true,includeSellerDetails:false,includeSellerReviews:false,language:'en',catalogIds:['5','1904'],monitorMode:true,monitorStoreName:monitorStore(names),skipFirstRun:true,resetMonitor:false,alertOnPriceDrop:false};
 }
 export function monitorRow(row,observedAt){
  if(row.record_type&&row.record_type!=='item')return null;
@@ -26,9 +26,9 @@ export function monitorRow(row,observedAt){
  if(!item||!identifyBrand(item.brand,config)||item.price>itemPriceLimit(item.brand,config))return null;
  return item;
 }
-export async function monitorGroup(selection,{token,fetcher=fetch}={}){
+export async function monitorGroup(selection,{token,fetcher=fetch,maxCostUsd=.015}={}){
  const input=monitorInput(selection);
- const r=await candidateRun('topapi~vinted-scraper',input,{token,fetcher,maxCostUsd:.09,maxItems:selection.length*10});
+ const r=await candidateRun('topapi~vinted-scraper',input,{token,fetcher,maxCostUsd,maxItems:selection.length*10});
  const normalized=r.rows.map(row=>monitorRow(row,r.observedAt)).filter(Boolean);
  return selection.map(([brand])=>({brand,runId:r.runId,returned:r.rows.filter(row=>identifyBrand(row.brand_title,config)===brand).length,normalizedCount:normalized.filter(i=>identifyBrand(i.brand,config)===brand).length,items:normalized.filter(i=>identifyBrand(i.brand,config)===brand),freshness:{state:'source_monitor_new_only',baseline:'skip_first_run',store:input.monitorStoreName}}));
 }

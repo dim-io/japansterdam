@@ -4,11 +4,11 @@ export function garmentType(name) {
   const text = normalize(name);
   if (/\b(set|co ord|coord|ensemble|suit)\b/.test(text)) return 'set';
   if (/\b(short|shorts|bermuda|bermudas)\b/.test(text)) return 'shorts';
-  if (/\b(pants|trousers|pantalon|pantalone|pantaloni|broek|jeans|hose|jogging|joggers)\b/.test(text)) return 'trousers';
-  if (/\b(t shirt|tshirt|tee)\b/.test(text)) return 'tee';
+  if (/\b(pants|trousers|pantalon|pantalone|pantaloni|broek|jeans|jean|vaqueros|pant|hose|jogging|joggers)\b/.test(text)) return 'trousers';
+  if (/\b(t shirt|tshirt|tee|camiseta)\b/.test(text)) return 'tee';
   if (/\b(shirt|chemise|camicia|polo|blouse|overhemd|hemd)\b/.test(text)) return 'shirt';
-  if (/\b(hoodie|sweatshirt|sweater|knit|cardigan|trui|pullover|strickjacke|maglione|maglia)\b/.test(text)) return 'knit';
-  if (/\b(jacket|coat|parka|blazer|jas|veste|manteau|jacke|mantel|giacca|giubbotto|gilet)\b/.test(text)) return 'outerwear';
+  if (/\b(hoodie|sweatshirt|sweater|knit|cardigan|trui|pull|pullover|strickjacke|maglione|maglia)\b/.test(text)) return 'knit';
+  if (/\b(jacket|coat|parka|blazer|jas|veste|manteau|jacke|mantel|giacca|chaqueta|giubbotto|gilet)\b/.test(text)) return 'outerwear';
   return null;
 }
 

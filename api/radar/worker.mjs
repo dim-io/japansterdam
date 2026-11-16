@@ -1,3 +1,4 @@
+import {scanLimit,sourceReserve} from './trial-limits.mjs';
 import {monitorGroup} from './monitor-source.mjs';
 import {freshIntake} from './intake.mjs';
 import {brandDiagnostics,summarizeDiagnostics} from './diagnostics.mjs';
@@ -19,7 +20,7 @@ import { estimateFromShop, missingReferenceReason } from '../../tools/deal-radar
 export const PILOT_ID = 'pilot-2026-11-04';
 export function inWindow(now, policy = settings) {
   const start = Date.parse(policy.startsAt), end = Date.parse(policy.endsAt);
-  return policy.enabled && Number.isInteger(policy.maxAttempts) && policy.maxAttempts > 0 && policy.maxAttempts <= 25
+  return policy.enabled && Number.isInteger(policy.maxAttempts) && policy.maxAttempts > 0 && policy.maxAttempts <= scanLimit(policy)
     && Number.isFinite(start) && Number.isFinite(end) && end > start && end - start <= 86400000 && now >= start && now < end;
 }
 const sql = (env, query, ...args) => env.RADAR_DB.prepare(query).bind(...args);
@@ -48,26 +49,26 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   const previous = await sql(env, 'SELECT * FROM radar_control WHERE id = ?', pilotId).first();
   if (!previous) throw new Error('Radarstatus niet overgezet; scanner blijft gestopt');
   await sql(env, 'UPDATE radar_control SET last_wake_at = ? WHERE id = ?', now, pilotId).run();
-  if ((previous.last_slot >= slot && !previous.transport_retry) || previous.attempts >= Math.min(policy.maxAttempts, 25)) return { skipped: true };
+  if ((previous.last_slot >= slot && !previous.transport_retry) || previous.attempts >= Math.min(policy.maxAttempts, scanLimit(policy))) return { skipped: true };
   // Validate the source before reserving/spending a scan. Retrying a failed inventory read is free of Apify calls.
   // Across accounts, read current public references without shop database access.
   const products = await readCatalog(env, fetcher);
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
   if (boundedMode(policy)) {
-    const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? (policy.mode==='fresh-rotation'?2.16:policy.bundleChecks?.enabled?1.81:1.69) : .31,policy.sourceBudget);
+    const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? sourceReserve(policy) : .31,policy.sourceBudget);
     if (!budget.enoughCredit) throw new Error('RADAR_BUDGET_BLOCKED');
   }
   // Atomic database reservation: overlapping events and redeployments cannot spend twice in one hour.
   const reservation = await sql(env,
     'UPDATE radar_control SET attempts = attempts + 1, last_slot = ?, last_attempt_at = ?, transport_retry=0, last_error=NULL, error_at=NULL WHERE id = ? AND (last_slot < ? OR transport_retry=1) AND attempts < ? RETURNING attempts',
-    slot, now, pilotId, slot, Math.min(policy.maxAttempts, 25)).first();
+    slot, now, pilotId, slot, Math.min(policy.maxAttempts, scanLimit(policy))).first();
   if (!reservation) return { skipped: true };
   const selection = scanSelection(policy,slot,reservation.attempts);
   const selectedBrand = selection.map(([brand]) => brand).join(' + ');
   const results = [];
   if(policy.sourceProvider==='topapi-monitor'&&probeFn===probe){
-    try {results.push(...await monitorGroup(selection,{token:env.APIFY_TOKEN,fetcher}));}catch{throw Error('RADAR_PROVIDER_FAILED');}
+    try {results.push(...await monitorGroup(selection,{token:env.APIFY_TOKEN,fetcher,maxCostUsd:policy.maxCostPerMonitorRunUsd||.09}));}catch{throw Error('RADAR_PROVIDER_FAILED');}
   }else for (const [brand, brandId] of selection) {
     if (!inWindow(clock(), policy)) break;
     try {
@@ -166,6 +167,8 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
       if(outcome.photo)photoScreen=outcome.photo;
     }
     if (deal.reason === 'Geen passende prijsreferentie: flipwaarde blijft onbekend') deal.reason = missingReferenceReason(item, products, config);
+    const weakResearch=!candidate&&!deal.eligible&&!valuation&&preference.allowed&&policy.researchEnabled?researchCandidate(item,researchConfig,now):null;
+    if(weakResearch&&weakResearch.priority<(policy.minimumResearchPriority||0))deal={...deal,reason:'research_priority_below_threshold'};
     decisions.push({ itemId:id, photoScreening: photoScreen?.state || null, photoReason:photoScreen?.reason||null, authenticity: deal.authenticity?.state || 'not_assessed', photoCount: item.photoUrls?.length || 0, title: item.title, price: item.price, score: deal.score ?? null, reason: deal.reason });
     if (!deal.eligible || sent+photoReviewSent+researchSent>=2 || !inWindow(clock(), policy)) continue;
     if(policy.requireVisualBrandEvidence&&deal.authenticity?.state!=='reviewed_supported') {
@@ -186,7 +189,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     sent++;
   }
   const report = { scheduler: 'cloudflare', scannedAt: new Date(now).toISOString(), attempts: reservation.attempts,
-    selectedBrand, byBrand:results.map((r)=>({brand:r.brand,checked:r.items.length,sourceReturned:r.returned??null,excludedByBrand:Math.max(0,(r.returned??r.items.length)-r.items.length),freshness:r.freshness})), checked: sourceItems.length, admitted:items.length, newListings:sourceItems.filter(i=>!seenIds.has(/\/items\/(\d+)/.exec(i.url)?.[1])).length, repeatedListings:sourceItems.filter(i=>seenIds.has(/\/items\/(\d+)/.exec(i.url)?.[1])).length,
+    selectedBrand, byBrand:results.map((r)=>({brand:r.brand,checked:r.items.length,sourceReturned:r.returned??null,excludedByBrand:Math.max(0,(r.normalizedCount??r.items.length)-r.items.length),excludedAtNormalization:Math.max(0,(r.returned??r.items.length)-(r.normalizedCount??r.items.length)),freshness:r.freshness})), checked: sourceItems.length, admitted:items.length, newListings:sourceItems.filter(i=>!seenIds.has(/\/items\/(\d+)/.exec(i.url)?.[1])).length, repeatedListings:sourceItems.filter(i=>seenIds.has(/\/items\/(\d+)/.exec(i.url)?.[1])).length,
     sent, photoReviewSent, researchQueued, researchSent, bundlesQueued, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
   await sql(env, 'UPDATE radar_control SET last_scan_at=?, last_report=?, last_error=NULL, error_at=NULL WHERE id=?',
     now, JSON.stringify(report), pilotId).run();
@@ -229,7 +232,8 @@ export async function status(env, now = Date.now(), policy = settings) {
   const readiness = await sql(env,'SELECT state,result,created_at FROM radar_photo_checks WHERE pilot_id=? AND item_id=? AND evidence_key=?',readinessPolicy.id,'smoke-v2','empty-pixel-regression-v2').first();
   const readinessResult = readiness?.result ? JSON.parse(readiness.result) : null;
   const report = row?.last_report ? JSON.parse(row.last_report) : null;
-  const researchStates=policy.researchEnabled ? (await sql(env,'SELECT state,COUNT(*) AS count FROM radar_research WHERE pilot_id=? GROUP BY state',pilotId).all()).results : [];
+  const researchHistoryStates=policy.researchEnabled ? (await sql(env,'SELECT state,COUNT(*) AS count FROM radar_research WHERE pilot_id=? GROUP BY state',pilotId).all()).results : [];
+  const researchStates=policy.sourceProvider==='topapi-monitor'&&policy.researchEnabled?(await sql(env,'SELECT state,COUNT(*) AS count FROM radar_research WHERE pilot_id=? AND first_seen>=? GROUP BY state',pilotId,Date.parse(policy.startsAt)).all()).results:researchHistoryStates;
   const researchTest=policy.researchTestOnce ? await sql(env,'SELECT state,report FROM radar_research_tests WHERE pilot_id=?',pilotId).first() : null;
   const researchBudget=policy.researchEnabled ? await sql(env,'SELECT attempts FROM radar_research_limits WHERE pilot_id=?',pilotId).first() : null;
   const bundleBudget=policy.bundleChecks?.enabled?await sql(env,'SELECT attempts FROM radar_bundle_limits WHERE pilot_id=?',pilotId).first():null;
@@ -244,16 +248,16 @@ export async function status(env, now = Date.now(), policy = settings) {
     byBrand:report?.byBrand || [],newOnly:policy.mode==='fresh-rotation',maxListingAgeHours:policy.maxListingAgeHours||null,admitted:report?.admitted??null,repeatedListings:report?.repeatedListings??null,
     trialDiagnostics:policy.enableDiagnostics?summarizeDiagnostics((await sql(env,'SELECT report FROM radar_scan_reports WHERE pilot_id=? ORDER BY slot',pilotId).all()).results):[],
     researchTest:researchTest?.report?JSON.parse(researchTest.report):researchTest?{state:researchTest.state}:null,
-    researchEnabled:policy.researchEnabled===true,researchStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
+    researchEnabled:policy.researchEnabled===true,researchStates,researchHistoryStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
     bundleCheck: policy.bundleChecks?.enabled?'bounded_idle_wake_lookup':'inactive',bundleCheckLimit:policy.bundleChecks?.maxAttempts||0,bundleChecksUsed:bundleBudget?.attempts||0,bundleStates, active: inWindow(now,policy), endsAt: policy.endsAt,
     lastWakeAt: row?.last_wake_at ? new Date(row.last_wake_at).toISOString() : null,
     lastScanAt: row?.last_scan_at ? new Date(row.last_scan_at).toISOString() : null,
-    attempts: row?.attempts ?? null, limit: Math.min(policy.maxAttempts, 25),
+    attempts: row?.attempts ?? null, limit: Math.min(policy.maxAttempts, scanLimit(policy)),
     selectedBrand: report?.selectedBrand ?? null, checked: report?.checked ?? null,
     newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null, photoReviewSentLastScan:report?.photoReviewSent ?? null,
     error: row?.last_error ?? null, errorAt: row?.error_at ? new Date(row.error_at).toISOString() : null,
     overdue: inWindow(now,policy) && now - (row?.last_scan_at || Date.parse(policy.startsAt)) > 90 * 60000,
-    note: policy.sourceProvider==='topapi-monitor'?'Nieuwe bron met blijvende beginstand: eerste zoekronde onthoudt voorraad, latere rondes leveren alleen nieuwe items. 34 merken per uur; extra upload-, kleding- en merkcontrole blijft verplicht.':policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
+    note: policy.sourceProvider==='topapi-monitor'?'Monitor onthoudt eerder gevonden items. Alleen kleding van maximaal zes uur oud komt door de intake. 34 merken per uur; brongeheugen blijft tussen proeven bewaard.':policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
 }
 
 export default {

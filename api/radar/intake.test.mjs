@@ -33,6 +33,10 @@ test('fresh trial covers all 34 canonical brands each hour within an unchanged m
  assert(selections.every(g=>g.length>=2&&g.length<=3));
  assert.deepEqual(scanSelection(policy,12),scanSelection(policy,0));
  assert.equal(policy.sourceBudget.maxMonthlyUsageUsd,19);
- assert.equal(Date.parse(policy.endsAt)-Date.parse(policy.startsAt),2*3600000);
+ assert.equal(Date.parse(policy.endsAt)-Date.parse(policy.startsAt),24*3600000);
  assert.equal(policy.requireVisualBrandEvidence,true);
+});
+
+test('French and Spanish garment titles do not disappear solely because of their language',()=>{
+ for(const title of ['Maison Kitsuné pull bleu','Engineered Garments chaqueta','Evisu vaqueros','Evisu camiseta'])assert.equal(freshIntake({...good,title,brand:title.split(' ')[0]==='Maison'?'Maison Kitsuné':title.startsWith('Evisu')?'Evisu':'Engineered Garments'},config,now),null);
 });

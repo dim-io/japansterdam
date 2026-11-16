@@ -1,10 +1,10 @@
 {
   "enabled": true,
-  "id": "pilot-2026-11-16-source2",
-  "previousPilotId": "pilot-2026-11-16",
-  "startsAt": "2026-11-16T19:24:12.736960+00:00",
-  "endsAt": "2026-11-16T21:24:12.736960+00:00",
-  "maxAttempts": 24,
+  "id": "pilot-2026-11-16-source3",
+  "previousPilotId": "pilot-2026-11-16-source2",
+  "startsAt": "2026-11-16T23:14:54.552694+00:00",
+  "endsAt": "2026-11-17T23:14:54.552694+00:00",
+  "maxAttempts": 288,
   "brands": {
     "Nonnative": "355385",
     "Wacko Maria": "614622",
@@ -129,7 +129,7 @@
       "Denim by Vanquish & Fragment"
     ]
   ],
-  "revision": "native-new-only-source-v10",
+  "revision": "native-monitor-day-budget-v11",
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
@@ -142,8 +142,8 @@
     "plan": "free",
     "source": "dashboard_current_plan",
     "confirmedAt": "2026-11-16T17:33:58.961284+00:00",
-    "authorizedAt": "2026-11-16T19:24:12.736960+00:00",
-    "validUntil": "2026-11-16T21:24:12.736960+00:00"
+    "authorizedAt": "2026-11-16T23:14:54.552694+00:00",
+    "validUntil": "2026-11-17T23:14:54.552694+00:00"
   },
   "reviewBacklog": false,
   "bundleChecks": {
@@ -159,5 +159,6 @@
   "pausedBrands": {},
   "maxListingAgeHours": 6,
   "minimumResearchPriority": 7,
-  "sourceProvider": "topapi-monitor"
+  "sourceProvider": "topapi-monitor",
+  "maxCostPerMonitorRunUsd": 0.015
 }
