@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "id": "pilot-2026-11-16",
   "previousPilotId": "pilot-2026-11-14",
   "startsAt": "2026-11-16T17:35:05.645740+00:00",
@@ -158,5 +158,6 @@
   "enableDiagnostics": true,
   "pausedBrands": {},
   "maxListingAgeHours": 6,
-  "minimumResearchPriority": 7
+  "minimumResearchPriority": 7,
+  "pauseReason": "Source repeats historical catalogue results; paused pending source audit."
 }
