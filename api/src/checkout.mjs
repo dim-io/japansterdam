@@ -42,7 +42,7 @@ export function readiness(env,s){
 }
 async function mollie(env,mode,path,options={}){
  if(!credentials(env,mode))fail(503,'Payment account is not configured for this mode.');
- const r=await fetch('https://api.mollie.com/v2'+path,{...options,redirect:'error',signal:AbortSignal.timeout(15000),headers:{Authorization:'Bearer '+env.MOLLIE_API_KEY,'Content-Type':'application/json',...options.headers}});
+ const r=await fetch('https://api.mollie.com/v2'+path,{...options,redirect:'manual',signal:AbortSignal.timeout(15000),headers:{Authorization:'Bearer '+env.MOLLIE_API_KEY,'Content-Type':'application/json',...options.headers}});
  if(!r.ok){const e=new CheckoutError(502,'The payment provider could not complete this request.');e.definitive=r.status>=400&&r.status<500&&r.status!==408&&r.status!==409&&r.status!==429;throw e;}
  return r.json();
 }
@@ -150,7 +150,7 @@ export async function sendMessages(env){
  for(const m of rows.results){
   if(now()-m.created_at>23*3600000){await sql(env,"UPDATE order_messages SET state='needs_review' WHERE order_id=? AND kind=?",m.order_id,m.kind).run();continue;}
   const claim=await sql(env,"UPDATE order_messages SET attempts=attempts+1,last_attempt_at=? WHERE order_id=? AND kind=? AND state='queued' AND (last_attempt_at IS NULL OR last_attempt_at<?)",now(),m.order_id,m.kind,now()-60000).run();if(!claim.meta.changes)continue;
-  try{const r=await fetch('https://api.resend.com/emails',{method:'POST',redirect:'error',signal:AbortSignal.timeout(15000),headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':m.order_id+'-'+m.kind},body:m.payload});if(r.ok)await sql(env,"UPDATE order_messages SET state='sent',sent_at=? WHERE order_id=? AND kind=?",now(),m.order_id,m.kind).run();}catch{/* Stable key/payload allow a bounded retry without duplicate receipts. */}
+  try{const r=await fetch('https://api.resend.com/emails',{method:'POST',redirect:'manual',signal:AbortSignal.timeout(15000),headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':m.order_id+'-'+m.kind},body:m.payload});if(r.ok)await sql(env,"UPDATE order_messages SET state='sent',sent_at=? WHERE order_id=? AND kind=?",now(),m.order_id,m.kind).run();}catch{/* Stable key/payload allow a bounded retry without duplicate receipts. */}
  }
 }
 export async function reconcile(env){
@@ -177,7 +177,7 @@ export async function commerceRoute(req,env,ctx,{admin=false}={}){
   if(path==='/admin/checkout/test'&&method==='POST')return createOrder(req,env,{test:true});
   if(path==='/admin/checkout/email-test'&&method==='POST'){
    const s=await settings(env);if(!env.RESEND_API_KEY||!env.ORDER_EMAIL_FROM||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email))fail(400,'Configure the verified sender and save your contact email first.');
-   const r=await fetch('https://api.resend.com/emails',{method:'POST',redirect:'error',signal:AbortSignal.timeout(15000),headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':'owner-email-test-'+Math.floor(now()/60000)},body:JSON.stringify({from:env.ORDER_EMAIL_FROM,to:[s.email],subject:'Japansterdam checkout — email test',reply_to:s.email,text:'Japansterdam — TEST EMAIL. This is a sample order confirmation. No payment has been taken and no garment has been purchased.\n\n'+receipt(sampleEmailOrder(s)).replace('Payment received. Thank you, Sample customer.','Sample only — no payment received.').replace('Total paid:','Sample total:'),html:orderEmailHtml(sampleEmailOrder(s),{test:true})})});
+   const r=await fetch('https://api.resend.com/emails',{method:'POST',redirect:'manual',signal:AbortSignal.timeout(15000),headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':'owner-email-test-'+Math.floor(now()/60000)},body:JSON.stringify({from:env.ORDER_EMAIL_FROM,to:[s.email],subject:'Japansterdam checkout — email test',reply_to:s.email,text:'Japansterdam — TEST EMAIL. This is a sample order confirmation. No payment has been taken and no garment has been purchased.\n\n'+receipt(sampleEmailOrder(s)).replace('Payment received. Thank you, Sample customer.','Sample only — no payment received.').replace('Total paid:','Sample total:'),html:orderEmailHtml(sampleEmailOrder(s),{test:true})})});
    if(!r.ok)fail(502,'Email provider did not accept the test. Check your sending domain and credentials.');return response({ok:true});
   }
 

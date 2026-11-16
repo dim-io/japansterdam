@@ -15,7 +15,7 @@ function setup(){
 let payments=new Map(),starts=0,mails=[];
 const nativeFetch=globalThis.fetch;
 function provider(){payments=new Map();starts=0;mails=[];globalThis.fetch=async(url,options={})=>{
- if(url==='https://api.resend.com/emails'){mails.push({body:JSON.parse(options.body),key:options.headers['Idempotency-Key']});return Response.json({id:'email'});}
+ if(url==='https://api.resend.com/emails'){assert.equal(options.redirect,'manual');mails.push({body:JSON.parse(options.body),key:options.headers['Idempotency-Key']});return Response.json({id:'email'});}
  if(url==='https://api.mollie.com/v2/payments'){
   starts++;const payload=JSON.parse(options.body),id='tr_'+String(starts),p={id,mode:options.headers.Authorization.includes('test_')?'test':'live',amount:payload.amount,metadata:payload.metadata,status:'open',_links:{checkout:{href:'https://www.mollie.com/checkout/'+id}}};payments.set(id,p);return Response.json(p);
  }
@@ -92,3 +92,10 @@ test('a busy reconciliation stays within the Cloudflare Free 50-request limit',a
  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n,0);
  assert.equal(JSON.parse(db.prepare("SELECT data FROM products WHERE slug='one'").get().data).sold,false);
  });
+
+test('email redirects are rejected without marking queued receipts as sent',async()=>{
+ provider();const {db,env}=setup(),o=await create(env,await input(env));payments.get('tr_1').status='paid';await syncOrder(env,o.id);
+ globalThis.fetch=async(url,options)=>{assert.equal(url,'https://api.resend.com/emails');assert.equal(options.redirect,'manual');return new Response(null,{status:307,headers:{Location:'https://other.example.test/emails'}});};
+ await sendMessages(env);assert.equal(db.prepare("SELECT COUNT(*) AS n FROM order_messages WHERE state='sent'").get().n,0);
+ await assert.rejects(commerceRoute(req('/admin/checkout/email-test',{}),env,{}, {admin:true}),/Email provider did not accept/);
+});
