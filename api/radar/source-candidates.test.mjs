@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {candidateRun,candidateInput,candidates} from './source-candidates.mjs';
 test('candidate inputs request newest-first and no notifications, sellers or reviews',()=>{
  const a=candidateInput(candidates[0],'Needles');assert.equal(new URL(a.startUrls[0].url).searchParams.get('order'),'newest_first');assert.equal(a.maxProducts,10);assert.deepEqual(a.webhookUrls,[]);
- const b=candidateInput(candidates[1],'Needles',{monitor:true});assert.deepEqual(b.brands,['Needles']);assert.deepEqual(b.brandIds,['360271']);assert.deepEqual(b.includeKeywords,['Needles']);assert.equal(b.order,'newest_first');assert.equal(b.monitorMode,true);assert.equal(b.alertOnPriceDrop,false);assert.equal(b.resetMonitor,false);assert.equal(b.includeSellerDetails,false);assert.equal(b.maxItems,10);
+ const b=candidateInput(candidates[1],'Needles',{monitor:true});assert.deepEqual(b.brands,['Needles']);assert.deepEqual(b.brandIds,['360271']);assert.deepEqual(b.includeKeywords,['Needles']);assert.equal(b.order,'newest_first');assert.equal(b.monitorMode,true);assert.equal(b.skipFirstRun,true);assert.deepEqual(b.catalogIds,['5','1904']);assert.equal(b.alertOnPriceDrop,false);assert.equal(b.resetMonitor,false);assert.equal(b.includeSellerDetails,false);assert.equal(b.maxItems,10);
 });
 test('source acceptance uses capped authenticated requests and rejects redirects',async()=>{
  let starts=0;const result=await candidateRun(candidates[0],candidateInput(candidates[0],'Needles'),{token:'fixture',fetcher:async(url,o)=>{
