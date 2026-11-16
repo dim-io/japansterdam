@@ -20,7 +20,7 @@ export async function candidateRun(actor,input,{token,fetcher=fetch,maxCostUsd=.
 }
 export function candidateInput(actor,brand,{monitor=false}={}){
  const url=new URL('https://www.vinted.nl/catalog');url.search=new URLSearchParams({search_text:brand,price_to:'70',currency:'EUR',order:'newest_first'});
- if(actor===candidates[0])return {startUrls:[url.href],maxProducts:10,includeDetails:true,trackPriceChanges:true,saveOnly:'new',webhookUrls:[],discordWebhookUrls:[]};
- if(actor===candidates[1])return {searchQueries:[brand],country:'nl',order:'newest_first',priceTo:70,maxItems:10,maxItemsPerSearch:10,includeDetails:true,includeSellerDetails:false,includeSellerReviews:false,language:'en',monitorMode:monitor,monitorStoreName:'japansterdam-source-acceptance-20261116',alertOnPriceDrop:false,skipFirstRun:false,resetMonitor:false};
+ if(actor===candidates[0])return {startUrls:[{url:url.href}],maxProducts:10,includeDetails:true,trackPriceChanges:true,saveOnly:'new',webhookUrls:[],discordWebhookUrls:[]};
+ if(actor===candidates[1])return {searchQueries:[brand],brands:[brand],...(brand==='Needles'?{brandIds:['360271']}:{ }),includeKeywords:[brand],country:'nl',order:'newest_first',priceTo:70,maxItems:10,maxItemsPerSearch:10,includeDetails:true,includeSellerDetails:false,includeSellerReviews:false,language:'en',monitorMode:monitor,monitorStoreName:'japansterdam-source-acceptance-exact-20261116',alertOnPriceDrop:false,skipFirstRun:false,resetMonitor:false};
  throw Error('Unknown candidate');
 }
