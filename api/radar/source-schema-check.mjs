@@ -8,6 +8,6 @@ if(policy.sourceProvider==='topapi-monitor'){
  const rows=await get('/datasets/'+run.defaultDatasetId+'/items?clean=true&format=json&limit=1');
  const item=monitorRow(rows[0]||{},run.finishedAt);
  const report={schemaVerified:!!item,price:typeof item?.price==='number',availability:item?.available===true,condition:!!item?.condition,publication:!!item?.publishedAt,photos:(item?.photoUrls?.length||0)>0};
- console.log(JSON.stringify(report));
+ console.log(JSON.stringify({report,sourceAvailability:Object.fromEntries(Object.entries(rows[0]||{}).filter(([k])=>/avail|sold|reserved|hidden|can_buy/.test(k)))}));
  if(!Object.values(report).every(Boolean))throw Error('Replacement source schema not verified');
 }
