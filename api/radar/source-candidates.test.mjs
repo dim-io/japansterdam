@@ -8,7 +8,7 @@ test('candidate inputs request newest-first and no notifications, sellers or rev
 test('source acceptance uses capped authenticated requests and rejects redirects',async()=>{
  let starts=0;const result=await candidateRun(candidates[0],candidateInput(candidates[0],'Needles'),{token:'fixture',fetcher:async(url,o)=>{
   assert.equal(o.redirect,'manual');assert.equal(o.headers.Authorization,'Bearer fixture');assert(!url.includes('fixture'));
-  if(o.method==='POST'){starts++;assert(url.includes('maxTotalChargeUsd=.03'));assert(url.includes('maxItems=10'));return Response.json({data:{id:'Run1',status:'SUCCEEDED',defaultDatasetId:'Data1'}});}
+  if(o.method==='POST'){starts++;assert(url.includes('maxTotalChargeUsd=0.03'));assert(url.includes('maxItems=10'));return Response.json({data:{id:'Run1',status:'SUCCEEDED',defaultDatasetId:'Data1'}});}
   return Response.json([{id:123,title:'shirt'}]);
  }});assert.equal(starts,1);assert.equal(result.rows.length,1);
  await assert.rejects(candidateRun('unapproved~actor',{}, {token:'fixture'}),/Invalid source trial/);

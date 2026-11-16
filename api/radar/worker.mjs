@@ -1,3 +1,4 @@
+import {monitorGroup} from './monitor-source.mjs';
 import {freshIntake} from './intake.mjs';
 import {brandDiagnostics,summarizeDiagnostics} from './diagnostics.mjs';
 import {curation} from './curation.mjs';
@@ -65,7 +66,9 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   const selection = scanSelection(policy,slot,reservation.attempts);
   const selectedBrand = selection.map(([brand]) => brand).join(' + ');
   const results = [];
-  for (const [brand, brandId] of selection) {
+  if(policy.sourceProvider==='topapi-monitor'&&probeFn===probe){
+    try {results.push(...await monitorGroup(selection,{token:env.APIFY_TOKEN,fetcher}));}catch{throw Error('RADAR_PROVIDER_FAILED');}
+  }else for (const [brand, brandId] of selection) {
     if (!inWindow(clock(), policy)) break;
     try {
       const source = await probeFn({ token: env.APIFY_TOKEN, ...(typeof brandId==='object'?{searchText:brandId.searchText}:{brandIds:brandId}), fetcher,
@@ -231,7 +234,7 @@ export async function status(env, now = Date.now(), policy = settings) {
   const researchBudget=policy.researchEnabled ? await sql(env,'SELECT attempts FROM radar_research_limits WHERE pilot_id=?',pilotId).first() : null;
   const bundleBudget=policy.bundleChecks?.enabled?await sql(env,'SELECT attempts FROM radar_bundle_limits WHERE pilot_id=?',pilotId).first():null;
   const bundleStates=policy.bundleChecks?.enabled?(await sql(env,'SELECT state,COUNT(*) AS count FROM radar_bundle_checks WHERE pilot_id=? GROUP BY state',pilotId).all()).results:[];
-  return { scheduler: 'cloudflare', assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
+  return { scheduler: 'cloudflare', sourceProvider:policy.sourceProvider||'omkar-legacy',sourceMonitor:policy.sourceProvider==='topapi-monitor',assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
     researchPhotoCheckRequired:policy.requireVisualBrandEvidence===true, photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
@@ -250,7 +253,7 @@ export async function status(env, now = Date.now(), policy = settings) {
     newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null, photoReviewSentLastScan:report?.photoReviewSent ?? null,
     error: row?.last_error ?? null, errorAt: row?.error_at ? new Date(row.error_at).toISOString() : null,
     overdue: inWindow(now,policy) && now - (row?.last_scan_at || Date.parse(policy.startsAt)) > 90 * 60000,
-    note: policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
+    note: policy.sourceProvider==='topapi-monitor'?'Nieuwe bron met blijvende beginstand: eerste zoekronde onthoudt voorraad, latere rondes leveren alleen nieuwe items. 34 merken per uur; extra upload-, kleding- en merkcontrole blijft verplicht.':policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
 }
 
 export default {

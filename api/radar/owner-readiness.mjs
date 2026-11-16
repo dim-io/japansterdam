@@ -19,7 +19,7 @@ export function aiAdapter(token,fetcher=fetch){return {async run(model,input){
   if(!response.ok||!data.success){const codes=(data.errors||[]).map(e=>e.code);throw Error(codes.includes(5016)?'model_terms_required':codes.includes(3036)?'free_quota_exhausted':'model_unavailable');}
   return data.result;
 }};}
-async function telegramReadiness(token,chat,fetcher){
+export async function telegramReadiness(token,chat,fetcher){
   if(!/^\d+:[A-Za-z0-9_-]+$/.test(token||'')||!/^\d+$/.test(chat||''))return false;
   // Read-only checks; no messages or listing data are sent.
   for(const action of ['getMe','getChat']){

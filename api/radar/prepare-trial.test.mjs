@@ -19,3 +19,15 @@ test('successful preparation checks readiness without scraper or message side ef
 test('the bundle pilot reserves four extra bounded actor calls inside Free credit',async()=>{
  await prepareTrial({}, {now,testPolicy:{...testPolicy,bundleChecks:{enabled:true}},query:async()=>[],budget:async(token,fetcher,reserve)=>{assert.equal(reserve,1.81);return{freePlanConfirmed:true,enoughCredit:true};},readiness:async()=>({shopReferences:true,telegramReady:true,photoState:'ready'})});
 });
+
+test('replacement monitor reuses only recent same-account photo proof and rechecks shop and Telegram',async()=>{
+ const {validOwnerConfirmation}=await import('./free-plan.mjs');
+ const {default:readinessPolicy}=await import('./owner-readiness.json',{with:{type:'json'}});
+ const now=Date.now(),testPolicy={id:'replacement',enabled:true,sourceProvider:'topapi-monitor',mode:'fresh-rotation',endsAt:new Date(now+7200000).toISOString(),visionAccountConfirmation:{accountId:readinessPolicy.accountId,plan:'free',source:'dashboard_current_plan',confirmedAt:new Date(now-3600000).toISOString(),authorizedAt:new Date(now).toISOString(),validUntil:new Date(now+7200000).toISOString()}};
+ assert(validOwnerConfirmation(testPolicy,now));let imageTests=0;
+ const result=await prepareTrial({APIFY_TOKEN:'fixture',TELEGRAM_BOT_TOKEN:'123:fixture',TELEGRAM_CHAT_ID:'42'},{now,testPolicy,
+  query:async(sql)=>sql.includes('radar_photo_checks')?[{state:'ready',created_at:now-3600000}]:[],
+  fetcher:async url=>String(url).includes('workers.dev')?Response.json([{name:'Needles shirt',brand:'Needles',price:100}]):Response.json({ok:true,result:{}}),
+  budget:async()=>({includedPlanConfirmed:true,enoughCredit:true}),readiness:async()=>{imageTests++;throw Error('no new image test');}});
+ assert.equal(result.reusedPhotoReadiness,true);assert.equal(imageTests,0);assert.equal(result.messagesSent,0);
+});

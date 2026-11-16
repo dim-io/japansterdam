@@ -6,7 +6,7 @@ import {inWindow,scanSelection} from './worker.mjs';
 import readiness from './owner-readiness.json' with {type:'json'};
 import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
 export async function bootstrapTrial(query,p=policy,now=Date.now()){
-  if(!/^pilot-\d{4}-\d{2}-\d{2}$/.test(p.id)||p.id===p.previousPilotId)throw Error('Ongeldig proefvenster');
+  if(!/^pilot-\d{4}-\d{2}-\d{2}(?:-source2)?$/.test(p.id)||p.id===p.previousPilotId)throw Error('Ongeldig proefvenster');
   if((await query('SELECT verified FROM radar_transfer WHERE id=?',[SOURCE.database]))[0]?.verified!==1)throw Error('Accountoverdracht niet geverifieerd');
   if(p.enableDiagnostics)await query(DIAGNOSTIC_SCHEMA);
   if(p.bundleChecks?.enabled)for(const schema of BUNDLE_SCHEMA)await query(schema);

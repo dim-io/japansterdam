@@ -1,6 +1,9 @@
+import {validOwnerConfirmation} from './free-plan.mjs';
+import readinessPolicy from './owner-readiness.json' with {type:'json'};
+import {readCatalog} from './catalog.mjs';
 import {pathToFileURL} from 'node:url';
 import {client,TARGET} from './account-migration.mjs';
-import {check} from './owner-readiness.mjs';
+import {check,telegramReadiness} from './owner-readiness.mjs';
 import {preflight} from '../../tools/deal-radar/budget.mjs';
 import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
 
@@ -11,6 +14,15 @@ export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testP
   const source=await budget(env.APIFY_TOKEN,fetcher,testPolicy.mode==='fresh-rotation'?2.16:testPolicy.bundleChecks?.enabled?1.81:1.69,testPolicy.sourceBudget);
   if(!(source.includedPlanConfirmed??source.freePlanConfirmed))throw Error('source_budget_not_confirmed:plan_unconfirmed');
   if(!source.enoughCredit)throw Error('source_budget_not_confirmed:insufficient_included_credit');
+  // Reuse the actual same-account blank-image test, retaining global daily AI usage.
+  if(testPolicy.sourceProvider==='topapi-monitor'&&validOwnerConfirmation(testPolicy,now)){
+    const proof=(await query('SELECT state,created_at FROM radar_photo_checks WHERE pilot_id=? AND item_id=? AND evidence_key=?',[readinessPolicy.id,'smoke-v2','empty-pixel-regression-v2']))[0];
+    if(readinessPolicy.accountId===testPolicy.visionAccountConfirmation.accountId&&proof?.state==='ready'&&proof.created_at<=now&&now-proof.created_at<86400000){
+      await readCatalog({SHOP_CATALOG_URL:'https://japansterdam-api.sam-jesse.workers.dev/public/products'},fetcher);
+      if(!await telegramReadiness(env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher))throw Error('trial_readiness_not_confirmed');
+      return {includedSourceBudgetConfirmed:true,photoState:'ready',reusedPhotoReadiness:true,newScraperStarts:0,messagesSent:0};
+    }
+  }
   const ready=await readiness(env,{query,now,fetcher});
   if(!ready.shopReferences||!ready.telegramReady||ready.photoState!=='ready')throw Error('trial_readiness_not_confirmed');
   return {includedSourceBudgetConfirmed:true,photoState:ready.photoState,newScraperStarts:0,messagesSent:0};
