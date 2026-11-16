@@ -1,0 +1,20 @@
+name: Radar alternatieve bronnen toetsen
+on:
+  push:
+    branches: [main]
+    paths: ['api/radar/source-acceptance.mjs', '.github/workflows/radar-source-acceptance.yml']
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Bronkwaliteit en herhalingen toetsen (maximaal 15 dollarcent)
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        run: node api/radar/source-acceptance.mjs
