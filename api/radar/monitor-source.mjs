@@ -15,7 +15,7 @@ export function monitorInput(selection){
 }
 export function monitorRow(row,observedAt){
  if(row.record_type&&row.record_type!=='item')return null;
- let availability=row.availability;
+ let availability=row.availability==='InStock'?'available':row.availability;
  if(row.is_sold===true||row.is_reserved===true||row.is_hidden===true||row.can_buy===false)availability='unavailable';
  else if(!availability&&row.can_buy===true&&row.is_sold===false&&row.is_reserved===false&&row.is_hidden===false)availability='available';
  const item=normalizeRow({...row,link:row.url,brand:row.brand_title,price:row.price_amount,currency:row.price_currency,size:row.size_title,image:row.photo_url,availability},observedAt,70);
