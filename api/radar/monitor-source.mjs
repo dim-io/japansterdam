@@ -3,6 +3,10 @@ import {normalizeRow} from '../../tools/deal-radar/provider.mjs';
 import {identifyBrand,itemPriceLimit} from '../../tools/deal-radar/scoring.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
 export const MONITOR_STORE='japansterdam-new-garments-v1'; // Stable across trials and redeploys.
+export function monitorStore(names){
+ let hash=2166136261;for(const c of [...names].sort().join('|'))hash=Math.imul(hash^c.charCodeAt(0),16777619);
+ return MONITOR_STORE+'-'+(hash>>>0).toString(16);
+}
 export function monitorInput(selection){
  if(!Array.isArray(selection)||selection.length<1||selection.length>3)throw Error('Invalid monitor group');
  const names=selection.map(([b])=>b);
@@ -11,7 +15,7 @@ export function monitorInput(selection){
   const u=new URL('https://www.vinted.nl/catalog');u.search=new URLSearchParams({search_text:brand,price_to:String(itemPriceLimit(brand,config)),currency:'EUR',order:'newest_first'});
   if(typeof id==='string'&&/^\d+$/.test(id))u.searchParams.append('brand_ids[]',id);
   return u.href;
- }),brands:names,includeKeywords:names,country:'nl',order:'newest_first',maxItems:selection.length*10,maxItemsPerSearch:10,includeDetails:true,includeSellerDetails:false,includeSellerReviews:false,language:'en',catalogIds:['5','1904'],monitorMode:true,monitorStoreName:MONITOR_STORE,skipFirstRun:true,resetMonitor:false,alertOnPriceDrop:false};
+ }),brands:names,includeKeywords:names,country:'nl',order:'newest_first',maxItems:selection.length*10,maxItemsPerSearch:10,includeDetails:true,includeSellerDetails:false,includeSellerReviews:false,language:'en',catalogIds:['5','1904'],monitorMode:true,monitorStoreName:monitorStore(names),skipFirstRun:true,resetMonitor:false,alertOnPriceDrop:false};
 }
 export function monitorRow(row,observedAt){
  if(row.record_type&&row.record_type!=='item')return null;
@@ -23,7 +27,8 @@ export function monitorRow(row,observedAt){
  return item;
 }
 export async function monitorGroup(selection,{token,fetcher=fetch}={}){
- const r=await candidateRun('topapi~vinted-scraper',monitorInput(selection),{token,fetcher,maxCostUsd:.09,maxItems:selection.length*10});
+ const input=monitorInput(selection);
+ const r=await candidateRun('topapi~vinted-scraper',input,{token,fetcher,maxCostUsd:.09,maxItems:selection.length*10});
  const normalized=r.rows.map(row=>monitorRow(row,r.observedAt)).filter(Boolean);
- return selection.map(([brand])=>({brand,runId:r.runId,returned:r.rows.filter(row=>identifyBrand(row.brand_title,config)===brand).length,normalizedCount:normalized.filter(i=>identifyBrand(i.brand,config)===brand).length,items:normalized.filter(i=>identifyBrand(i.brand,config)===brand),freshness:{state:'source_monitor_new_only',baseline:'skip_first_run',store:MONITOR_STORE}}));
+ return selection.map(([brand])=>({brand,runId:r.runId,returned:r.rows.filter(row=>identifyBrand(row.brand_title,config)===brand).length,normalizedCount:normalized.filter(i=>identifyBrand(i.brand,config)===brand).length,items:normalized.filter(i=>identifyBrand(i.brand,config)===brand),freshness:{state:'source_monitor_new_only',baseline:'skip_first_run',store:input.monitorStoreName}}));
 }
