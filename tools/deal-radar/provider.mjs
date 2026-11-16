@@ -1,3 +1,4 @@
+import {publicationTime} from '../../api/radar/intake.mjs';
 import { listingUrl } from './scoring.mjs';
 
 const API = 'https://api.apify.com/v2';
@@ -37,6 +38,8 @@ export function normalizeRow(row, observedAt, maxPrice=40) {
     available: row.availability === 'available' ? true : row.availability ? false : null,
     photoUrls: listingPhotos(row), sellerRef:sellerReference(row),
     description: String(row.description || '').slice(0, 5000), sourceUploadAge: String(row.uploaded_ago || '').slice(0, 80) || null, observedAt, comparables: [] };
+  const published=publicationTime(row,observedAt);if(published)item.publishedAt=published;
+  item.category=String(row.category_path||row.category_title||row.category?.title||'').slice(0,500);
   if (typeof row.shipping_price === 'number' && row.shipping_price >= 0) item.shippingCost = row.shipping_price;
   if (typeof row.buyer_protection_fee === 'number' && row.buyer_protection_fee >= 0) item.buyerFee = row.buyer_protection_fee;
   return item;

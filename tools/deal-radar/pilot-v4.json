@@ -1,0 +1,162 @@
+{
+  "enabled": true,
+  "id": "pilot-2026-11-16",
+  "previousPilotId": "pilot-2026-11-14",
+  "startsAt": "2026-11-16T17:35:05.645740+00:00",
+  "endsAt": "2026-11-16T19:35:05.645740+00:00",
+  "maxAttempts": 24,
+  "brands": {
+    "Nonnative": "355385",
+    "Wacko Maria": "614622",
+    "Auralee": "2053426",
+    "Visvim": "276225",
+    "Fullcount": "742239",
+    "Momotaro": "358913",
+    "Iron Heart": "492896",
+    "BEAMS Plus": "7373680",
+    "Nanamica": "596562",
+    "Kaptain Sunshine": "2588542",
+    "White Mountaineering": "605090",
+    "SOPHNET.": "352670",
+    "Neighborhood": "330747",
+    "WTAPS": "320615",
+    "South2 West8": "2901292",
+    "Blue Blue Japan": "360813",
+    "Kapital": "576107",
+    "Needles": "360271",
+    "Engineered Garments": "609050",
+    "orSlow": "373463",
+    "Ts(s)": {
+      "searchText": "Ts(s)"
+    },
+    "Sage de Cret": {
+      "searchText": "Sage de Cret"
+    },
+    "Remi Relief": {
+      "searchText": "Remi Relief"
+    },
+    "Ordinary Fits": {
+      "searchText": "Ordinary Fits"
+    },
+    "Uniform Experiment": {
+      "searchText": "Uniform Experiment"
+    },
+    "Fragment Design": {
+      "searchText": "Fragment Design"
+    },
+    "Fumito Ganryu": {
+      "searchText": "Fumito Ganryu"
+    },
+    "Nulabel": {
+      "searchText": "Nulabel"
+    },
+    "Portvel": {
+      "searchText": "Portvel"
+    },
+    "Wislom": {
+      "searchText": "Wislom"
+    },
+    "Evisu": {
+      "searchText": "Evisu"
+    },
+    "Kenzo": {
+      "searchText": "Kenzo"
+    },
+    "Maison Kitsuné": {
+      "searchText": "Maison Kitsuné"
+    },
+    "Denim by Vanquish & Fragment": {
+      "searchText": "Denim by Vanquish & Fragment"
+    }
+  },
+  "brandGroups": [
+    [
+      "Nonnative",
+      "Wacko Maria",
+      "Auralee"
+    ],
+    [
+      "Visvim",
+      "Fullcount",
+      "Momotaro"
+    ],
+    [
+      "Iron Heart",
+      "BEAMS Plus",
+      "Nanamica"
+    ],
+    [
+      "Kaptain Sunshine",
+      "White Mountaineering",
+      "SOPHNET."
+    ],
+    [
+      "Neighborhood",
+      "WTAPS",
+      "South2 West8"
+    ],
+    [
+      "Blue Blue Japan",
+      "Kapital",
+      "Needles"
+    ],
+    [
+      "Engineered Garments",
+      "orSlow",
+      "Ts(s)"
+    ],
+    [
+      "Sage de Cret",
+      "Remi Relief",
+      "Ordinary Fits"
+    ],
+    [
+      "Uniform Experiment",
+      "Fragment Design",
+      "Fumito Ganryu"
+    ],
+    [
+      "Nulabel",
+      "Portvel",
+      "Wislom"
+    ],
+    [
+      "Evisu",
+      "Kenzo"
+    ],
+    [
+      "Maison Kitsuné",
+      "Denim by Vanquish & Fragment"
+    ]
+  ],
+  "revision": "fresh-only-34-brands-v9",
+  "mode": "fresh-rotation",
+  "maxResultsPerBrand": 10,
+  "maxCostPerRunUsd": 0.03,
+  "maxPhotoChecks": 4,
+  "dailyVisionLimit": 3,
+  "researchEnabled": true,
+  "researchTestOnce": false,
+  "visionAccountConfirmation": {
+    "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
+    "plan": "free",
+    "source": "dashboard_current_plan",
+    "confirmedAt": "2026-11-16T17:33:58.961284+00:00",
+    "authorizedAt": "2026-11-16T17:33:58.961284+00:00",
+    "validUntil": "2026-11-16T19:35:05.645740+00:00"
+  },
+  "reviewBacklog": false,
+  "bundleChecks": {
+    "enabled": false
+  },
+  "sourceBudget": {
+    "allowPaidIncludedCredits": true,
+    "maxMonthlyUsageUsd": 19,
+    "authorizedAt": "2026-11-14T21:39:05.758231+00:00"
+  },
+  "requireVisualBrandEvidence": true,
+  "enableDiagnostics": true,
+  "pausedBrands": {},
+  "maxListingAgeHours": 6,
+  "minimumResearchPriority": 7
+}

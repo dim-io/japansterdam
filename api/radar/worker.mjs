@@ -1,3 +1,4 @@
+import {freshIntake} from './intake.mjs';
 import {brandDiagnostics,summarizeDiagnostics} from './diagnostics.mjs';
 import {curation} from './curation.mjs';
 import {queueBestBundle,checkNextBundle} from './bundles.mjs';
@@ -6,7 +7,7 @@ import readinessPolicy from './owner-readiness.json' with {type:'json'};
 import {runResearchTest} from './research-test.mjs';
 import {researchCandidate,processResearch,queueResearchBatch,MAX_RESEARCH_NOTICES} from './research.mjs';
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
-import settings from '../../tools/deal-radar/pilot-v3.json' with { type: 'json' };
+import settings from '../../tools/deal-radar/pilot-v4.json' with { type: 'json' };
 import { preflight } from '../../tools/deal-radar/budget.mjs';
 import { compareCatalog } from './freshness.mjs';
 import { probe } from '../../tools/deal-radar/provider.mjs';
@@ -21,13 +22,14 @@ export function inWindow(now, policy = settings) {
     && Number.isFinite(start) && Number.isFinite(end) && end > start && end - start <= 86400000 && now >= start && now < end;
 }
 const sql = (env, query, ...args) => env.RADAR_DB.prepare(query).bind(...args);
-const boundedMode=policy=>['both-brands','rotating-brands'].includes(policy.mode);
+const boundedMode=policy=>['both-brands','rotating-brands','fresh-rotation'].includes(policy.mode);
+const interval=policy=>policy.mode==='fresh-rotation'?300000:3600000;
 export function scanSelection(policy,slot,attempts=1){
   const brands=Object.entries(policy.brands);
-  if(policy.mode==='rotating-brands'){
+  if(policy.mode==='rotating-brands'||policy.mode==='fresh-rotation'){
     const groups=policy.brandGroups;
-    if(!Array.isArray(groups)||groups.length<1||groups.length>12||groups.some(g=>!Array.isArray(g)||g.length!==2)
-      ||new Set(groups.flat()).size!==brands.length||groups.flat().length!==brands.length||groups.flat().some(b=>!policy.brands[b])||brands.length>24||brands.length<2)throw Error('Ongeldig merkschema');
+    if(!Array.isArray(groups)||groups.length<1||groups.length>12||groups.some(g=>!Array.isArray(g)||(policy.mode==='fresh-rotation'?(g.length<2||g.length>3):g.length!==2))
+      ||new Set(groups.flat()).size!==brands.length||groups.flat().length!==brands.length||groups.flat().some(b=>!policy.brands[b])||brands.length>(policy.mode==='fresh-rotation'?36:24)||brands.length<2)throw Error('Ongeldig merkschema');
     return groups[slot%groups.length].map(b=>[b,policy.brands[b]]);
   }
   return policy.mode==='both-brands'?brands:[brands[(attempts-1)%brands.length]];
@@ -40,8 +42,8 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     throw new Error('Radarconfiguratie ontbreekt');
   }
   const pilotId = policy.id || PILOT_ID;
-  const slot = Math.floor((now - (boundedMode(policy) ? Date.parse(policy.startsAt) : 0)) / 3600000);
-  if(policy.mode==='rotating-brands')scanSelection(policy,slot);
+  const slot = Math.floor((now - (boundedMode(policy) ? Date.parse(policy.startsAt) : 0)) / interval(policy));
+  if(['rotating-brands','fresh-rotation'].includes(policy.mode))scanSelection(policy,slot);
   const previous = await sql(env, 'SELECT * FROM radar_control WHERE id = ?', pilotId).first();
   if (!previous) throw new Error('Radarstatus niet overgezet; scanner blijft gestopt');
   await sql(env, 'UPDATE radar_control SET last_wake_at = ? WHERE id = ?', now, pilotId).run();
@@ -52,7 +54,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   if (!Array.isArray(products) || !products.length) throw new Error('Shopreferenties ontbreken');
   if (!inWindow(clock(), policy)) return { inactive: true };
   if (boundedMode(policy)) {
-    const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? (policy.bundleChecks?.enabled?1.81:1.69) : .31,policy.sourceBudget);
+    const budget = await preflight(env.APIFY_TOKEN, fetcher, previous.attempts === 0 ? (policy.mode==='fresh-rotation'?2.16:policy.bundleChecks?.enabled?1.81:1.69) : .31,policy.sourceBudget);
     if (!budget.enoughCredit) throw new Error('RADAR_BUDGET_BLOCKED');
   }
   // Atomic database reservation: overlapping events and redeployments cannot spend twice in one hour.
@@ -76,7 +78,8 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     } catch { throw new Error('RADAR_PROVIDER_FAILED'); }
   }
   const result = {runId:results.map((r)=>r.runId).join(',')};
-  const items = [...new Map(results.flatMap((r)=>r.items).map((item)=>[item.url,item])).values()];
+  let items = [...new Map(results.flatMap((r)=>r.items).map((item)=>[/\/items\/(\d+)/.exec(item.url)?.[1]||item.url,item])).values()];
+  const sourceItems=items, intakeDecisions=[];
   let newListings = 0, sent = 0, photoReviewSent = 0, researchQueued = 0, researchSent = 0;
   const researchConfig={...config,authenticityReviews};
   // In the bundle pilot, keep the limited model-reading budget for paired label checks.
@@ -87,11 +90,16 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   const seenIds=new Set();
   if(ids.length) {
     const placeholders=ids.map(()=>'?').join(',');
-    const seen=await sql(env,`SELECT item_id FROM radar_seen WHERE pilot_id=? AND item_id IN (${placeholders})`,pilotId,...ids).all();
+    const seen=await sql(env,`SELECT item_id FROM radar_seen WHERE ${policy.mode==='fresh-rotation'?'1=1':'pilot_id=?'} AND item_id IN (${placeholders})`,...(policy.mode==='fresh-rotation'?[]:[pilotId]),...ids).all();
     seen.results.forEach((row)=>seenIds.add(row.item_id));
-    const values=ids.map(()=>'(?,?,?,?)').join(',');
+
     const rows=items.filter((item)=>/\/items\/(\d+)/.test(item.url));
-    await sql(env,`INSERT INTO radar_seen (pilot_id,item_id,price,observed_at) VALUES ${values} ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, observed_at=excluded.observed_at`,...rows.flatMap((item)=>[pilotId,/\/items\/(\d+)/.exec(item.url)[1],item.price,now])).run();
+    for(let offset=0;offset<rows.length;offset+=20){const batch=rows.slice(offset,offset+20);
+    await sql(env,`INSERT INTO radar_seen (pilot_id,item_id,price,observed_at) VALUES ${batch.map(()=>'(?,?,?,?)').join(',')} ON CONFLICT(pilot_id,item_id) DO UPDATE SET price=excluded.price, observed_at=excluded.observed_at`,...batch.flatMap((item)=>[pilotId,/\/items\/(\d+)/.exec(item.url)[1],item.price,now])).run();}
+  }
+  if(policy.mode==='fresh-rotation'){
+    items=items.filter(item=>{const id=/\/items\/(\d+)/.exec(item.url)?.[1];const reason=seenIds.has(id)?'already_seen':freshIntake(item,config,now,policy.maxListingAgeHours);
+      if(reason)intakeDecisions.push({itemId:id,title:item.title,price:item.price,score:null,reason});return !reason;});
   }
   if(policy.researchEnabled) {
     const previousResearch=await sql(env,'SELECT item_id,state FROM radar_research WHERE pilot_id=?',pilotId).all();
@@ -99,7 +107,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     for(const item of items) {
       if(!finished.has(/\/items\/(\d+)/.exec(item.url)?.[1])&&!estimateFromShop(item,products,config)) {
         const candidate=researchCandidate(item,researchConfig,now);
-        if(candidate)research.set(item.url,candidate);
+        if(candidate&&candidate.priority>=(policy.minimumResearchPriority||0))research.set(item.url,candidate);
       }
     }
     // Priced strong candidates retain first use of the shared photo budget.
@@ -115,7 +123,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
   }
   const bundlesQueued=await queueBestBundle(env,items,researchConfig,policy,now);
   const queuedResearch=await queueResearchBatch(env,items.filter(item=>allResearch.has(item.url)).map(item=>({item,candidate:allResearch.get(item.url)})),policy,now);
-  const decisions = [];
+  const decisions = [...intakeDecisions];
   for (const item of items) {
     const id = /\/items\/(\d+)/.exec(item.url)?.[1];
     if (!id) continue;
@@ -175,7 +183,7 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     sent++;
   }
   const report = { scheduler: 'cloudflare', scannedAt: new Date(now).toISOString(), attempts: reservation.attempts,
-    selectedBrand, byBrand:results.map((r)=>({brand:r.brand,checked:r.items.length,sourceReturned:r.returned??null,excludedByBrand:Math.max(0,(r.returned??r.items.length)-r.items.length),freshness:r.freshness})), checked: items.length, newListings, repeatedListings: items.length - newListings,
+    selectedBrand, byBrand:results.map((r)=>({brand:r.brand,checked:r.items.length,sourceReturned:r.returned??null,excludedByBrand:Math.max(0,(r.returned??r.items.length)-r.items.length),freshness:r.freshness})), checked: sourceItems.length, admitted:items.length, newListings:sourceItems.filter(i=>!seenIds.has(/\/items\/(\d+)/.exec(i.url)?.[1])).length, repeatedListings:sourceItems.filter(i=>seenIds.has(/\/items\/(\d+)/.exec(i.url)?.[1])).length,
     sent, photoReviewSent, researchQueued, researchSent, bundlesQueued, priced: decisions.filter((d) => d.score !== null).length, runId: result.runId, decisions };
   await sql(env, 'UPDATE radar_control SET last_scan_at=?, last_report=?, last_error=NULL, error_at=NULL WHERE id=?',
     now, JSON.stringify(report), pilotId).run();
@@ -227,10 +235,10 @@ export async function status(env, now = Date.now(), policy = settings) {
     researchPhotoCheckRequired:policy.requireVisualBrandEvidence===true, photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
-    trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:boundedMode(policy) ? 2 : 1,
+    trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:policy.mode==='fresh-rotation'?Object.keys(policy.brands).length:boundedMode(policy) ? 2 : 1,
     priceLimits:Object.fromEntries(Object.keys(policy.brands).map(brand=>[brand,itemPriceLimit(brand,config)])),
-    brandSchedule:policy.brandGroups||null,scanIntervalHours:policy.mode==='rotating-brands'?policy.brandGroups.length:policy.mode==='both-brands'?1:Object.keys(policy.brands).length,
-    byBrand:report?.byBrand || [],
+    brandSchedule:policy.brandGroups||null,scanIntervalHours:policy.mode==='fresh-rotation'?policy.brandGroups.length/12:policy.mode==='rotating-brands'?policy.brandGroups.length:policy.mode==='both-brands'?1:Object.keys(policy.brands).length,
+    byBrand:report?.byBrand || [],newOnly:policy.mode==='fresh-rotation',maxListingAgeHours:policy.maxListingAgeHours||null,admitted:report?.admitted??null,repeatedListings:report?.repeatedListings??null,
     trialDiagnostics:policy.enableDiagnostics?summarizeDiagnostics((await sql(env,'SELECT report FROM radar_scan_reports WHERE pilot_id=? ORDER BY slot',pilotId).all()).results):[],
     researchTest:researchTest?.report?JSON.parse(researchTest.report):researchTest?{state:researchTest.state}:null,
     researchEnabled:policy.researchEnabled===true,researchStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
@@ -242,7 +250,7 @@ export async function status(env, now = Date.now(), policy = settings) {
     newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null, photoReviewSentLastScan:report?.photoReviewSent ?? null,
     error: row?.last_error ?? null, errorAt: row?.error_at ? new Date(row.error_at).toISOString() : null,
     overdue: inWindow(now,policy) && now - (row?.last_scan_at || Date.parse(policy.startsAt)) > 90 * 60000,
-    note: 'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
+    note: policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
 }
 
 export default {

@@ -5,8 +5,8 @@ compatibility_date = "2026-10-30"
 workers_dev = true
 
 [triggers]
-# Wake frequently; the database reserves at most one actual scan per UTC hour.
-# The fixed 24-hour trial gates every scan; wakeups outside it do nothing.
+# The fresh-only trial reserves one group of 2–3 brands per five-minute slot.
+# All 34 brands are checked each hour; the fixed two-hour window gates every scan.
 crons = ["*/5 * * * *"]
 
 [vars]

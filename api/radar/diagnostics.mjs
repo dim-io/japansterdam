@@ -7,7 +7,9 @@ export function brandDiagnostics(results,decisions,config,now) {
  return results.map(r=>{
   const reasons={},photoStates={},photoReasons={};
   for(const item of r.items){
-   const reason=researchAssessment(item,config,now).reason;reasons[reason]=(reasons[reason]||0)+1;
+   const idForReason=/\/items\/(\d+)/.exec(item.url)?.[1];
+   const decisionReason=photos.get(idForReason)?.reason;
+   const reason=['already_seen','not_clothing','upload_time_unknown','listing_not_recent','brand_claim_unsupported','imitation_language'].includes(decisionReason)?decisionReason:researchAssessment(item,config,now).reason;reasons[reason]=(reasons[reason]||0)+1;
    const id=/\/items\/(\d+)/.exec(item.url)?.[1];const decision=photos.get(id);const state=decision?.photoScreening||'not_checked';photoStates[state]=(photoStates[state]||0)+1;
    const photoReason=decision?.photoReason||'photo_check_not_run';photoReasons[photoReason]=(photoReasons[photoReason]||0)+1;
   }

@@ -31,7 +31,11 @@
     "Neighborhood",
     "The Changes",
     "orSlow",
-    "WTAPS"
+    "WTAPS",
+    "Evisu",
+    "Kenzo",
+    "Maison Kitsuné",
+    "Denim by Vanquish & Fragment"
   ],
   "peripheralBrands": [
     "Visvim",
@@ -104,6 +108,12 @@
     ],
     "Sage de Cret": [
       "Sage de Crêt"
+    ],
+    "Maison Kitsuné": [
+      "Maison Kitsune"
+    ],
+    "Wislom": [
+      "WISLOM"
     ]
   },
   "authenticityRequiredBrands": [
@@ -200,6 +210,21 @@
     "Kapital",
     "Needles",
     "Engineered Garments",
-    "orSlow"
+    "orSlow",
+    "Ts(s)",
+    "Sage de Cret",
+    "Remi Relief",
+    "Ordinary Fits",
+    "Uniform Experiment",
+    "Fragment Design",
+    "Fumito Ganryu",
+    "Nulabel",
+    "Portvel",
+    "Wislom",
+    "The Changes",
+    "Evisu",
+    "Kenzo",
+    "Maison Kitsuné",
+    "Denim by Vanquish & Fragment"
   ]
 }

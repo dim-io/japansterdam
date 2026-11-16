@@ -136,6 +136,7 @@ export async function screenPhotos(env,item,config,policy,{now=Date.now(),fetche
 
 export function reviewMessage(item,screen) {
   return ['FOTOCHECK — MENSELIJKE BEOORDELING NODIG',`${item.brand} · €${item.price.toFixed(2)}`,
+    ...(item.publishedAt?['Geplaatst: '+item.publishedAt]:[]),
     'De fotoanalyse ziet geen directe tegenstrijdigheid tussen kledingstuk en leesbare labels. Dit bewijst geen authenticiteit.',
     'Geen koopadvies of bevestigde flipwaarde. Controleer zelf labels, model, staat en maten voordat je koopt.',
     item.url].join('\n\n');

@@ -42,6 +42,7 @@ export function researchText(item,screen,candidate={}) {
     ? 'Fotoanalyse: onvoldoende leesbaar merk- of waslabel. Vraag duidelijke labelfoto’s op.'
     : 'Nog niet visueel gecontroleerd — onderzoekskandidaat. Controleer zelf kledingstuk, merklabel en waslabel.';
   return ['ONDERZOEK — GEEN KOOPADVIES',plain(item.title),`${plain(item.brand,60)} · €${item.price.toFixed(2)} · Maat ${plain(item.size,30)||'onbekend'}`,
+    ...(item.publishedAt?['Geplaatst: '+item.publishedAt]:[]),
     'Kandidaat binnen jouw selectie; model, uitvoering en vraagprijs verdienen nader onderzoek. Een passende prijsreferentie ontbreekt.',
     ...(candidate.curationReason==='preferred_needles_garment'?['Selectie: een van jouw voorkeurscategorieën van Needles; beoordeel de specifieke uitvoering.']:[]),
     'Verkoopwaarde en marge: onbekend. Authenticiteit: niet bevestigd.',photo,
@@ -58,8 +59,11 @@ export async function queueResearchBatch(env,rows,policy,now) {
     return [policy.id,id,data,candidate.priority,now,now];
   }).filter(Boolean);
   if(!entries.length)return new Map();
-  const values=entries.map(()=>"(?,?,?,?,'queued',?,?)").join(',');
-  const result=await sql(env,`INSERT INTO radar_research (pilot_id,item_id,data,priority,state,first_seen,last_seen) VALUES ${values} ON CONFLICT(pilot_id,item_id) DO UPDATE SET data=excluded.data,priority=excluded.priority,last_seen=excluded.last_seen RETURNING item_id,state`,...entries.flat()).all();
+  // One JSON binding avoids D1's 100-parameter limit without adding subrequests.
+  const result=await sql(env,`INSERT INTO radar_research (pilot_id,item_id,data,priority,state,first_seen,last_seen)
+    SELECT json_extract(value,'$[0]'),json_extract(value,'$[1]'),json_extract(value,'$[2]'),json_extract(value,'$[3]'),'queued',json_extract(value,'$[4]'),json_extract(value,'$[5]')
+    FROM json_each(?) WHERE true
+    ON CONFLICT(pilot_id,item_id) DO UPDATE SET data=excluded.data,priority=excluded.priority,last_seen=excluded.last_seen RETURNING item_id,state`,JSON.stringify(entries)).all();
   return new Map(result.results.map(row=>[row.item_id,{id:row.item_id,state:row.state}]));
 }
 export async function queueResearch(env,item,candidate,policy,now) {

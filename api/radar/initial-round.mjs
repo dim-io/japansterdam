@@ -3,7 +3,7 @@ import {wake,inWindow} from './worker.mjs';
 import {client,TARGET} from './account-migration.mjs';
 import {databaseAdapter,aiAdapter} from './owner-readiness.mjs';
 import {freePlanDecision} from './free-plan.mjs';
-import policy from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
+import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
 
 // Start only the first reserved round while a new Cron propagates. The same
 // atomic D1 reservation is shared with the production Worker: never two starts.

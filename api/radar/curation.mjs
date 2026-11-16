@@ -9,7 +9,7 @@ export function curation(item,config){
  const review=config.curationPreferences.listingFeedback?.[id];
  if(review?.verdict==='skip')return {allowed:false,boost:0,reason:review.reason,bundleWorthChecking:false};
  const track=isNeedlesTrackPants(item,config);
- const distinctive=/\b(rebuild|patchwork|mohair|jacquard|bandana|sashiko|boro|velour|velours|velvet|kountry)\b/.test(text);
+ const distinctive=/\b(rebuild|patchwork|mohair|jacquard|bandana|sashiko|boro|selvedge|selvage|velour|velours|velvet|kountry)\b/.test(text);
  const preferred=brand==='Needles'&&['outerwear','shirt','knit','set'].includes(type);
  return {allowed:!track,boost:Number(preferred)*6+Number(distinctive)*3+Number(review?.verdict==='interesting')*4+Number(modelNumbers(item.description).length>0)*2,
   reason:track?'needles_track_pants_require_set_and_label_evidence':preferred?'preferred_needles_garment':distinctive?'distinctive_execution':'brand_selection',

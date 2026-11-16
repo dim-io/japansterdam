@@ -129,3 +129,22 @@ test('visual triage sends only a human-review notice and never grants authentica
   assert(messages[0].startsWith('FOTOCHECK'));assert(messages[0].includes('MENSELIJKE BEOORDELING'));assert(!messages[0].includes('/10'));
   db.close();
 });
+
+test('fresh rotation rejects historical IDs across trials before photo or research processing',async()=>{
+ const {db,env}=setup();
+ const freshPolicy={...policy,mode:'fresh-rotation',brands:{Needles:'360271',Kapital:'576107',orSlow:'373463'},brandGroups:[['Needles','Kapital','orSlow']],maxListingAgeHours:6,requireVisualBrandEvidence:true,researchEnabled:true};
+ db.prepare('INSERT INTO radar_seen VALUES(?,?,?,?)').run('old-trial','123456',10,now-86400000);
+ let photos=0,messages=0;env.VISION_FREE_CONFIRMED='true';env.AI={async run(){photos++;throw Error('must not be called');}};
+ const opts={...options,policy:freshPolicy,fetcher:async url=>{
+  if(String(url).endsWith('/users/me'))return Response.json({data:{isPaying:false,plan:{tier:'FREE',monthlyBasePriceUsd:0,monthlyUsageCreditsUsd:5}}});
+  if(String(url).endsWith('/limits'))return Response.json({data:{limits:{maxMonthlyUsageUsd:5},current:{monthlyUsageUsd:0}}});
+  if(String(url).includes('vinted.nl/catalog'))return new Response('',{status:403});
+  messages++;throw Error('no messages');
+ },probeFn:async()=>({runId:'fixture',items:[{...item,publishedAt:new Date(now-60000).toISOString()}, {...item,url:'https://www.vinted.nl/items/54321-waste',title:'Needles shirt sewing pattern',publishedAt:new Date(now-60000).toISOString()}]})};
+ const report=await scan(env,opts);assert.equal(report.checked,2);assert.equal(report.admitted,0);assert.equal(report.repeatedListings,1);
+ assert.deepEqual(report.decisions.map(d=>d.reason),['already_seen','not_clothing']);assert.equal(photos,0);assert.equal(messages,0);
+ // A new five-minute slot is allowed; the exact same slot remains reserved.
+ assert((await scan(env,opts)).skipped);
+ const next=await scan(env,{...opts,now:now+300000,clock:()=>now+300000});assert.equal(next.admitted,0);assert.equal(next.repeatedListings,2);
+ db.close();
+});

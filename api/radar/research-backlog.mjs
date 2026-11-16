@@ -6,7 +6,7 @@ import {databaseAdapter} from './owner-readiness.mjs';
 import {existingResults} from './research-test.mjs';
 import {researchCandidate,processResearch} from './research.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
-import policy from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
+import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
 
 export async function reviewBacklog(env,{query,now=Date.now(),clock=Date.now,fetcher=fetch,readExisting=existingResults,testPolicy=policy}={}) {
   if(testPolicy.reviewBacklog===false)return {state:'disabled_for_this_trial'};

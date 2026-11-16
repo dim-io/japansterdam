@@ -2,13 +2,13 @@ import {pathToFileURL} from 'node:url';
 import {client,TARGET} from './account-migration.mjs';
 import {check} from './owner-readiness.mjs';
 import {preflight} from '../../tools/deal-radar/budget.mjs';
-import policy from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
+import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
 
 // Read-only account/source checks precede even the single bounded blank-image test.
 export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testPolicy=policy,readiness=check,budget=preflight}={}) {
   if((await query('SELECT id FROM radar_control WHERE id=?',[testPolicy.id])).length)return {alreadyInitialized:true};
   if(!testPolicy.enabled||now>=Date.parse(testPolicy.endsAt))throw Error('trial_window_closed');
-  const source=await budget(env.APIFY_TOKEN,fetcher,testPolicy.bundleChecks?.enabled?1.81:1.69,testPolicy.sourceBudget);
+  const source=await budget(env.APIFY_TOKEN,fetcher,testPolicy.mode==='fresh-rotation'?2.16:testPolicy.bundleChecks?.enabled?1.81:1.69,testPolicy.sourceBudget);
   if(!(source.includedPlanConfirmed??source.freePlanConfirmed))throw Error('source_budget_not_confirmed:plan_unconfirmed');
   if(!source.enoughCredit)throw Error('source_budget_not_confirmed:insufficient_included_credit');
   const ready=await readiness(env,{query,now,fetcher});
