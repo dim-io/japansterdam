@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {orderEmailHtml,sampleEmailOrder} from '../src/order-email.mjs';
+import {orderEmailHtml,orderEmailAttachments,sampleEmailOrder} from '../src/order-email.mjs';
 
 test('receipt escapes product, customer and policy text, retaining readable newlines',()=>{
  const o=sampleEmailOrder({company:'Japansterdam',email:'hello@example.test',shipping:[{country:'NL',cents:795}],returnsText:'Return within 14 days.\nContact us first.'});
@@ -18,7 +18,12 @@ test('all order emails use the original wordmark and readable curated positionin
  const o=sampleEmailOrder({company:'Japansterdam',email:'hello@example.test'});
  for(const opts of [{},{owner:true},{test:true}]){
   const html=orderEmailHtml(o,opts);
-  assert(html.includes('https://japansterdam.com/assets/img/site/header-logo.png'));
+  assert(html.includes('src="cid:japansterdam-wordmark"'));
+  assert(!/<img[^>]+src="https?:/.test(html));
+  const [logo]=orderEmailAttachments();
+  assert.equal(logo.content_id,'japansterdam-wordmark');
+  assert.equal(logo.content_type,'image/png');
+  assert.equal(logo.path,'https://japansterdam.com/assets/img/site/header-logo.png');
   assert(html.includes('alt="Japansterdam"'));
   assert(html.includes('max-width:100%;height:auto'));
   assert(html.includes('Curated Japanese Garments'));

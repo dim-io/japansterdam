@@ -1,5 +1,5 @@
 // Hosted payments. Prices, stock and payment state are always server-owned.
-import {orderEmailHtml,sampleEmailOrder} from './order-email.mjs';
+import {orderEmailHtml,orderEmailAttachments,sampleEmailOrder} from './order-email.mjs';
 import {stripeCredentials,stripeSigningSecret,stripeAccountId,stripeSessionPayload,startStripePayment,readStripePayment,stripeWebhookEvent,webhookOrderId,verifyStripeAccount,STRIPE_EVENTS} from './stripe-payments.mjs';
 const orderProvider=o=>JSON.parse(o.policy).provider||'mollie';
 export class CheckoutError extends Error { constructor(status,message){super(message);this.name='CheckoutError';this.status=status;} }
@@ -119,8 +119,8 @@ async function enqueue(env,o,kind,to,subject,text,extra={}){
 function receipt(o){const s=JSON.parse(o.policy),c=JSON.parse(o.customer);return ['Japansterdam — order JPN-'+o.id,'Payment received. Thank you, '+c.name+'.','',...JSON.parse(o.items).map(p=>`${p.brand} ${p.name} / Size ${p.size} / €${money(p.cents)}\nCondition: ${p.condition}. ${p.conditionNotes||''}`),'',`Subtotal: €${money(o.subtotal)}`,`Shipping: €${money(o.shipping)}`,`Total paid: €${money(o.total)}`,s.taxNote,'',c.name,c.street,c.zip+' '+c.city,c.country,'',s.company,s.address,'KvK '+s.kvk,s.vat?'VAT ID '+s.vat:'',s.email,s.phone||'','',s.deliveryText,'',s.termsText,'',s.returnsText,'Return address: '+s.returnAddress,'Withdraw online: https://japansterdam.com/returns.html','',s.privacyText].join('\n');}
 async function queuePaidMail(env,o){
  const s=JSON.parse(o.policy),c=JSON.parse(o.customer);
- await enqueue(env,o,'receipt',c.email,'Your Japansterdam order — JPN-'+o.id,receipt(o),{html:orderEmailHtml(o),reply_to:s.email});
- await enqueue(env,o,'owner',s.email,'Paid Japansterdam order — JPN-'+o.id,receipt(o)+'\n\nCustomer email: '+c.email+(c.note?'\nOrder note: '+c.note:''),{html:orderEmailHtml(o,{owner:true}),reply_to:c.email});
+ await enqueue(env,o,'receipt',c.email,'Your Japansterdam order — JPN-'+o.id,receipt(o),{html:orderEmailHtml(o),attachments:orderEmailAttachments(),reply_to:s.email});
+ await enqueue(env,o,'owner',s.email,'Paid Japansterdam order — JPN-'+o.id,receipt(o)+'\n\nCustomer email: '+c.email+(c.note?'\nOrder note: '+c.note:''),{html:orderEmailHtml(o,{owner:true}),attachments:orderEmailAttachments(),reply_to:c.email});
 }
 export async function syncOrder(env,id){
  let o=await rowById(env,id);if(!o||!o.payment_id)return o;
@@ -177,7 +177,7 @@ export async function commerceRoute(req,env,ctx,{admin=false}={}){
   if(path==='/admin/checkout/test'&&method==='POST')return createOrder(req,env,{test:true});
   if(path==='/admin/checkout/email-test'&&method==='POST'){
    const s=await settings(env);if(!env.RESEND_API_KEY||!env.ORDER_EMAIL_FROM||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email))fail(400,'Configure the verified sender and save your contact email first.');
-   const r=await fetch('https://api.resend.com/emails',{method:'POST',redirect:'manual',signal:AbortSignal.timeout(15000),headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':'owner-email-test-'+Math.floor(now()/60000)},body:JSON.stringify({from:env.ORDER_EMAIL_FROM,to:[s.email],subject:'Japansterdam checkout — email test',reply_to:s.email,text:'Japansterdam — TEST EMAIL. This is a sample order confirmation. No payment has been taken and no garment has been purchased.\n\n'+receipt(sampleEmailOrder(s)).replace('Payment received. Thank you, Sample customer.','Sample only — no payment received.').replace('Total paid:','Sample total:'),html:orderEmailHtml(sampleEmailOrder(s),{test:true})})});
+   const r=await fetch('https://api.resend.com/emails',{method:'POST',redirect:'manual',signal:AbortSignal.timeout(15000),headers:{Authorization:'Bearer '+env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':'owner-email-test-'+Math.floor(now()/60000)},body:JSON.stringify({from:env.ORDER_EMAIL_FROM,to:[s.email],subject:'Japansterdam checkout — email test',reply_to:s.email,text:'Japansterdam — TEST EMAIL. This is a sample order confirmation. No payment has been taken and no garment has been purchased.\n\n'+receipt(sampleEmailOrder(s)).replace('Payment received. Thank you, Sample customer.','Sample only — no payment received.').replace('Total paid:','Sample total:'),html:orderEmailHtml(sampleEmailOrder(s),{test:true}),attachments:orderEmailAttachments()})});
    if(!r.ok)fail(502,'Email provider did not accept the test. Check your sending domain and credentials.');return response({ok:true});
   }
 

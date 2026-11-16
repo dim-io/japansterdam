@@ -15,7 +15,7 @@ function setup(){
 let payments=new Map(),starts=0,mails=[];
 const nativeFetch=globalThis.fetch;
 function provider(){payments=new Map();starts=0;mails=[];globalThis.fetch=async(url,options={})=>{
- if(url==='https://api.resend.com/emails'){assert.equal(options.redirect,'manual');mails.push({body:JSON.parse(options.body),key:options.headers['Idempotency-Key']});return Response.json({id:'email'});}
+ if(url==='https://api.resend.com/emails'){assert.equal(options.redirect,'manual');const msg=JSON.parse(options.body);if(msg.html){assert(msg.html.includes('src="cid:japansterdam-wordmark"'));assert.equal(msg.attachments[0].content_id,'japansterdam-wordmark');assert.equal(msg.attachments[0].filename,'japansterdam.png');assert(!/<img[^>]+src="https?:/.test(msg.html));}mails.push({body:JSON.parse(options.body),key:options.headers['Idempotency-Key']});return Response.json({id:'email'});}
  if(url==='https://api.mollie.com/v2/payments'){
   starts++;const payload=JSON.parse(options.body),id='tr_'+String(starts),p={id,mode:options.headers.Authorization.includes('test_')?'test':'live',amount:payload.amount,metadata:payload.metadata,status:'open',_links:{checkout:{href:'https://www.mollie.com/checkout/'+id}}};payments.set(id,p);return Response.json(p);
  }
