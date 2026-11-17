@@ -3,7 +3,7 @@ import { liveStories, storyCard, journalHTML, articleBody } from './editorial.mj
 import { createProductRoutes } from '../../js/product-urls.js';
 import { BRAND_PAGES } from '../../js/brand-pages.js';
 import { sitemapXML } from '../src/sitemap.mjs';
-import { ORIGIN,productMeta,productSchema,withMeta,productHTML,brandCards,esc,jsonScript } from './render.mjs';
+import { ORIGIN,productMeta,productSchema,withMeta,productHTML,brandCards,shopCategoryHTML,esc,jsonScript } from './render.mjs';
 const API='https://japansterdam-api.sam-jesse.workers.dev';
 async function catalog(env){
  const source=env.SOURCE_FETCH||(env.API_BACKEND?env.API_BACKEND.fetch.bind(env.API_BACKEND):fetch);
@@ -57,6 +57,7 @@ export default {async fetch(request,env){
    }else if(home||shop){
     const id=home?'collection-grid':'shop-grid',cards=brandCards(products,null,home?4:Infinity,home?0:2);
     html=html.replace('<div class="grid" id="'+id+'"></div>',()=>'<div class="grid" id="'+id+'">'+cards.html+'</div>');
+    if(shop)html=html.replace('<div class="chips" id="f-chips" role="group" aria-label="Category"></div>',()=>'<div class="chips" id="f-chips" role="group" aria-label="Category">'+shopCategoryHTML(products)+'</div>');
     if(shop)html=html.replace(/(<p[^>]*id="shop-count"[^>]*>)[\s\S]*?<\/p>/,(_,open)=>open+cards.count+' pieces</p>');
     if(home){
      html=html.replace(/(<blockquote id="quote-text">)[\s\S]*?<\/blockquote>/,(_,open)=>open+'“'+esc(content.home?.quote||'')+'”</blockquote>');

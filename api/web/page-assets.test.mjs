@@ -16,3 +16,12 @@ test('responsive images offer four resolutions and leave external or signed URLs
  assert.equal(responsiveAttrs('https://example.com/photo.jpg'),'');
  assert.equal(responsiveAttrs('https://japansterdam-api.sam-jesse.workers.dev/img/products/a.jpg?token=x'),'');
 });
+
+import {shopCategoryHTML} from './render.mjs';
+test('initial shop filters include real category counts before client hydration',()=>{
+ const html=shopCategoryHTML([{category:'Tops'},{category:'Bottoms'},{category:'Tops',active:false}]);
+ assert.equal((html.match(/class="chip"/g)||[]).length,6);
+ assert.ok(html.includes('All <span class="chip__n">2</span>'));
+ assert.ok(html.includes('Tops <span class="chip__n">1</span>'));
+ assert.ok(html.includes('data-cat="Footwear"'));
+});

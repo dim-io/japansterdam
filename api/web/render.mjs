@@ -51,3 +51,9 @@ export function brandCards(products,brand,limit=Infinity,eagerCount=0){
  const html=selected.length?selected.map((p,i)=>`<a class="card" href="${esc(routes.urlFor(p.slug))}"><div class="card__media"><img style="${imageFrameStyle(p,p.images[0])}" src="${esc(p.images[0])}"${responsiveAttrs(p.images[0])} alt="${esc(p.name)}" width="960" height="1200" loading="${i<eagerCount?'eager':'lazy'}"${i===0&&eagerCount?' fetchpriority="high"':''} decoding="async"></div><div class="card__body"><div class="card__top"><p class="card__brand">${esc(p.brand)}</p></div><h3 class="card__name">${esc(p.name)}</h3><p class="card__meta">Size ${esc(p.size)} · ${money(p.price)}</p></div></a>`).join(''):'<p class="brand-empty">No pieces are currently available. Explore the full collection or check back for new arrivals.</p>';
  return {html,count:pieces.length};
 }
+
+// Render the initial category controls before JS to reserve their real wrapped height.
+export function shopCategoryHTML(products) {
+ const active=products.filter(p=>p.active!==false);
+ return ['', 'Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Footwear'].map(cat=>`<button class="chip" type="button" data-cat="${esc(cat)}" aria-pressed="${!cat}">${cat||'All'} <span class="chip__n">${active.filter(p=>!cat||p.category===cat).length}</span></button>`).join('');
+}
