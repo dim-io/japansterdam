@@ -12,7 +12,7 @@ export async function accountingView({root,h,api,toast,products,setDirty}) {
  function select(label,name,value,options){return h('label',{class:'field'},h('span',{},label),h('select',{name},options.map(([v,n])=>h('option',{value:v,selected:v===value},n))));}
  const euros=(label,name,value=0)=>field(label,name,amount(value));
  function warning(text){return h('p',{class:'acc-notice'},text);}
- function button(label,fn,primary=false){return h('button',{type:'button',class:'btn'+(primary?' btn--primary':''),onclick:async e=>{e.currentTarget.disabled=true;try{await fn();}catch(err){toast(err.message,true);}finally{e.currentTarget.disabled=false;}}},label);}
+ function button(label,fn,primary=false){return h('button',{type:'button',class:'btn'+(primary?' btn--primary':''),onclick:async e=>{const target=e.currentTarget;target.disabled=true;try{await fn();}catch(err){toast(err.message,true);}finally{target.disabled=false;}}},label);}
  const name=e=>`${labels[e.kind]} ${String(e.id).padStart(6,'0')}`;
  function paint(){
   const nav=h('div',{class:'acc-tabs'},[['overview','Overzicht'],['purchase','Inkopen'],['sale','Verkopen'],['refund','Retouren'],['expense','Kosten'],['settings','Instellingen'],['export','Export & back-up']].map(([v,n])=>button(n,async()=>{if(edit&&!confirm('Niet-opgeslagen invoer verlaten?'))return;edit=null;setDirty(false);section=v;paint();})));
