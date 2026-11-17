@@ -17,7 +17,8 @@ if (heroLink && heroImage) {
     const scale = Math.max(w / iw, h / ih);
     const width = iw * scale, height = ih * scale;
     heroLink.style.left = ((w - width) / 2 + width * .82) + 'px';
-    heroLink.style.top = ((h - height) / 2 + height * .535) + 'px';
+    // The model image is top-aligned to preserve the space above his head.
+    heroLink.style.top = (height * .535) + 'px';
     heroLink.style.width = (width * .295) + 'px';
     heroLink.style.height = (height * .043) + 'px';
     heroLink.style.setProperty('--hero-cta-width', (width * .295 + 2) + 'px');

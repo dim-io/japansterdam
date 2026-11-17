@@ -149,6 +149,8 @@ img[data-fade]{opacity:1}
 .hero{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - var(--header-h));height:calc(100svh - var(--header-h));min-height:480px}
 .hero__panel,.hero__model{position:relative;overflow:hidden;background:var(--cream)}
 .hero img{width:100%;height:100%;object-fit:cover;object-position:center}
+/* Preserve the headroom in the model photograph, including wide desktop crops. */
+.hero__model > img{object-position:center top}
 .hero__cta{position:absolute;z-index:2;left:82%;top:53.5%;width:29.5%;height:4.3%;min-width:44px;min-height:44px;transform:translate(-50%,-50%);cursor:pointer;background:transparent;border:0;box-shadow:none;text-decoration:none;-webkit-tap-highlight-color:transparent}
 .hero__cta-face{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;width:var(--hero-cta-width,100%);height:var(--hero-cta-height,100%);background:#111;color:#fff;box-shadow:inset 0 0 0 1px #ddd;font:500 var(--hero-cta-font,11px)/1.2 var(--body);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;pointer-events:none;transition:box-shadow .15s ease}
 @media(hover:hover) and (pointer:fine){.hero__cta:hover .hero__cta-face{box-shadow:inset 0 0 0 2px #ddd}}
