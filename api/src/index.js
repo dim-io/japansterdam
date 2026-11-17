@@ -376,6 +376,10 @@ async function handle(request, env, ctx) {
     }
 
     if (seg[0] === 'admin') {
+      if (path === '/admin/accounting' || path.startsWith('/admin/accounting/')) {
+        const { accountingRoute } = await import('./accounting.mjs');
+        return accountingRoute(request, env, user);
+      }
       if (path === '/admin/checkout' || path.startsWith('/admin/checkout/') || path === '/admin/orders' || path.startsWith('/admin/orders/')) {
         const { commerceRoute } = await import('./checkout.mjs');
         const result = await commerceRoute(request, env, ctx, { admin: true });
@@ -500,7 +504,7 @@ export default {
     try {
       res = await handle(request, env, ctx);
     } catch (e) {
-      if (e instanceof HttpError || e?.name === 'CheckoutError') res = json({ error: e.message }, e.status);
+      if (e instanceof HttpError || ['CheckoutError','AccountingError'].includes(e?.name)) res = json({ error: e.message }, e.status);
       else { console.error(e); res = json({ error: 'Something went wrong' }, 500); }
     }
     const out = new Response(res.body, res);
