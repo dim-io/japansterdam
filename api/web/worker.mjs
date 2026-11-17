@@ -27,7 +27,7 @@ export default {async fetch(request,env){
  // Missing build variants (for example a new CMS upload) use the original.
  if(u.pathname.startsWith('/assets/optimized/')){
   const asset=await env.ASSETS.fetch(request);if(asset.status!==404)return asset;
-  const m=u.pathname.match(/^\/assets\/optimized\/(uploads|local)\/([\w./-]+\.(?:jpe?g|png|webp))-(480|960)\.webp$/i);
+  const m=u.pathname.match(/^\/assets\/optimized\/(uploads|local)\/([\w./-]+\.(?:jpe?g|png|webp))-(320|480|768|960)\.webp$/i);
   if(!m||m[2].includes('..'))return errorPage(404);
   const original=m[1]==='uploads'?API+'/img/products/'+m[2]:u.origin+'/assets/img/'+m[2];
   return new Response(null,{status:302,headers:{Location:original,'Cache-Control':'public, max-age=60'}});

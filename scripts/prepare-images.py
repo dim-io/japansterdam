@@ -28,10 +28,10 @@ def prepare(entry):
         with Image.open(io.BytesIO(data)) as original:
             image=ImageOps.exif_transpose(original)
             image=image.convert('RGBA' if 'A' in image.getbands() else 'RGB')
-            for width in (480,960):
+            for width in (320,480,768,960):
                 target=OUT/(name+'-'+str(width)+'.webp');target.parent.mkdir(parents=True,exist_ok=True)
                 resized=image.resize((width,round(image.height*width/image.width)),Image.Resampling.LANCZOS)
-                resized.save(target,'WEBP',quality=82,method=4)
+                resized.save(target,'WEBP',quality=82 if width==960 else 78,method=4)
         return True
     except Exception as e:
         print('Using original for',name,':',type(e).__name__);return False
