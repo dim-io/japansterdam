@@ -1,4 +1,4 @@
-import { accountingView } from './accounting.js';
+import { accountingView } from './accounting.js?v=private-books-2';
 import { commerceView } from './commerce.js?v=stripe-1';
 import { FIT_SIZES, productFitsLike, suggestedFitsLike } from '../js/sizing.js?v=footwear-filter-1';
 import { imageFrameStyle } from '../js/image-frames.js';

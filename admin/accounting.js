@@ -6,7 +6,7 @@ export async function accountingView({root,h,api,toast,products,setDirty}) {
  const stateName={draft:'Concept',posted:'Geboekt',void:'Vervallen'};
  const money=(v)=>{const s=String(v||'0').trim().replace(',','.');if(!/^\d+(\.\d{1,2})?$/.test(s))throw Error('Gebruik bedragen zoals 45,00, zonder duizendtallen.');const [a,b='']=s.split('.');return Number(a)*100+Number(b.padEnd(2,'0'));};
  const amount=c=>(c/100).toFixed(2).replace('.',',');
- const download=(name,body,type)=>{const u=URL.createObjectURL(new Blob([body],{type}));const a=h('a',{href:u,download:name});a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);};
+ const download=(name,body,type)=>{const u=URL.createObjectURL(new Blob([body],{type}));const a=h('a',{href:u,download:name,class:'btn btn--primary'},'Download '+name);const box=h('section',{class:'item',role:'status'},h('p',{},'Bestand gereed. Klik hieronder om het te bewaren.'),a);root.append(box);box.scrollIntoView({block:'nearest'});setTimeout(()=>{URL.revokeObjectURL(u);box.remove();},300000);};
  async function refresh(){data=await api('/admin/accounting?year='+reportYear);paint();}
  function field(label,name,value='',type='text',required=false){return h('label',{class:'field'},h('span',{},label),h('input',{name,type,value,required,...(type==='text'&&/Cents$/.test(name)?{inputmode:'decimal'}:{})}));}
  function select(label,name,value,options){return h('label',{class:'field'},h('span',{},label),h('select',{name},options.map(([v,n])=>h('option',{value:v,selected:v===value},n))));}
