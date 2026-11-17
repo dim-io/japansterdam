@@ -1,3 +1,5 @@
+import { initCardImages } from './card-images.mjs';
+initCardImages();
 import { imageFrameStyle } from './image-frames.js';
 // Header, footer, mobile menu and bag drawer: the single source for shared chrome.
 import { getContent, getProducts, formatPrice, esc, productUrl } from './data.js';

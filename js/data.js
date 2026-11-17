@@ -70,13 +70,13 @@ export function altFor(p, i) {
   return p.name + (i === 0 ? ' front' : i === 1 ? ' detail' : ' detail ' + i);
 }
 
-export function cardHTML(p) {
+export function cardHTML(p, options = {}) {
   const img1 = p.images[0], img2 = p.images[1];
   return `<a class="card${p.sold ? ' card--sold' : ''}" href="${productUrl(p.slug)}">
   <div class="card__media">
     ${p.sold ? '<span class="tag-sold">Sold</span>' : inBag(p.slug) ? '<span class="tag-bag">In bag</span>' : ''}
-    <img style="${imageFrameStyle(p, img1)}" src="${esc(img1)}"${responsiveAttrs(img1)} alt="${esc(altFor(p, 0))}" width="960" height="1200" loading="lazy" decoding="async" data-fade>
-    ${img2 ? `<img class="alt" style="${imageFrameStyle(p, img2)}" src="${esc(img2)}"${responsiveAttrs(img2)} alt="" width="960" height="1200" loading="lazy" decoding="async">` : ''}
+    <img style="${imageFrameStyle(p, img1)}" src="${esc(img1)}"${responsiveAttrs(img1)} alt="${esc(altFor(p, 0))}" width="960" height="1200" loading="${options.eager ? 'eager' : 'lazy'}"${options.priority ? ' fetchpriority="high"' : ''} decoding="async" data-fade>
+    ${img2 ? `<img class="alt" style="${imageFrameStyle(p, img2)}" data-card-src="${esc(img2)}"${responsiveAttrs(img2).replace(/ (srcset|sizes)=/g, ' data-card-$1=')} alt="" width="960" height="1200" decoding="async">` : ''}
   </div>
   <div class="card__body">
     <div class="card__top"><p class="card__brand">${esc(p.brand)}</p><p class="card__no">${catNo(p)}</p></div>

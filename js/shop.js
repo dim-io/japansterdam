@@ -146,7 +146,7 @@ function render() {
   list.sort((a, b) => byAvailability(a, b) || cmp(a, b));
   countEl.textContent = list.length + (list.length === 1 ? ' piece' : ' pieces');
   grid.innerHTML = list.length
-    ? list.map(cardHTML).join('')
+    ? list.map((p, i) => cardHTML(p, {eager: i < (density === 'large' ? (mqMid.matches ? 2 : 1) : mqWide.matches ? 4 : mqMid.matches ? 3 : 2), priority: i === 0})).join('')
     : `<div class="empty-state"><p>${esc(c.shop.empty || 'Nothing here right now.')}</p><button class="btn" type="button" data-reset>${esc(c.shop.clear || 'Clear filters')}</button></div>`;
 }
 

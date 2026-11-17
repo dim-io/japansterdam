@@ -272,7 +272,7 @@ img[data-fade]{opacity:1}
 .card__media{position:relative;aspect-ratio:4/5;background:var(--stone);overflow:hidden}
 .card__media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .4s ease}
 .card__media img.alt{opacity:0}
-@media(hover:hover) and (pointer:fine){.card:hover .card__media img.alt{opacity:1}}
+@media(hover:hover) and (pointer:fine){.card:hover .card__media img.alt.is-ready,.card:focus-visible .card__media img.alt.is-ready{opacity:1}}
 .card--sold .card__media::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.45);pointer-events:none}
 .tag-sold{position:absolute;top:10px;left:10px;z-index:2;background:var(--paper);color:var(--red);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:4px 8px;line-height:1.2}
 .card__body{padding-top:14px}

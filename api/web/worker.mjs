@@ -55,7 +55,7 @@ export default {async fetch(request,env){
     html=withMeta(html,page.meta,page.schema);
     html=html.replace(/<div id="journal-root">[\s\S]*?<\/div>/,()=>'<div id="journal-root" data-server-rendered>'+page.html+'</div>');
    }else if(home||shop){
-    const id=home?'collection-grid':'shop-grid',cards=brandCards(products,null,home?4:Infinity);
+    const id=home?'collection-grid':'shop-grid',cards=brandCards(products,null,home?4:Infinity,home?0:2);
     html=html.replace('<div class="grid" id="'+id+'"></div>',()=>'<div class="grid" id="'+id+'">'+cards.html+'</div>');
     if(shop)html=html.replace(/(<p[^>]*id="shop-count"[^>]*>)[\s\S]*?<\/p>/,(_,open)=>open+cards.count+' pieces</p>');
     if(home){
