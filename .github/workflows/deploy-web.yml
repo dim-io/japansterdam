@@ -2,7 +2,7 @@ name: Website on Sam's Cloudflare account
 on:
   push:
     branches: [main]
-    paths: ['api/web/**', 'api/package.json', 'api/package-lock.json', 'scripts/prepare-images.py', 'js/**', 'css/**', '*.html', 'assets/**', '.github/workflows/deploy-web.yml']
+    paths: ['api/web/**', 'api/package.json', 'api/package-lock.json', 'scripts/prepare-images.py', 'js/**', 'css/**', 'admin/**', '*.html', 'assets/**', '.github/workflows/deploy-web.yml']
   workflow_dispatch:
 permissions:
   contents: read
