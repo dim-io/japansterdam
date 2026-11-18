@@ -1,3 +1,4 @@
+import './statistics.js';
 import { initCardImages } from './card-images.mjs';
 initCardImages();
 import { imageFrameStyle } from './image-frames.js';

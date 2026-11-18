@@ -1,3 +1,4 @@
+import { track } from './statistics.js';
 import { responsiveAttrs } from './responsive-images.js';
 import { productFitsLike } from './sizing.js?v=footwear-filter-1';
 import { productStoriesHTML } from './journal-shared.js?v=inline-links-1';
@@ -18,6 +19,7 @@ if (!p) {
   m.content = 'noindex';
   root.innerHTML = `<div class="wrap notfound"><h1 class="page-title">Piece not found</h1><p>This piece does not exist or is no longer listed.</p><a class="btn btn--primary" href="shop.html">Back to the shop</a></div>`;
 } else {
+  track('product', p.slug);
   // Old shared links still resolve; display and publish the garment's current URL.
   const canonical = new URL(productUrl(p.slug), 'https://japansterdam.com/');
   const current = new URL(location.href);

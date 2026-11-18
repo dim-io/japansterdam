@@ -1,3 +1,4 @@
+import { track } from './statistics.js';
 // Shopping bag: array of product slugs in localStorage ("jp_bag"). Every piece is one-of-a-kind, so quantity is 1.
 const KEY = 'jp_bag';
 let memory = [];
@@ -19,7 +20,7 @@ export const inBag = (slug) => getBag().includes(slug);
 export const bagCount = () => getBag().length;
 export function addToBag(slug) {
   const a = getBag();
-  if (!a.includes(slug)) save([...a, slug]);
+  if (!a.includes(slug)) { save([...a, slug]); track('bag', slug); }
 }
 export function removeFromBag(slug) { save(getBag().filter((s) => s !== slug)); }
 export function setBag(a) { save(a); }

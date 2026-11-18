@@ -299,6 +299,11 @@ async function handle(request, env, ctx) {
   const method = request.method;
   const seg = path.split('/').filter(Boolean);
 
+  if (path === '/public/statistics/event' && method === 'POST') {
+    const { collect } = await import('./statistics.mjs');
+    return collect(request, env);
+  }
+
   if (path.startsWith('/checkout/')) {
     const { commerceRoute } = await import('./checkout.mjs');
     const result = await commerceRoute(request, env, ctx);
@@ -376,6 +381,10 @@ async function handle(request, env, ctx) {
     }
 
     if (seg[0] === 'admin') {
+      if (path === '/admin/statistics' && method === 'GET') {
+        const { report } = await import('./statistics.mjs');
+        return report(request, env);
+      }
       if (path === '/admin/accounting' || path.startsWith('/admin/accounting/')) {
         const { accountingRoute } = await import('./accounting.mjs');
         return accountingRoute(request, env, user);
@@ -496,6 +505,10 @@ export default {
   async scheduled(controller, env, ctx) {
     const { reconcile } = await import('./checkout.mjs');
     ctx.waitUntil(reconcile(env));
+    if (Math.floor(controller.scheduledTime / 60000) % 1440 < 5) {
+      const { cleanupStatistics } = await import('./statistics.mjs');
+      ctx.waitUntil(cleanupStatistics(env));
+    }
   },
   async fetch(request, env, ctx) {
     const cors = corsHeaders(request, env);
@@ -504,7 +517,7 @@ export default {
     try {
       res = await handle(request, env, ctx);
     } catch (e) {
-      if (e instanceof HttpError || ['CheckoutError','AccountingError'].includes(e?.name)) res = json({ error: e.message }, e.status);
+      if (e instanceof HttpError || ['CheckoutError','AccountingError','StatisticsError'].includes(e?.name)) res = json({ error: e.message }, e.status);
       else { console.error(e); res = json({ error: 'Something went wrong' }, 500); }
     }
     const out = new Response(res.body, res);

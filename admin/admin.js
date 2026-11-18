@@ -1,3 +1,4 @@
+import { statisticsView } from './statistics.js?v=statistics-1';
 import { radarView } from './radar.js?v=placement-time-1';
 import { accountingView } from './accounting.js?v=private-books-2';
 import { commerceView } from './commerce.js?v=stripe-1';
@@ -194,6 +195,10 @@ async function route(keepDirty = false) {
         if(!response.ok)throw new Error(data.error||'Radar niet bereikbaar');
         return data;
       }});
+    }
+    else if (view === 'statistics') {
+      setTitle('Statistics');
+      await statisticsView({root:el,h,api,toast});
     }
     else if (view === 'pages') await viewPages(parts[1]);
     else if (view === 'accounting') {
