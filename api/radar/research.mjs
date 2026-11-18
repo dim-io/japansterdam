@@ -29,13 +29,15 @@ export function researchAssessment(item,config,now=Date.now(),{forBundle=false}=
   const preference=curation(item,config);
   if(!preference.allowed&&!forBundle)return reject('curation_excluded');
   if(!preference.allowed&&!preference.track)return reject('curation_excluded');
-  if(check.reason!=='Geen passende prijsreferentie: flipwaarde blijft onbekend'){
-    if(check.eligible)return reject('priced_candidate');
-    const curatorReason=['preferred_japanese_story','preferred_porter_tanker','preferred_porter_tanker_green_orange'].includes(preference.reason);
-    const highScore=item.dealRating?.state==='scored'&&item.dealRating.score>=75;
-    if((!curatorReason&&!highScore)||item.available!==true||item.price>100)return reject(check.eligible?'priced_candidate':check.reason.includes('prijsgrens')?'price_limit':check.reason.includes('Beschikbaarheid')?'availability_unconfirmed':check.reason.includes('recent genoeg')||check.reason.includes('uploadtijd')?'source_freshness':check.reason.includes('imitatie')?'imitation_language':'not_a_standout_find');
+  const curatorReason=['preferred_japanese_story','preferred_porter_tanker','preferred_porter_tanker_green_orange'].includes(preference.reason);
+  const highScore=item.dealRating?.state==='scored'&&item.dealRating.score>=70;
+  if(!check.eligible&&item.available===true&&item.price<=100&&(curatorReason||highScore)){
     return {reason:'research_candidate',candidate:{type,reason:curatorReason?'curator_pick':'high_deal_score',curationReason:preference.reason,
       priority:preference.boost+(highScore?item.dealRating.score:0)+15}};
+  }
+  if(check.reason!=='Geen passende prijsreferentie: flipwaarde blijft onbekend'){
+    if(check.eligible)return reject('priced_candidate');
+    return reject(check.reason.includes('prijsgrens')?'price_limit':check.reason.includes('Beschikbaarheid')?'availability_unconfirmed':check.reason.includes('recent genoeg')||check.reason.includes('uploadtijd')?'source_freshness':check.reason.includes('imitatie')?'imitation_language':'financial_or_other_eligibility');
   }
   const distinctive=/\b(track|painter|velour|velvet|bandana|boro|sashiko|kountry|rebuild|jogging)\b/.test(text);
   return {reason:'research_candidate',candidate:{type,reason:'model_reference_missing',curationReason:preference.reason,priority:preference.boost+Number(distinctive)*2+Number(photos.length>=4)*3+Number(item.price<=35)+Number(item.condition!=='good')}};
