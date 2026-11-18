@@ -35,7 +35,7 @@ export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
   const raw=new URL(request.url).searchParams.get('offset')||'0';
   if(!/^\d{1,4}$/.test(raw)||Number(raw)>1980)return reply({error:'Ongeldige pagina.'},400);
   const offset=Number(raw);
-  const get=async path=>{const response=await fetcher('https://api.apify.com/v2'+path,{headers:{Authorization:'Bearer '+env.APIFY_TOKEN},redirect:'error',signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('source_unavailable');return response.json();};
+  const get=async path=>{const response=await fetcher('https://api.apify.com/v2'+path,{headers:{Authorization:'Bearer '+env.APIFY_TOKEN},redirect:'manual',signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('source_unavailable');return response.json();};
   const list=await get('/acts/topapi~vinted-scraper/runs?desc=true&limit='+PAGE_SIZE+'&offset='+offset);
   const runs=list.data?.items;if(!Array.isArray(runs))throw Error('invalid_source');
   const rows=[],rounds=[];let failedDatasets=0;

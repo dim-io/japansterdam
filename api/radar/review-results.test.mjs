@@ -17,7 +17,7 @@ test('source review requires a real shop session before reading private results'
 test('review reads bounded existing datasets, includes non-alert results, and exposes no tokens or seller data',async()=>{
  const urls=[];const env={APIFY_TOKEN:'secret',SHOP_API:{fetch:async req=>{assert.equal(req.headers.get('Authorization'),'Bearer '+token);return Response.json({user:{id:1}});}}};
  const response=await reviewResults(new Request('https://radar/results?offset=0',{headers:{Origin:origin,Authorization:'Bearer '+token}}),env,policy,{fetcher:async(url,options)=>{
-  urls.push(url);assert(!options.method||options.method==='GET');assert.equal(options.headers.Authorization,'Bearer secret');
+  urls.push(url);assert.equal(options.redirect,'manual');assert(!options.method||options.method==='GET');assert.equal(options.headers.Authorization,'Bearer secret');
   return Response.json(url.includes('/runs?')?{data:{items:[run,{...run,id:'Empty',statusMessage:'No new listings. Nothing was charged.'}],total:2}}:[row,{...row,id:124,url:'https://www.vinted.nl/items/124-other',title:'Kapital gebreid vest',brand_title:'Kapital'}]);
  }});
  assert.equal(response.status,200);assert.equal(response.headers.get('Access-Control-Allow-Origin'),origin);assert.match(response.headers.get('Cache-Control'),/no-store/);
