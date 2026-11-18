@@ -3,12 +3,13 @@ import {estimateFromShop} from '../../tools/deal-radar/valuation.mjs';
 import {curation} from './curation.mjs';
 import {modelObject,VISION_MODEL} from './vision.mjs';
 
-export const RATING_VERSION='deal-priority-v1';
+export const RATING_VERSION='deal-priority-v2';
 export const RATING_MODEL=VISION_MODEL; // Same already-enabled model, text only.
 export const RATING_BATCH_SIZE=6;
 export const RATING_DAILY_LIMIT=24;
 export const RATING_INPUT_BYTES=4096;
 export const RATING_OUTPUT_TOKENS=900;
+export const RATING_TIMEOUT_MS=55000;
 const q=(env,sql,...args)=>env.RADAR_DB.prepare(sql).bind(...args);
 const text=(value,max=180)=>String(value||'').replace(/(?:https?:\/\/|www\.)\S+|[\w.+-]+@[\w.-]+\.[a-z]{2,}|\+?\d[\d ()-]{8,}\d/gi,'').replace(/\s+/g,' ').trim().slice(0,max);
 const active=(policy,now)=>policy.dealScoring?.enabled===true&&policy.enabled&&now>=Date.parse(policy.startsAt)&&now<Date.parse(policy.endsAt);
@@ -82,16 +83,16 @@ export async function scoreDealBatch(env,policy,{now=Date.now(),clock=Date.now}=
  const schema={type:'object',additionalProperties:false,required:['ratings'],properties:{ratings:{type:'array',minItems:inputs.length,maxItems:inputs.length,items:{type:'object',additionalProperties:false,required:['id','price','fit','condition','evidence','reason'],properties:{id:{type:'string'},price:{type:'integer',minimum:0,maximum:40},fit:{type:'integer',minimum:0,maximum:25},condition:{type:'integer',minimum:0,maximum:20},evidence:{type:'integer',minimum:0,maximum:15},reason:{type:'string'}}}}}};
  let timer,results=[],failure='invalid_output';
  try{
-  const response=await Promise.race([env.AI.run(RATING_MODEL,{messages:[{role:'system',content:RATING_SYSTEM},{role:'user',content:JSON.stringify(inputs)}],guided_json:schema,temperature:0,max_tokens:RATING_OUTPUT_TOKENS}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('rating_timeout')),25000);})]);
+  const response=await Promise.race([env.AI.run(RATING_MODEL,{messages:[{role:'system',content:RATING_SYSTEM},{role:'user',content:JSON.stringify(inputs)}],guided_json:schema,temperature:0,max_tokens:RATING_OUTPUT_TOKENS}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('rating_timeout')),RATING_TIMEOUT_MS);})]);
   const values=modelObject(response)?.ratings;
   if(Array.isArray(values)&&values.length===inputs.length&&new Set(values.map(value=>value.id)).size===inputs.length)results=inputs.map(input=>parseRating(values.find(value=>value.id===input.id),input));
  }catch(error){
-  const message=String(error?.message||'');failure=/3036|quota|daily.*limit/i.test(message)?'free_quota_exhausted':/5016|terms|agreement/i.test(message)?'model_terms_required':'model_unavailable';
+  const message=String(error?.message||'');failure=/rating_timeout/.test(message)?'model_timeout':/3036|quota|daily.*limit/i.test(message)?'free_quota_exhausted':/5016|terms|agreement/i.test(message)?'model_terms_required':'model_unavailable';
   if(['free_quota_exhausted','model_terms_required'].includes(failure))await q(env,'UPDATE radar_deal_rating_daily SET blocked=1 WHERE day=?',day).run();
  }finally{clearTimeout(timer);}
  const updates=claimed.map((row,index)=>({id:row.item_id,key:row.evidence_key,state:results[index]?'scored':'failed',result:JSON.stringify(results[index]||{state:'failed',reason:failure})}));
  await q(env,`UPDATE radar_deal_ratings SET state=json_extract(value,'$.state'),result=json_extract(value,'$.result'),rated_at=? FROM json_each(?) WHERE item_id=json_extract(value,'$.id') AND evidence_key=json_extract(value,'$.key') AND state='pending'`,clock(),JSON.stringify(updates)).run();
- return {state:'completed',scored:updates.filter(row=>row.state==='scored').length,failed:updates.filter(row=>row.state==='failed').length};
+ return {state:'completed',scored:updates.filter(row=>row.state==='scored').length,failed:updates.filter(row=>row.state==='failed').length,...(updates.some(row=>row.state==='failed')?{failureReason:failure}:{})};
 }
 
 export async function readDealRatings(env,rows,policy){

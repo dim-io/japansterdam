@@ -25,6 +25,6 @@ export async function bootstrapRatings(env,{query,fetcher=fetch,now=Date.now(),t
  const queued=await queueDealRatings(runtime,items,config,products,testPolicy,{now});
  const batches=[];
  for(let i=0;i<2;i++){const result=await scoreDealBatch(runtime,testPolicy);batches.push(result);if(result.state!=='completed'||!result.scored)break;}
- return {state:'completed',queued,scored:batches.reduce((n,b)=>n+(b.scored||0),0),failed:batches.reduce((n,b)=>n+(b.failed||0),0),batches:batches.length,newScraperStarts:0,messagesSent:0};
+ return {state:'completed',queued,scored:batches.reduce((n,b)=>n+(b.scored||0),0),failed:batches.reduce((n,b)=>n+(b.failed||0),0),batches:batches.length,failureReasons:[...new Set(batches.map(b=>b.failureReason).filter(Boolean))],newScraperStarts:0,messagesSent:0};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)bootstrapRatings(process.env,{query:client(TARGET,process.env.CLOUDFLARE_API_TOKEN)}).then(result=>console.log(JSON.stringify(result))).catch(()=>{console.error('Bestaande resultaten tijdelijk niet beoordeeld; de Radar hervat dit binnen het dagbudget.');process.exitCode=1;});
