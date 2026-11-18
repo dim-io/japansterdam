@@ -1,4 +1,4 @@
-import {publicationTime} from './intake.mjs';
+import {publicationDetails} from './intake.mjs';
 import {listingUrl} from '../../tools/deal-radar/scoring.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import {canonicalListingBrand} from '../../tools/deal-radar/selection.mjs';
@@ -16,8 +16,9 @@ export function reviewItem(row,run){
  if(!brand||!originalTitle||!Number.isFinite(price)||price<=0)return null;
  const photo=row.photo_url||row.image;let image=null;
  try{const u=new URL(photo);if(u.protocol==='https:'&&/^images\d*\.vinted\.net$/.test(u.hostname)&&!u.username&&!u.password&&!u.port)image=u.href;}catch{}
+ const publication=publicationDetails(row,run.finishedAt||run.startedAt);
  return {id:/\/items\/(\d+)/.exec(url)[1],url,brand,title:brand+' — '+originalTitle,originalTitle,price,currency:clean(row.price_currency||row.currency,8),size:clean(row.size_title||row.size,50),condition:clean(row.condition||row.status,50),image,
-  uploadedAt:publicationTime(row,run.finishedAt||run.startedAt)||null,sourceAge:clean(row.uploaded_ago,60),observedAt:run.finishedAt||run.startedAt,
+  uploadedAt:publication?.at||null,uploadTimeKind:publication?.kind||'unknown',uploadPrecision:publication?.precision||null,sourceAge:clean(row.uploaded_ago,60),observedAt:run.finishedAt||run.startedAt,
   runId:run.id,runUrl:'https://console.apify.com/actors/gu7NqrMYT471tlfsB/runs/'+run.id,
   category:clean(Array.isArray(row.category_path)?row.category_path.join(' / '):row.category_path,240)};
 }

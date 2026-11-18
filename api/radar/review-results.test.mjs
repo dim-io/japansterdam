@@ -30,6 +30,11 @@ test('review refuses unsafe links, retains unknown upload time and omits non-ite
  assert.equal(reviewItem({...row,record_type:'seller'},run),null);
  const item=reviewItem({...row,uploaded_ago:'unknown',photo_url:'https://evil.example/p.png'},run);assert.equal(item.image,null);assert.equal(item.uploadedAt,null);
 });
+test('review distinguishes estimated placement from a later source check',()=>{
+ const item=reviewItem({...row,scraped_at:'2026-11-17T19:59:00Z',uploaded_ago:'an hour ago'},run);
+ assert.equal(item.uploadedAt,'2026-11-17T18:59:00.000Z');assert.equal(item.uploadTimeKind,'estimated');assert.equal(item.uploadPrecision,'hour');assert.equal(item.observedAt,run.finishedAt);
+ const exact=reviewItem({...row,published_at:'2026-11-17T19:30:00Z'},run);assert.equal(exact.uploadTimeKind,'exact');
+});
 test('all requested favorites remain selected and Rebuild is an explicit search within the existing Needles monitor',()=>{
  for(const brand of ['orSlow','Fullcount','Auralee','Sage de Cret','Nonnative','Nanamica','Engineered Garments','Ts(s)','Remi Relief','Needles','WTAPS','Uniform Experiment','Fragment Design','Wacko Maria','Denim by Vanquish & Fragment','Ordinary Fits','Fumito Ganryu','Visvim'])assert(brand in policy.brands,brand);
  const group=policy.brandGroups.find(g=>g.includes('Needles'));const input=monitorInput(group.map(b=>[b,policy.brands[b]]));assert(input.searchQueries.includes('Rebuild by Needles'));assert.equal(input.monitorStoreName,monitorStore(group));assert.equal(input.resetMonitor,false);
