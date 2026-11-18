@@ -240,7 +240,7 @@
       "ASICS"
     ]
   ],
-  "revision": "native-monitor-curated-brands-v16-all-70",
+  "revision": "native-curated-brands-v17-recent-results",
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
@@ -271,5 +271,6 @@
   "maxListingAgeHours": 6,
   "minimumResearchPriority": 7,
   "sourceProvider": "topapi-monitor",
-  "maxCostPerMonitorRunUsd": 0.015
+  "maxCostPerMonitorRunUsd": 0.015,
+  "sourceMode": "recent-snapshot"
 }

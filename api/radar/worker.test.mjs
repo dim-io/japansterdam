@@ -148,3 +148,26 @@ test('fresh rotation rejects historical IDs across trials before photo or resear
  const next=await scan(env,{...opts,now:now+300000,clock:()=>now+300000});assert.equal(next.admitted,0);assert.equal(next.repeatedListings,2);
  db.close();
 });
+
+test('native recent snapshots keep raw rows while the fixed budget, six-hour gate and cross-scan deduplication still apply',async()=>{
+ const {db,env}=setup();let starts=0;
+ const p={...policy,sourceProvider:'topapi-monitor',sourceMode:'recent-snapshot',mode:'fresh-rotation',brandGroups:[['Kapital','Needles']],maxCostPerMonitorRunUsd:.015,maxListingAgeHours:6,requireVisualBrandEvidence:true};
+ const row={url:item.url,title:item.title,brand_title:'Needles',price_amount:65,price_currency:'EUR',condition:'Very good',availability:'InStock',uploaded_at:new Date(now-60000).toISOString()};
+ const fetcher=async(url,opts)=>{
+  if(url.endsWith('/users/me'))return Response.json({data:{isPaying:false,plan:{tier:'FREE',monthlyBasePriceUsd:0,monthlyUsageCreditsUsd:5}}});
+  if(url.endsWith('/limits'))return Response.json({data:{limits:{maxMonthlyUsageUsd:5},current:{monthlyUsageUsd:0}}});
+  if(opts?.method==='POST'&&url.includes('/acts/')){
+   starts++;const input=JSON.parse(opts.body);assert.equal(input.monitorMode,false);assert.equal(input.skipFirstRun,false);assert.equal(input.maxItems,20);assert.match(url,/maxTotalChargeUsd=0.015/);
+   return Response.json({data:{id:'Recent'+starts,status:'SUCCEEDED',defaultDatasetId:'Data'+starts,finishedAt:new Date(now).toISOString()}});
+  }
+  if(opts?.method==='PUT')return Response.json({data:{}});
+  if(url.includes('/datasets/'))return Response.json([row,{...row,url:'https://www.vinted.nl/items/54321-old',uploaded_at:new Date(now-7*3600000).toISOString()}]);
+  throw Error('unexpected outbound call');
+ };
+ const first=await scan(env,{now,clock:()=>now,policy:p,fetcher,authenticityReviews:{}});
+ assert.equal(first.checked,2);assert.equal(first.admitted,1);assert(first.decisions.some(d=>d.reason==='listing_not_recent'));assert.equal(first.sent,0);
+ assert((await scan(env,{now,clock:()=>now,policy:p,fetcher})).skipped);
+ const next=await scan(env,{now:now+300000,clock:()=>now+300000,policy:p,fetcher});
+ assert.equal(next.checked,2);assert.equal(next.admitted,0);assert.equal(next.repeatedListings,2);assert.equal(starts,2);assert.equal(next.attempts,2);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM radar_alerts').get().n,0);db.close();
+});

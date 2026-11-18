@@ -51,7 +51,7 @@ export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
    }catch{failedDatasets++;}
   }));
   rows.sort((a,b)=>Date.parse(b.observedAt)-Date.parse(a.observedAt));
-  return reply({rows,rounds,selectedBrands:Object.keys(policy.brands),nextOffset:offset+runs.length<(list.data.total??Infinity)&&runs.length===PAGE_SIZE?offset+PAGE_SIZE:null,
+  return reply({rows,rounds,runIds:runs.map(run=>run.id),sourceMode:policy.sourceMode||'new-only',selectedBrands:Object.keys(policy.brands),nextOffset:offset+runs.length<(list.data.total??Infinity)&&runs.length===PAGE_SIZE?offset+PAGE_SIZE:null,
    loadedRuns:runs.length,failedDatasets,trial:policy.id,endsAt:policy.endsAt,active:policy.enabled&&Date.now()>=Date.parse(policy.startsAt)&&Date.now()<Date.parse(policy.endsAt),
    cycleMinutes:(policy.brandGroups?.length||12)*5});
  }catch{return reply({error:'Bronresultaten tijdelijk niet beschikbaar. Er is geen nieuwe zoekopdracht gestart.'},503);}
