@@ -216,3 +216,62 @@ fieldset.grp legend{padding:0 8px;font-size:11px;letter-spacing:.1em;text-transf
 .radar-score-guide{margin:0 0 20px;padding:12px 16px;border:1px solid var(--border,#ddd);background:#faf9f6;max-width:960px}.radar-score-guide summary{cursor:pointer;font-weight:600}.radar-score-guide p{max-width:90ch;line-height:1.6}.radar-rating{padding:16px 16px 0}.radar-score{display:inline-block;padding:6px 10px;background:#eeeae2;color:#5e5950;border-radius:4px;font-size:12px;font-weight:600;letter-spacing:.02em}.radar-score.is-scored{background:#151515;color:#fff;font-size:15px;font-variant-numeric:tabular-nums}.radar-score-reason{margin:10px 0 6px;line-height:1.45;font-size:13px}.radar-rating details{font-size:11px;color:#666;line-height:1.5;margin:8px 0}.radar-rating summary{cursor:pointer}.radar-rating details p{margin:6px 0}
 
 .radar-card__time{display:flex;gap:9px;align-items:baseline;padding:11px 14px;border-bottom:1px solid var(--line,#ddd);font-size:12px;line-height:1.5;background:#f5f4ef;font-weight:600;font-variant-numeric:tabular-nums}.radar-rank{color:#777;min-width:20px}.radar-sort-note{font-size:13px;line-height:1.6;max-width:100ch}.radar-sort-note:empty{display:none}.radar-time-divider{grid-column:1/-1;border-top:1px solid #aaa;padding-top:20px;font-size:13px;font-weight:600}
+
+/* Home-screen app install guidance */
+.install-help-link{display:block;margin:14px auto 0;padding:8px;background:transparent;border:0;color:var(--muted);font-size:12px;text-decoration:underline;text-underline-offset:3px}
+.install-help-link:hover{color:var(--ink)}
+.install-dialog h2{font-size:18px;line-height:1.35}
+.install-steps{list-style:decimal;padding-left:22px;margin:18px 0}
+.install-steps li{padding:5px 0 5px 4px}
+.install-dialog .hint{line-height:1.6;margin:12px 0}
+
+/* iPhone touch targets, safe areas and compact admin navigation */
+@media(max-width:820px){
+  html,body{min-height:100%;overscroll-behavior-x:none}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  .login{min-height:100vh;min-height:100svh;padding:calc(20px + env(safe-area-inset-top)) 18px calc(20px + env(safe-area-inset-bottom))}
+  .login__box{padding:28px 22px}
+  .side{position:sticky;top:0;z-index:21;min-height:58px;padding:6px 12px;gap:12px;overscroll-behavior-x:contain;scrollbar-width:none}
+  .side::-webkit-scrollbar,.side__nav::-webkit-scrollbar{display:none}
+  .side__logo{flex:none}
+  .side__logo img{width:94px}
+  .side__nav{flex:1;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .side__nav a{min-height:44px;display:flex;align-items:center;padding:8px 10px;font-size:11px;letter-spacing:.05em}
+  .top{top:58px;min-height:56px;padding:8px 12px}
+  .top__title{font-size:13px}
+  .view{padding:14px 12px calc(32px + env(safe-area-inset-bottom));overflow:hidden}
+  .toolbar{gap:8px}
+  .toolbar .btn,.toolbar input,.toolbar select,.seg button,.acc-tabs .btn{min-height:44px}
+  .icon-btn{width:40px;height:40px}
+  .side__nav a,.plinks button,.st-tabs button{-webkit-tap-highlight-color:transparent}
+  .panel{padding:16px}
+  .savebar{bottom:env(safe-area-inset-bottom);padding:10px;gap:8px}
+  .savebar .btn{min-height:44px}
+  .dlg{max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:auto;padding:20px}
+  .dlg__actions .btn{min-height:44px}
+  .toasts{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px)}
+  .st-heading{gap:12px}
+  .st-controls{align-items:stretch}
+  .st-controls label{min-width:0}
+  .st-map-wrap{overflow:hidden}
+  .radar-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:12px}
+}
+@media(max-width:520px){
+  .side{gap:8px;padding-inline:8px}
+  .side__logo img{width:78px}
+  .side__nav a{padding-inline:8px;font-size:10px}
+  .top{gap:8px}
+  .profile{gap:0}
+  .view{padding-inline:10px}
+  .prow{grid-template-columns:auto 44px minmax(0,1fr) auto;gap:8px;padding:8px}
+  .prow__thumb{width:44px;height:56px}
+  .toolbar .grow{flex-basis:100%;min-width:0}
+  .toolbar>.btn,.toolbar>.seg{max-width:100%}
+  .seg button{padding:0 10px;font-size:10px}
+  .acc-tabs{gap:6px}
+  .acc-tabs .btn{flex:1;padding:8px}
+  .st-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .st-card{min-height:140px;padding:14px}
+  .st-card strong{font-size:24px}
+  .install-dialog{width:calc(100vw - 24px)}
+}

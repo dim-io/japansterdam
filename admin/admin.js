@@ -140,10 +140,12 @@ const closeMenu = () => { menu.hidden = true; menuBtn.setAttribute('aria-expande
 menuBtn.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; menuBtn.setAttribute('aria-expanded', String(!menu.hidden)); });
 document.addEventListener('click', closeMenu);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+$('#install-help-login').addEventListener('click', () => $('#dlg-install').showModal());
 menu.addEventListener('click', async (e) => {
   const act = e.target.closest('button')?.dataset.act;
   if (!act) return;
   closeMenu();
+  if (act === 'install') { $('#dlg-install').showModal(); return; }
   if (act === 'profile') { $('#profile-display').value = user.displayName; $('#profile-error').textContent = ''; $('#dlg-profile').showModal(); }
   if (act === 'password') { $('#form-password').reset(); $('#pw-error').textContent = ''; $('#dlg-password').showModal(); }
   if (act === 'logout') {

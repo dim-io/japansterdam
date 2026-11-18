@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f3efe6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Japansterdam">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
 <meta name="robots" content="noindex,nofollow">
 <title>Japansterdam admin</title>
 <link rel="icon" type="image/svg+xml" href="../assets/icons/favicon.svg">
@@ -20,6 +26,7 @@
     <label class="field"><span>Password</span><input id="login-pass" name="password" type="password" autocomplete="current-password" required></label>
     <p class="login__error" id="login-error" role="alert"></p>
     <button class="btn btn--primary btn--block" type="submit">Log in</button>
+    <button class="install-help-link" id="install-help-login" type="button">Use as an iPhone app</button>
   </form>
 </main>
 
@@ -44,6 +51,7 @@
       <div class="menu">
         <button class="profile" id="profile-btn" aria-haspopup="true" aria-expanded="false"><span class="profile__initial" id="profile-initial"></span><span class="profile__name" id="profile-name"></span></button>
         <div class="menu__list" id="profile-menu" hidden>
+          <button data-act="install">Install on iPhone</button>
           <button data-act="profile">Profile</button>
           <button data-act="password">Change password</button>
           <button data-act="logout">Log out</button>
@@ -54,6 +62,18 @@
   </div>
 </div>
 
+<dialog id="dlg-install" class="dlg install-dialog">
+  <form method="dialog">
+    <h2>Use Japansterdam on your iPhone</h2>
+    <ol class="install-steps">
+      <li>Open this admin page in <strong>Safari</strong>.</li>
+      <li>Tap the <strong>Share</strong> button.</li>
+      <li>Choose <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.</li>
+    </ol>
+    <p class="hint">Sign in with your existing Japansterdam admin account. An internet connection is needed to load and save backend data.</p>
+    <div class="dlg__actions"><button class="btn btn--primary" value="close">Got it</button></div>
+  </form>
+</dialog>
 <dialog id="dlg-profile" class="dlg">
   <form method="dialog" id="form-profile">
     <h2>Profile</h2>
@@ -82,5 +102,6 @@
 </dialog>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <script type="module" src="admin.js?v=visitor-insights-3"></script>
+<script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {}));</script>
 </body>
 </html>
