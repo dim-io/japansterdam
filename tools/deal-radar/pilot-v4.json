@@ -58,6 +58,111 @@
     },
     "Denim by Vanquish & Fragment": {
       "searchText": "Denim by Vanquish & Fragment"
+    },
+    "VANQUISH": {
+      "searchText": "Vanquish Japan",
+      "searchTerms": [
+        "Vanquish Japan",
+        "Vanquish Shibuya",
+        "Vanquish souvenir"
+      ],
+      "exactQueriesOnly": true
+    },
+    "A Vontade": {
+      "searchText": "A Vontade",
+      "searchTerms": [
+        "A Vontade"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Haversack": {
+      "searchText": "Haversack",
+      "searchTerms": [
+        "Haversack"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Junya Watanabe": {
+      "searchText": "Junya Watanabe MAN",
+      "searchTerms": [
+        "Junya Watanabe MAN",
+        "eYe Junya Watanabe"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Comme des Garçons Homme": {
+      "searchText": "Comme des Garçons Homme",
+      "searchTerms": [
+        "Comme des Garçons Homme"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Undercover": {
+      "searchText": "Undercover",
+      "searchTerms": [
+        "Undercover",
+        "Undercoverism"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Sugar Cane": {
+      "searchText": "Sugar Cane",
+      "searchTerms": [
+        "Sugar Cane",
+        "Sugarcane"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Resolute": {
+      "searchText": "Resolute",
+      "searchTerms": [
+        "Resolute"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Porter Yoshida": {
+      "searchText": "Porter Yoshida",
+      "searchTerms": [
+        "Porter Yoshida",
+        "Porter Tanker",
+        "Porter Tokyo"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Moonstar": {
+      "searchText": "Moonstar",
+      "searchTerms": [
+        "Moonstar"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Shoes Like Pottery": {
+      "searchText": "Shoes Like Pottery",
+      "searchTerms": [
+        "Shoes Like Pottery"
+      ],
+      "exactQueriesOnly": true
+    },
+    "ASICS": {
+      "searchText": "ASICS Kiko Kostadinov",
+      "searchTerms": [
+        "ASICS Kiko Kostadinov",
+        "ASICS NOVALIS",
+        "ASICS Cecilie Bahnsen",
+        "ASICS JJJJound",
+        "ASICS HAL STUDIOS"
+      ],
+      "exactQueriesOnly": true,
+      "includeKeywords": [
+        "Kostadinov",
+        "NOVALIS",
+        "TEREMOA",
+        "KIRIL",
+        "BURZ",
+        "Cecilie Bahnsen",
+        "JJJJound",
+        "HAL STUDIOS"
+      ]
     }
   },
   "brandGroups": [
@@ -113,9 +218,29 @@
     [
       "Wislom",
       "Denim by Vanquish & Fragment"
+    ],
+    [
+      "VANQUISH",
+      "A Vontade",
+      "Haversack"
+    ],
+    [
+      "Junya Watanabe",
+      "Comme des Garçons Homme",
+      "Undercover"
+    ],
+    [
+      "Sugar Cane",
+      "Resolute",
+      "Porter Yoshida"
+    ],
+    [
+      "Moonstar",
+      "Shoes Like Pottery",
+      "ASICS"
     ]
   ],
-  "revision": "native-monitor-curated-brands-v13",
+  "revision": "native-monitor-curated-brands-v14",
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,

@@ -9,7 +9,18 @@ export function garmentType(name) {
   if (/\b(shirt|chemise|camicia|polo|blouse|overhemd|hemd)\b/.test(text)) return 'shirt';
   if (/\b(hoodie|sweatshirt|sweater|knit|cardigan|trui|pull|pullover|strickjacke|maglione|maglia)\b/.test(text)) return 'knit';
   if (/\b(jacket|coat|parka|blazer|jas|veste|manteau|jacke|mantel|giacca|chaqueta|giubbotto|gilet)\b/.test(text)) return 'outerwear';
+  if (/\b(shoes?|sneakers?|trainers?|boots?|schoenen?|laarzen|chaussures?|baskets?|zapatillas?|scarpe|schuhe|stiefel|gel teremoa|gel kiril|gel burz|gel kayano|gt 2160|gel 1130)\b/.test(text)) return 'footwear';
+  if (/\b(bags?|backpacks?|rucksacks?|rucksacke|wallets?|pouches?|briefcases?|tote|sac|sacs|sacoche|tas|tassen|tasje|rugzak|portemonnee|portefeuille|borsa|borsello|zaino|tasche)\b/.test(text)) return 'accessory';
   return null;
+}
+
+// Sparse shoe/bag titles often contain only a model name; use the source category
+// for those types only. Small sizes and women's listings remain eligible.
+export function itemType(item) {
+  const titleType=garmentType(item.title);
+  if(titleType)return titleType;
+  const categoryType=garmentType(item.category);
+  return ['footwear','accessory'].includes(categoryType)?categoryType:null;
 }
 
 // A common garment type alone is not a price comparison with an archive piece.
@@ -26,11 +37,16 @@ export function matchingModelFeatures(title, reference) {
 }
 
 export function estimateFromShop(item, products, config) {
-  const brand = identifyBrand(item.brand, config), type = garmentType(item.title);
+  const brand = identifyBrand(item.brand, config), type = itemType(item);
   if (!brand || !type) return null;
+  const series=config.selectionProfiles?.[brand]?.referenceSeries;
+  const seriesOf=text=>series?.findIndex(terms=>terms.some(term=>(' '+normalize(text)+' ').includes(' '+normalize(term)+' ')));
+  const itemSeries=seriesOf(item.title+' '+(item.description||''));
+  if(series&&itemSeries===-1)return null;
   // A mass-market collaboration is not comparable to the mainline label.
   const collaboration = /\b(uniqlo|gu)\b/.exec(normalize(item.title + ' ' + (item.description || '')))?.[1] || null;
   const references = products.filter((p) => identifyBrand(p.brand, config) === brand && garmentType(p.name) === type
+    && (!series||seriesOf(p.name)===itemSeries)
     && ((/\b(uniqlo|gu)\b/.exec(normalize(p.name))?.[1] || null) === collaboration)
     && matchingModelFeatures(item.title, p.name)
     && typeof p.price === 'number' && Number.isFinite(p.price) && p.price > 0);
@@ -43,7 +59,7 @@ export function estimateFromShop(item, products, config) {
 }
 
 export function missingReferenceReason(item, products, config) {
-  const brand = identifyBrand(item.brand, config), type = garmentType(item.title);
+  const brand = identifyBrand(item.brand, config), type = itemType(item);
   if (!brand) return 'Merk wordt niet herkend';
   if (!type) return 'Kledingtype niet herkend; geen onderbouwde flipwaarde';
   const collab = /\b(uniqlo|gu)\b/.exec(normalize(item.title + ' ' + (item.description || '')))?.[1];

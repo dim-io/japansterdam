@@ -61,7 +61,12 @@
     "South2 West8",
     "Haversack",
     "Anatomica",
-    "Blue Blue Japan"
+    "Blue Blue Japan",
+    "VANQUISH",
+    "Comme des Garçons Homme",
+    "Moonstar",
+    "Shoes Like Pottery",
+    "ASICS"
   ],
   "aliases": {
     "Kapital": [
@@ -98,7 +103,11 @@
       "Sophnet x Visvim"
     ],
     "Porter Yoshida": [
-      "Yoshida Porter"
+      "Yoshida Porter",
+      "Porter",
+      "Porter Tokyo",
+      "Yoshida & Co.",
+      "Porter Yoshida & Co."
     ],
     "Fullcount": [
       "Full Count"
@@ -118,6 +127,49 @@
     "Needles": [
       "Rebuild by Needles",
       "Needles Rebuild"
+    ],
+    "VANQUISH": [
+      "Vanquish Japan",
+      "Vanquish Shibuya"
+    ],
+    "A Vontade": [
+      "*A VONTADE",
+      "A Vontade Japan"
+    ],
+    "Haversack": [
+      "HAVERSACK ATTIRE"
+    ],
+    "Junya Watanabe": [
+      "Junya Watanabe MAN",
+      "eYe Junya Watanabe MAN",
+      "eYe Junya Watanabe",
+      "Junya Watanabe Comme des Garçons MAN"
+    ],
+    "Comme des Garçons Homme": [
+      "Comme des Garcons Homme",
+      "CDG Homme"
+    ],
+    "Undercover": [
+      "Undercoverism"
+    ],
+    "Sugar Cane": [
+      "Sugarcane"
+    ],
+    "Moonstar": [
+      "Moon Star"
+    ],
+    "Shoes Like Pottery": [
+      "Shoeslikepottery",
+      "Shoes Like Pottery by Moonstar"
+    ],
+    "ASICS": [
+      "ASICS SportStyle",
+      "ASICS Novalis",
+      "ASICS x Kiko Kostadinov",
+      "Kiko Kostadinov x ASICS",
+      "ASICS x Cecilie Bahnsen",
+      "ASICS x JJJJound",
+      "ASICS x HAL Studios"
     ]
   },
   "authenticityRequiredBrands": [
@@ -125,7 +177,9 @@
     "Needles",
     "Visvim",
     "Engineered Garments",
-    "orSlow"
+    "orSlow",
+    "Porter Yoshida",
+    "ASICS"
   ],
   "authenticityReviews": {
     "1069814625": {
@@ -229,6 +283,160 @@
     "Evisu",
     "Kenzo",
     "Maison Kitsuné",
-    "Denim by Vanquish & Fragment"
-  ]
+    "Denim by Vanquish & Fragment",
+    "VANQUISH",
+    "A Vontade",
+    "Haversack",
+    "Junya Watanabe",
+    "Comme des Garçons Homme",
+    "Undercover",
+    "Sugar Cane",
+    "Resolute",
+    "Porter Yoshida",
+    "Moonstar",
+    "Shoes Like Pottery",
+    "ASICS"
+  ],
+  "selectionProfiles": {
+    "VANQUISH": {
+      "allowedTypes": [
+        "set",
+        "shorts",
+        "trousers",
+        "tee",
+        "shirt",
+        "knit",
+        "outerwear"
+      ],
+      "requiredTerms": [
+        "Japan",
+        "Japanese",
+        "Tokyo",
+        "Shibuya",
+        "CENO",
+        "Hachiko",
+        "Souvenir",
+        "Sukajan"
+      ],
+      "excludedTerms": [
+        "Vanquish Fitness",
+        "VQ Fit",
+        "VQFit",
+        "VQ Active",
+        "gym",
+        "gymwear",
+        "bodybuilding"
+      ]
+    },
+    "Junya Watanabe": {
+      "allowedTypes": [
+        "set",
+        "shorts",
+        "trousers",
+        "tee",
+        "shirt",
+        "knit",
+        "outerwear"
+      ],
+      "requiredTerms": [
+        "Junya Watanabe MAN",
+        "eYe Junya Watanabe",
+        "Junya Watanabe Comme des Garçons MAN",
+        "Junya Watanabe CDG MAN",
+        "eYe Comme des Garçons"
+      ]
+    },
+    "Comme des Garçons Homme": {
+      "allowedTypes": [
+        "set",
+        "shorts",
+        "trousers",
+        "tee",
+        "shirt",
+        "knit",
+        "outerwear"
+      ],
+      "requiredTerms": [
+        "Comme des Garçons Homme",
+        "CDG Homme"
+      ],
+      "excludedTerms": [
+        "PLAY",
+        "Homme Plus",
+        "Homme Deux"
+      ]
+    },
+    "Porter Yoshida": {
+      "allowedTypes": [
+        "accessory"
+      ],
+      "requiredTerms": [
+        "Yoshida",
+        "Porter Tokyo",
+        "Porter Tanker",
+        "Porter Heat",
+        "Porter Force",
+        "Porter Smoky",
+        "Porter Freestyle",
+        "Porter Lift"
+      ],
+      "excludedTerms": [
+        "Porter International"
+      ]
+    },
+    "Moonstar": {
+      "allowedTypes": [
+        "footwear"
+      ]
+    },
+    "Shoes Like Pottery": {
+      "allowedTypes": [
+        "footwear"
+      ]
+    },
+    "ASICS": {
+      "allowedTypes": [
+        "footwear"
+      ],
+      "requiredTerms": [
+        "Kiko Kostadinov",
+        "Kostadinov",
+        "NOVALIS",
+        "GEL-TEREMOA",
+        "GEL-KIRIL",
+        "GEL-BURZ",
+        "Cecilie Bahnsen",
+        "JJJJound",
+        "HAL STUDIOS"
+      ],
+      "referenceSeries": [
+        [
+          "NOVALIS",
+          "GEL-TEREMOA"
+        ],
+        [
+          "Kiko Kostadinov",
+          "Kostadinov",
+          "GEL-KIRIL",
+          "GEL-BURZ"
+        ],
+        [
+          "Cecilie Bahnsen"
+        ],
+        [
+          "JJJJound"
+        ],
+        [
+          "HAL STUDIOS"
+        ]
+      ]
+    }
+  },
+  "brandFieldFamilies": {
+    "Comme des Garçons Homme": [
+      "Comme des Garçons",
+      "Comme des Garcons",
+      "CDG"
+    ]
+  }
 }

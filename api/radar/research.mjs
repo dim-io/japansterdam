@@ -1,6 +1,7 @@
 import {curation} from './curation.mjs';
 import {assess,authenticityAssessment,identifyBrand,listingUrl,normalize,sendTelegram} from '../../tools/deal-radar/scoring.mjs';
-import {garmentType} from '../../tools/deal-radar/valuation.mjs';
+import {itemType} from '../../tools/deal-radar/valuation.mjs';
+import {brandClaimSupported,selectionRejection} from '../../tools/deal-radar/selection.mjs';
 
 // null in the public status means no per-trial notice cap. Delivery deduplication remains active.
 export const MAX_RESEARCH_NOTICES = null;
@@ -12,12 +13,13 @@ export function researchAssessment(item,config,now=Date.now(),{forBundle=false}=
   const reject=reason=>({candidate:null,reason});
   const id=/\/items\/(\d+)/.exec(listingUrl(item.url)||'')?.[1];
   if(config.researchExcludedItems?.[id])return reject('explicit_exclusion');
-  const brand=identifyBrand(item.brand,config),type=garmentType(item.title);
+  const brand=identifyBrand(item.brand,config),type=itemType(item);
   if(!brand||![...config.coreBrands,...(config.researchBrands||[])].includes(brand))return reject('brand_outside_selection');
   if(!type)return reject('garment_type_unknown');
   if(!['new_with_tags','new_without_tags','very_good','good'].includes(item.condition)||item.flaws?.length)return reject('condition_or_flaws');
   const text=normalize(item.title+' '+(item.description||''));
-  if(!text.includes(normalize(brand)))return reject('brand_claim_unsupported'); // A misfilled brand field alone is insufficient.
+  if(!brandClaimSupported(item,config))return reject('brand_claim_unsupported'); // A misfilled brand field alone is insufficient.
+  const selection=selectionRejection(item,config);if(selection)return reject(selection);
   if(/\b(uniqlo|gu|baby|babies|kids|child|children|bimba|bimbo|enfant|garcon|fille|kinder|maanden|months)\b/.test(text))return reject('excluded_collaboration_or_child_item');
   const authenticity=authenticityAssessment(item,config,now);
   if(!['unreviewed','reviewed_supported'].includes(authenticity.state))return reject('authenticity_contradiction');

@@ -1,13 +1,14 @@
 import {publicationTime} from './intake.mjs';
-import {identifyBrand,listingUrl} from '../../tools/deal-radar/scoring.mjs';
+import {listingUrl} from '../../tools/deal-radar/scoring.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
+import {canonicalListingBrand} from '../../tools/deal-radar/selection.mjs';
 
 const ORIGINS=new Set(['https://japansterdam.com','https://www.japansterdam.com','https://dim-io.github.io','https://japansterdam-web.sam-jesse.workers.dev']);
 const PAGE_SIZE=36;
 const clean=(s,n=240)=>String(s||'').replace(/\s+/g,' ').slice(0,n);
 export function reviewItem(row,run){
  const url=listingUrl(row.url||row.link);if(!url||row.record_type&&row.record_type!=='item')return null;
- const brand=identifyBrand(row.brand_title||row.brand,config)||clean(row.brand_title||row.brand,80);
+ const brand=canonicalListingBrand({brand:row.brand_title||row.brand,title:row.title,description:row.description,category:row.category_path},config)||clean(row.brand_title||row.brand,80);
  const originalTitle=clean(row.title);const price=Number(row.price_amount??row.price);
  if(!brand||!originalTitle||!Number.isFinite(price)||price<=0)return null;
  const photo=row.photo_url||row.image;let image=null;

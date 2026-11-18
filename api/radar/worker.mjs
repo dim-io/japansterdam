@@ -31,8 +31,8 @@ export function scanSelection(policy,slot,attempts=1){
   const brands=Object.entries(policy.brands);
   if(policy.mode==='rotating-brands'||policy.mode==='fresh-rotation'){
     const groups=policy.brandGroups;
-    if(!Array.isArray(groups)||groups.length<1||groups.length>12||groups.some(g=>!Array.isArray(g)||(policy.mode==='fresh-rotation'?(g.length<2||g.length>3):g.length!==2))
-      ||new Set(groups.flat()).size!==brands.length||groups.flat().length!==brands.length||groups.flat().some(b=>!policy.brands[b])||brands.length>(policy.mode==='fresh-rotation'?36:24)||brands.length<2)throw Error('Ongeldig merkschema');
+    if(!Array.isArray(groups)||groups.length<1||groups.length>(policy.mode==='fresh-rotation'?16:12)||groups.some(g=>!Array.isArray(g)||(policy.mode==='fresh-rotation'?(g.length<2||g.length>3):g.length!==2))
+      ||new Set(groups.flat()).size!==brands.length||groups.flat().length!==brands.length||groups.flat().some(b=>!policy.brands[b])||brands.length>(policy.mode==='fresh-rotation'?48:24)||brands.length<2)throw Error('Ongeldig merkschema');
     return groups[slot%groups.length].map(b=>[b,policy.brands[b]]);
   }
   return policy.mode==='both-brands'?brands:[brands[(attempts-1)%brands.length]];
@@ -243,7 +243,8 @@ export async function status(env, now = Date.now(), policy = settings) {
     researchPhotoCheckRequired:policy.requireVisualBrandEvidence===true, photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
-    trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerHour:policy.mode==='fresh-rotation'?Object.keys(policy.brands).length:boundedMode(policy) ? 2 : 1,
+    trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerCycle:Object.keys(policy.brands).length,cycleMinutes:policy.mode==='fresh-rotation'?policy.brandGroups.length*5:null,
+    brandsPerHour:policy.mode==='fresh-rotation'?Math.round(Object.keys(policy.brands).length*12/policy.brandGroups.length*10)/10:boundedMode(policy) ? 2 : 1,
     priceLimits:Object.fromEntries(Object.keys(policy.brands).map(brand=>[brand,itemPriceLimit(brand,config)])),
     brandSchedule:policy.brandGroups||null,scanIntervalHours:policy.mode==='fresh-rotation'?policy.brandGroups.length/12:policy.mode==='rotating-brands'?policy.brandGroups.length:policy.mode==='both-brands'?1:Object.keys(policy.brands).length,
     byBrand:report?.byBrand || [],newOnly:policy.mode==='fresh-rotation',maxListingAgeHours:policy.maxListingAgeHours||null,admitted:report?.admitted??null,repeatedListings:report?.repeatedListings??null,
@@ -258,7 +259,7 @@ export async function status(env, now = Date.now(), policy = settings) {
     newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null, photoReviewSentLastScan:report?.photoReviewSent ?? null,
     error: row?.last_error ?? null, errorAt: row?.error_at ? new Date(row.error_at).toISOString() : null,
     overdue: inWindow(now,policy) && now - (row?.last_scan_at || Date.parse(policy.startsAt)) > 90 * 60000,
-    note: policy.sourceProvider==='topapi-monitor'?`Monitor onthoudt eerder gevonden items. Alleen kleding van maximaal zes uur oud komt door de intake. ${Object.keys(policy.brands).length} merken per cyclus van ${(policy.brandGroups?.length||12)*5} minuten; brongeheugen blijft tussen proeven bewaard.`:policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
+    note: policy.sourceProvider==='topapi-monitor'?`Monitor onthoudt eerder gevonden items. Alleen geselecteerde kleding, schoenen en accessoires van maximaal zes uur oud komen door de intake. ${Object.keys(policy.brands).length} merken per cyclus van ${(policy.brandGroups?.length||12)*5} minuten; brongeheugen blijft tussen proeven bewaard.`:policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
 }
 
 export default {
