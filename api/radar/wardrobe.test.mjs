@@ -13,7 +13,7 @@ test('wardrobe calls are capped and return only active matching-seller items, ne
    assert.deepEqual(JSON.parse(opts.body),{sellers:['42'],includeItems:true,includeFeedback:false,maxItems:10,language:'en'});
    return Response.json({data:{id:'run123',status:'SUCCEEDED',defaultDatasetId:'data123',finishedAt:new Date(now).toISOString()}});
   }
-  return Response.json([row,{...row,row_type:'seller'},{...row,seller_id:'99'},{...row,price:71},{...row,link:'https://evil.test/items/123-test'},{...row,link:'https://www.vinted.nl/items/456-test',is_sold:true}]);
+  return Response.json([row,{...row,row_type:'seller'},{...row,seller_id:'99'},{...row,price:101},{...row,link:'https://evil.test/items/123-test'},{...row,link:'https://www.vinted.nl/items/456-test',is_sold:true}]);
  }});
  assert.equal(calls,2);assert.equal(result.length,2);assert.equal(result[0].available,true);assert.equal(result[1].available,false);
  assert(result.every(item=>!Object.hasOwn(item,'seller_rating')));

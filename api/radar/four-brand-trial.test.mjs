@@ -12,8 +12,8 @@ import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import current from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
 import readiness from './owner-readiness.json' with {type:'json'};
 const now=Date.now(),p={...current,brands:{Kapital:'576107',Needles:'360271','Engineered Garments':'609050',orSlow:'373463'},brandGroups:[['Needles','orSlow'],['Kapital','Engineered Garments']],previousPilotId:'pilot-2026-11-06',startsAt:new Date(now).toISOString(),endsAt:new Date(now+86400000).toISOString()};
-test('all selected brands get seventy euros, consistently at normalization and assessment',()=>{
- for(const [brand,limit] of [['Needles',70],['Kapital',70],['Kountry',70],['Engineered Garments',70],['Orslow',70]]){
+test('all selected brands get one hundred euros, consistently at normalization and assessment',()=>{
+ for(const [brand,limit] of [['Needles',100],['Kapital',100],['Kountry',100],['Engineered Garments',100],['Orslow',100]]){
   assert.equal(itemPriceLimit(brand,config),limit);
   assert.match(assess({url:'https://www.vinted.nl/items/123-test',brand,price:limit+.01,currency:'EUR'},config,now).reason,new RegExp('€'+limit));
  }

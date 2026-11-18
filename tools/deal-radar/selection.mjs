@@ -26,6 +26,11 @@ export function selectionRejection(item,config) {
   const text=item.title+' '+(item.description||'');
   if(profile.excludedTerms?.some(term=>contains(text,term)))return 'excluded_brand_line';
   if(profile.allowedTypes&&!profile.allowedTypes.includes(itemType(item)))return 'product_type_outside_selection';
+  if(brand==='Porter Yoshida'){
+    const bagText=normalize(text+' '+(item.category||''));
+    if(/\b(wallet|pouch|coin purse|card holder|key case|keychain|key ring|portemonnee|portefeuille|geldbeutel)\b/.test(bagText))return 'porter_non_bag_accessory';
+    if(!/\b(bags?|backpacks?|rucksacks?|totes?|briefcases?|tas|tassen|rugzak|reistas|sac|sacs|sacoche|borsa|zaino|tasche)\b/.test(bagText))return 'porter_bag_category_unconfirmed';
+  }
   if(profile.requiredTerms&&!profile.requiredTerms.some(term=>contains(text,term)))return 'selected_line_unconfirmed';
   return null;
 }
