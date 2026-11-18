@@ -1,7 +1,7 @@
 // Private source browser; loading results never starts a paid scrape.
 import {compareRadarResults,mergeRadarResult,publicationLabel,radarScore} from './radar-data.js?v=time-1';
 export async function radarView({root,h,read,toast}){
- let rows=new Map(),offset=0,selected=[],active=false,cycle=75,filterBrand='',query='',sort='recent',max='70',includeOld=false,busy=false,onlyUnread=false,walking=false,updated=null,minScore='',includeUnrated=true;
+ let rows=new Map(),offset=0,selected=[],active=false,cycle=75,filterBrand='',query='',sort='recent',max='100',includeOld=false,busy=false,onlyUnread=false,walking=false,updated=null,minScore='',includeUnrated=true;
  const loadedRuns=new Set(),failures=new Map();
  const storage='jp_radar_read';let seen=new Set();try{seen=new Set(JSON.parse(localStorage.getItem(storage)||'[]'));}catch{}
  const controls=h('section',{class:'radar-controls'}),summary=h('p',{role:'status'}),sortNote=h('p',{class:'radar-sort-note'}),grid=h('div',{class:'radar-grid'}),footer=h('div',{class:'radar-footer'});
@@ -65,7 +65,7 @@ export async function radarView({root,h,read,toast}){
  // Skip a few empty pages automatically; a quiet recent batch need not make
  // the entire history look empty. This reads existing datasets only.
  for(let page=0;page<4;page++){
-  if(!await load()||offset===null||[...rows.values()].filter(r=>selected.includes(r.brand)&&r.currency==='EUR'&&r.price<=70).length>=24)break;
+  if(!await load()||offset===null||[...rows.values()].filter(r=>selected.includes(r.brand)&&r.currency==='EUR'&&r.price<=100).length>=24)break;
  }
  const timer=setInterval(()=>{
   if(!root.contains(grid)){clearInterval(timer);return;}

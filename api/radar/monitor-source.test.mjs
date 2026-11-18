@@ -8,8 +8,8 @@ const observed='2026-11-16T20:00:00Z';
 const row={record_type:'item',id:123,url:'https://www.vinted.nl/items/123-piece',title:'Needles Rebuild shirt',brand_title:'Needles',price_amount:65,price_currency:'EUR',condition:'Very good',size_title:'XS',uploaded_ago:'a minute ago',category_path:['Women','Clothing','Shirts'],availability:'InStock',can_buy:true,is_sold:false,is_hidden:false,is_reserved:false,photo_url:'https://images1.vinted.net/front.png',photos:['https://images1.vinted.net/label.png']};
 test('persistent monitor seeds old inventory, never resets and applies per-brand prices and adult fashion filters',()=>{
  const input=monitorInput([['Needles','360271'],['Nanamica','596562'],['Ts(s)',{searchText:'Ts(s)'}]]);
- assert.equal(input.monitorStoreName,monitorStore(['Needles','Nanamica','Ts(s)']));assert(input.monitorStoreName.startsWith(MONITOR_STORE));assert.equal(monitorStore(['A','B']),monitorStore(['B','A']));assert.notEqual(monitorStore(['A','B']),monitorStore(['C','D']));assert.equal(input.skipFirstRun,true);assert.equal(input.resetMonitor,false);assert.equal(input.alertOnPriceDrop,false);assert.equal(input.maxItems,30);assert.equal(input.priceTo,70);assert.equal(monitorInput([['Nanamica','596562']]).priceTo,70);
- assert.deepEqual(input.catalogIds,['5','1904']);assert.equal(new URL(input.searchQueries[0]).searchParams.get('price_to'),'70');assert.equal(new URL(input.searchQueries[1]).searchParams.get('price_to'),'70');assert(!new URL(input.searchQueries[2]).searchParams.has('brand_ids[]'));
+ assert.equal(input.monitorStoreName,monitorStore(['Needles','Nanamica','Ts(s)']));assert(input.monitorStoreName.startsWith(MONITOR_STORE));assert.equal(monitorStore(['A','B']),monitorStore(['B','A']));assert.notEqual(monitorStore(['A','B']),monitorStore(['C','D']));assert.equal(input.skipFirstRun,true);assert.equal(input.resetMonitor,false);assert.equal(input.alertOnPriceDrop,false);assert.equal(input.maxItems,30);assert.equal(input.priceTo,100);assert.equal(monitorInput([['Nanamica','596562']]).priceTo,100);
+ assert.deepEqual(input.catalogIds,['5','1904']);assert.equal(new URL(input.searchQueries[0]).searchParams.get('price_to'),'100');assert.equal(new URL(input.searchQueries[1]).searchParams.get('price_to'),'100');assert(!new URL(input.searchQueries[2]).searchParams.has('brand_ids[]'));
  assert.equal(new URL(input.searchQueries[1]).searchParams.get('brand_ids[]'),'596562');assert(!new URL(input.searchQueries[1]).searchParams.has('search_text'));assert.deepEqual(input.brands,[]);
  assert.throws(()=>monitorInput([['Unknown','1']]),/Unrecognized/);
 });
@@ -17,7 +17,7 @@ test('persistent monitor seeds old inventory, never resets and applies per-brand
 test('recent snapshots deliver an initial sample without seeding away every result or increasing the run budget',async()=>{
  const selection=[['Needles','360271'],['Nanamica','596562'],['Ts(s)',{searchText:'Ts(s)'}]];
  const input=monitorInput(selection,{mode:'recent-snapshot'});
- assert.equal(policy.sourceMode,'recent-snapshot');assert.equal(input.monitorMode,false);assert.equal(input.skipFirstRun,false);assert.equal(input.resetMonitor,false);assert.equal(input.maxItems,30);assert.equal(input.maxItemsPerSearch,7);assert.equal(input.includeSellerDetails,false);assert.equal(input.includeSellerReviews,false);
+ assert.equal(policy.sourceMode,'new-only');assert.equal(input.monitorMode,false);assert.equal(input.skipFirstRun,false);assert.equal(input.resetMonitor,false);assert.equal(input.maxItems,30);assert.equal(input.maxItemsPerSearch,7);assert.equal(input.includeSellerDetails,false);assert.equal(input.includeSellerReviews,false);
  assert(input.maxItemsPerSearch*input.searchQueries.length<=input.maxItems);
  const porter=monitorInput([['Porter Yoshida',policy.brands['Porter Yoshida']]],{mode:'recent-snapshot'});
  assert(porter.includeKeywords.includes('Porter'));assert(porter.includeKeywords.includes('Yoshida Porter'));
@@ -36,7 +36,7 @@ test('actual replacement schema preserves publication, photos and availability w
  assert.equal(monitorRow({...row,is_reserved:true},observed).available,false);
  assert.equal(monitorRow({...row,availability:undefined,can_buy:undefined},observed).available,null);
  assert.equal(monitorRow({...row,brand_title:'Nanamica',title:'Nanamica jacket'},observed).price,65);
- assert.equal(monitorRow({...row,brand_title:'Nanamica',price_amount:70.01},observed),null);
+ assert.equal(monitorRow({...row,brand_title:'Nanamica',price_amount:100},observed).price,100);assert.equal(monitorRow({...row,brand_title:'Nanamica',price_amount:100.01},observed),null);
  assert.equal(monitorRow({...row,record_type:'seller'},observed),null);
 });
 test('three searches share one capped actor run and only genuinely matching brands are returned',async()=>{

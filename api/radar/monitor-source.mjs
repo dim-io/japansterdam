@@ -1,7 +1,7 @@
 import {candidateRun} from './source-candidates.mjs';
 import {normalizeRow} from '../../tools/deal-radar/provider.mjs';
 import {identifyBrand,itemPriceLimit} from '../../tools/deal-radar/scoring.mjs';
-import {canonicalListingBrand} from '../../tools/deal-radar/selection.mjs';
+import {canonicalListingBrand,selectionRejection} from '../../tools/deal-radar/selection.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
 export const MONITOR_STORE='japansterdam-new-garments-v1'; // Stable across trials and redeploys.
 export function monitorStore(names){
@@ -34,11 +34,12 @@ export function monitorRow(row,observedAt){
  let availability=row.availability==='InStock'?'available':row.availability;
  if(row.is_sold===true||row.is_reserved===true||row.is_hidden===true||row.can_buy===false)availability='unavailable';
  else if(!availability&&row.can_buy===true&&row.is_sold===false&&row.is_reserved===false&&row.is_hidden===false)availability='available';
- const item=normalizeRow({...row,link:row.url,brand:row.brand_title,price:row.price_amount,currency:row.price_currency,size:row.size_title,image:row.photo_url,availability},observedAt,70);
+ const item=normalizeRow({...row,link:row.url,brand:row.brand_title,price:row.price_amount,currency:row.price_currency,size:row.size_title,image:row.photo_url,availability,category:Array.isArray(row.category_path)?row.category_path.join(' / '):row.category_path},observedAt,config.maxItemPrice);
  if(!item)return null;
  const brand=canonicalListingBrand(item,config);
  if(!brand||item.price>itemPriceLimit(brand,config))return null;
  item.brand=brand;
+ if(selectionRejection(item,config))return null;
  return item;
 }
 const namesLabel=selection=>selection.map(([brand])=>brand==='Needles'?'Needles / Rebuild by Needles':brand==='ASICS'?'ASICS (Kiko / NOVALIS / Cecilie / JJJJound / HAL)':brand).join(' + ');

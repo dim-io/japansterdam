@@ -1,7 +1,8 @@
 import {publicationDetails} from './intake.mjs';
 import {listingUrl} from '../../tools/deal-radar/scoring.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
-import {canonicalListingBrand} from '../../tools/deal-radar/selection.mjs';
+import {canonicalListingBrand,selectionRejection} from '../../tools/deal-radar/selection.mjs';
+import {itemPriceLimit} from '../../tools/deal-radar/scoring.mjs';
 import {monitorRow} from './monitor-source.mjs';
 import {readCatalog} from './catalog.mjs';
 import {queueDealRatings,readDealRatings} from './deal-ratings.mjs';
@@ -11,16 +12,20 @@ const PAGE_SIZE=36;
 const clean=(s,n=240)=>String(s||'').replace(/\s+/g,' ').slice(0,n);
 export function reviewItem(row,run){
  const url=listingUrl(row.url||row.link);if(!url||row.record_type&&row.record_type!=='item')return null;
- const brand=canonicalListingBrand({brand:row.brand_title||row.brand,title:row.title,description:row.description,category:row.category_path},config)||clean(row.brand_title||row.brand,80);
+ const category=Array.isArray(row.category_path)?row.category_path.join(' / '):row.category_path;
+ const candidate={brand:row.brand_title||row.brand,title:row.title,description:row.description,category};
+ const brand=canonicalListingBrand(candidate,config)||clean(row.brand_title||row.brand,80);
  const originalTitle=clean(row.title);const price=Number(row.price_amount??row.price);
  if(!brand||!originalTitle||!Number.isFinite(price)||price<=0)return null;
+ candidate.brand=brand;
+ if(selectionRejection(candidate,config)||price>itemPriceLimit(brand,config))return null;
  const photo=row.photo_url||row.image;let image=null;
  try{const u=new URL(photo);if(u.protocol==='https:'&&/^images\d*\.vinted\.net$/.test(u.hostname)&&!u.username&&!u.password&&!u.port)image=u.href;}catch{}
  const publication=publicationDetails(row,run.finishedAt||run.startedAt);
  return {id:/\/items\/(\d+)/.exec(url)[1],url,brand,title:brand+' — '+originalTitle,originalTitle,price,currency:clean(row.price_currency||row.currency,8),size:clean(row.size_title||row.size,50),condition:clean(row.condition||row.status,50),image,
   uploadedAt:publication?.at||null,uploadTimeKind:publication?.kind||'unknown',uploadPrecision:publication?.precision||null,sourceAge:clean(row.uploaded_ago,60),observedAt:run.finishedAt||run.startedAt,
   runId:run.id,runUrl:'https://console.apify.com/actors/gu7NqrMYT471tlfsB/runs/'+run.id,
-  category:clean(Array.isArray(row.category_path)?row.category_path.join(' / '):row.category_path,240)};
+  category:clean(category,240)};
 }
 
 // Read existing results only. Never start an Actor, send an alert or expose a key.
@@ -60,7 +65,7 @@ export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
    try{
     try{const products=await readCatalog(env,fetcher);await queueDealRatings(env,ratingItems,config,products,policy);}catch{/* Keep existing ratings usable when the public catalog is down. */}
     const ratings=await readDealRatings(env,rows,policy);
-    for(const row of rows)row.dealRating=ratings.get(row.id)||{state:policy.brands[row.brand]&&row.currency==='EUR'&&row.price<=70?'queued':'not_eligible'};
+    for(const row of rows)row.dealRating=ratings.get(row.id)||{state:policy.brands[row.brand]&&row.currency==='EUR'&&row.price<=itemPriceLimit(row.brand,config)?'queued':'not_eligible'};
    }catch{for(const row of rows)row.dealRating={state:'unavailable'};}
   }
   return reply({rows,rounds,runIds:runs.map(run=>run.id),sourceMode:policy.sourceMode||'new-only',selectedBrands:Object.keys(policy.brands),nextOffset:offset+runs.length<(list.data.total??Infinity)&&runs.length===PAGE_SIZE?offset+PAGE_SIZE:null,

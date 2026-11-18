@@ -10,8 +10,8 @@ test('normalization preserves uncertainty and never invents comparables', () => 
   assert.equal(item.condition, 'very_good');
   assert.deepEqual(item.comparables, []);
   assert.equal(normalizeRow({ ...row, availability: undefined, condition: undefined }, '').available, null);
-  assert.equal(normalizeRow({ ...row, price: 70 }, '').price, 70);
-  assert.equal(normalizeRow({ ...row, price: 70.01 }, ''), null);
+  assert.equal(normalizeRow({ ...row, price: 100 }, '').price, 100);
+  assert.equal(normalizeRow({ ...row, price: 100.01 }, ''), null);
   assert.equal(normalizeRow({ ...row, currency: 'GBP' }, ''), null);
 });
 
@@ -28,10 +28,10 @@ test('probe restricts the run, uses header authentication and reports only three
       const input = JSON.parse(options.body);
       assert.equal(input.searchQueries.length, 1);
       assert.equal(new URL(input.searchQueries[0]).searchParams.get('brand_ids[]'), '360271');
-      assert.equal(new URL(input.searchQueries[0]).searchParams.get('price_to'), '70');
+      assert.equal(new URL(input.searchQueries[0]).searchParams.get('price_to'), '100');
       assert.equal(input.brandIds, '360271');
       assert.equal(input.maxResults, 3);
-      assert.equal(input.maxPrice, 70);
+      assert.equal(input.maxPrice, 100);
       return Response.json({ data: { id: 'Run123', status: 'SUCCEEDED', defaultDatasetId: 'Data123', finishedAt: '2026-11-04T12:00:00Z' } });
     }
     return Response.json([row, row, row, row]);

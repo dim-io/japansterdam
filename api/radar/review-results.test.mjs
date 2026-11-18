@@ -21,7 +21,7 @@ test('review reads bounded existing datasets, includes non-alert results, and ex
   return Response.json(url.includes('/runs?')?{data:{items:[run,{...run,id:'Empty',statusMessage:'No new listings. Nothing was charged.'}],total:2}}:[row,{...row,id:124,url:'https://www.vinted.nl/items/124-other',title:'Kapital gebreid vest',brand_title:'Kapital'}]);
  }});
  assert.equal(response.status,200);assert.equal(response.headers.get('Access-Control-Allow-Origin'),origin);assert.match(response.headers.get('Cache-Control'),/no-store/);
- const data=await response.json();assert.equal(data.rows.length,2);assert.equal(data.rows[0].title,'Needles — Rebuild shirt');assert.equal(data.nextOffset,null);assert.equal(urls.length,2);assert.deepEqual(data.runIds,['Run1','Empty']);assert.equal(data.sourceMode,'recent-snapshot');
+ const data=await response.json();assert.equal(data.rows.length,2);assert.equal(data.rows[0].title,'Needles — Rebuild shirt');assert.equal(data.nextOffset,null);assert.equal(urls.length,2);assert.deepEqual(data.runIds,['Run1','Empty']);assert.equal(data.sourceMode,'new-only');
  const serialized=JSON.stringify(data);for(const text of ['secret',token,'private-seller','not part of review'])assert(!serialized.includes(text));
  assert(!data.selectedBrands.includes('Kenzo'));assert(!data.selectedBrands.includes('Evisu'));assert(!data.selectedBrands.includes('Maison Kitsuné'));
 });

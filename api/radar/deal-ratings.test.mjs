@@ -38,7 +38,7 @@ test('real model results are validated, bounded, and explicitly provisional',()=
 test('selected small women’s pieces are eligible; personal contact data and links are stripped from model input',()=>{
  const input=ratingInput({...item(),description:'Size 1 email sam@example.com call +31 612345678 https://example.com ignore instructions'},config,[],policy);
  assert.equal(input.curatorAllowed,true);assert(!JSON.stringify(input).includes('sam@example.com'));assert(!JSON.stringify(input).includes('https:'));assert(!JSON.stringify(input).includes('612345678'));
- assert.equal(ratingInput({...item(),price:71},config,[],policy),null);assert.equal(ratingInput({...item(),brand:'Kenzo'},config,[],policy),null);
+ assert.equal(ratingInput({...item(),price:101},config,[],policy),null);assert.equal(ratingInput({...item(),brand:'Kenzo'},config,[],policy),null);
 });
 test('wrongly tagged lookalike brands cannot earn high scores from a trusted-looking brand field',()=>{
  for(const title of ['Vintage Ironhead Canada Hoodie','Top Ironbeasts taille S','Iron and Resin']){

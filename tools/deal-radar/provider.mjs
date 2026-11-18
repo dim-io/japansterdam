@@ -32,7 +32,7 @@ export function normalizeRow(row, observedAt, maxPrice=config.maxItemPrice) {
   const url = listingUrl(row.link || row.url);
   const price = typeof row.price === 'number' ? row.price : Number(row.price?.amount);
   const currency = row.currency || row.price?.currency_code;
-  if (![40,70].includes(maxPrice)||!url || !Number.isFinite(price) || price <= 0 || price > maxPrice || currency !== 'EUR') return null;
+  if (!Number.isFinite(maxPrice)||maxPrice<1||maxPrice>100||!url || !Number.isFinite(price) || price <= 0 || price > maxPrice || currency !== 'EUR') return null;
   const conditions = { 'New with tags': 'new_with_tags', 'New without tags': 'new_without_tags', 'Very good': 'very_good', Good: 'good', Satisfactory: 'satisfactory' };
   const item = { url, title: String(row.title || '').slice(0, 200), brand: String(row.brand || row.brand_title || ''), price, currency,
     size: String(row.size || row.size_title || ''), condition: conditions[row.condition || row.status] || null,
@@ -60,7 +60,7 @@ export async function probe({ token, brandIds = '360271', searchText = null, fet
   if (searchText !== null && (typeof searchText !== 'string' || searchText.length < 2 || searchText.length > 80 || /[\r\n]/.test(searchText))) throw new Error('Ongeldige zoekterm.');
   if (searchText === null && !/^\d+(?:,\d+){0,9}$/.test(brandIds)) throw new Error('Ongeldige merkselectie.');
   if (![3,10].includes(maxResults) || !Number.isFinite(maxCostUsd) || maxCostUsd < .02 || maxCostUsd > .03) throw new Error('Ongeldig scanbudget.');
-  if (![40,70].includes(maxPrice)) throw new Error('Ongeldige prijsgrens.');
+  if (!Number.isFinite(maxPrice)||maxPrice<1||maxPrice>100) throw new Error('Ongeldige prijsgrens.');
   const search = new URL('https://www.vinted.nl/catalog');
   if (searchText !== null) search.searchParams.set('search_text', searchText);
   else brandIds.split(',').forEach((id) => search.searchParams.append('brand_ids[]', id));

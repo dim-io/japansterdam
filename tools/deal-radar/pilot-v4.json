@@ -123,9 +123,9 @@
     "Porter Yoshida": {
       "searchText": "Porter Yoshida",
       "searchTerms": [
-        "Porter Yoshida",
         "Porter Tanker",
-        "Porter Tokyo"
+        "Yoshida Porter Tanker",
+        "Porter Yoshida"
       ],
       "exactQueriesOnly": true
     },
@@ -240,7 +240,7 @@
       "ASICS"
     ]
   ],
-  "revision": "native-curated-brands-v18-ai-deal-scores",
+  "revision": "native-curated-brands-v19-price-100-curator-picks",
   "dealScoring": { "enabled": true },
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
@@ -273,5 +273,5 @@
   "minimumResearchPriority": 7,
   "sourceProvider": "topapi-monitor",
   "maxCostPerMonitorRunUsd": 0.015,
-  "sourceMode": "recent-snapshot"
+  "sourceMode": "new-only"
 }

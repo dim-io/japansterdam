@@ -1,5 +1,5 @@
 {
-  "maxItemPrice": 70,
+  "maxItemPrice": 100,
   "alertScore": 8.2,
   "minimumMargin": 50,
   "minimumRoi": 1.2,
@@ -196,8 +196,8 @@
     }
   },
   "maxItemPriceByBrand": {
-    "Kapital": 70,
-    "Needles": 70
+    "Kapital": 100,
+    "Needles": 100
   },
   "researchExcludedItems": {
     "10594928216": "Photo label identifies Needles x UNIQLO; do not compare with mainline Needles.",
@@ -205,6 +205,18 @@
   },
   "curationPreferences": {
     "enabled": true,
+    "brandPreferences": {
+      "VANQUISH": {
+        "storyTerms": ["Hachiko", "Hachiko s", "Shibuya", "Tokyo", "Japan story", "souvenir jacket"],
+        "reason": "preferred_japanese_story"
+      },
+      "Porter Yoshida": {
+        "preferredTerms": ["Tanker"],
+        "greenTerms": ["olive", "khaki", "green", "sage", "army green"],
+        "orangeTerms": ["orange lining", "orange interior", "orange inside", "orange inner", "orange pocket lining"],
+        "reason": "preferred_porter_tanker"
+      }
+    },
     "listingFeedback": {
       "10724039125": {
         "verdict": "interesting",
@@ -315,6 +327,7 @@
         "Shibuya",
         "CENO",
         "Hachiko",
+        "Hachiko s",
         "Souvenir",
         "Sukajan"
       ],

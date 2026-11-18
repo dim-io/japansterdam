@@ -1,5 +1,5 @@
 import {reviewResults} from './review-results.mjs';
-import {queueDealRatings,scoreDealBatch,readDealRatings} from './deal-ratings.mjs';
+import {queueDealRatings,scoreDealBatch,readDealRatings,RATING_DAILY_LIMIT} from './deal-ratings.mjs';
 import {scanLimit,sourceReserve} from './trial-limits.mjs';
 import {monitorGroup} from './monitor-source.mjs';
 import {freshIntake} from './intake.mjs';
@@ -120,8 +120,9 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
     const previousResearch=await sql(env,'SELECT item_id,state FROM radar_research WHERE pilot_id=?',pilotId).all();
     const finished=new Set(previousResearch.results.filter((row)=>['notified','rejected','notification_pending'].includes(row.state)).map((row)=>row.item_id));
     for(const item of items) {
-      if(!finished.has(/\/items\/(\d+)/.exec(item.url)?.[1])&&!estimateFromShop(item,products,config)) {
-        const candidate=researchCandidate(item,researchConfig,now);
+      if(!finished.has(/\/items\/(\d+)/.exec(item.url)?.[1])) {
+        const valuation=estimateFromShop(item,products,config);
+        const candidate=researchCandidate({...item,...(valuation?{valuation}:{})},researchConfig,now);
         if(candidate&&candidate.priority>=(policy.minimumResearchPriority||0))research.set(item.url,candidate);
       }
     }
@@ -251,6 +252,7 @@ export async function status(env, now = Date.now(), policy = settings) {
   const bundleBudget=policy.bundleChecks?.enabled?await sql(env,'SELECT attempts FROM radar_bundle_limits WHERE pilot_id=?',pilotId).first():null;
   const bundleStates=policy.bundleChecks?.enabled?(await sql(env,'SELECT state,COUNT(*) AS count FROM radar_bundle_checks WHERE pilot_id=? GROUP BY state',pilotId).all()).results:[];
   const dealRatingStates=policy.dealScoring?.enabled?(await sql(env,'SELECT state,COUNT(*) AS count FROM radar_deal_ratings GROUP BY state').all()).results:[];
+  const dealRatingDaily=policy.dealScoring?.enabled?await sql(env,'SELECT attempts FROM radar_deal_rating_daily WHERE day=?',new Date(now).toISOString().slice(0,10)).first():null;
   return { scheduler: 'cloudflare', sourceProvider:policy.sourceProvider||'omkar-legacy',sourceMode:policy.sourceMode||'new-only',sourceMonitor:policy.sourceProvider==='topapi-monitor'&&policy.sourceMode!=='recent-snapshot',assessmentPolicy: 'auth-review-required-v1', automaticPhotoAnalysis: env.VISION_FREE_CONFIRMED === 'true' && vision?.smoke_ok === 1,
     researchPhotoCheckRequired:policy.requireVisualBrandEvidence===true, photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
@@ -262,7 +264,7 @@ export async function status(env, now = Date.now(), policy = settings) {
     byBrand:report?.byBrand || [],newOnly:policy.mode==='fresh-rotation',maxListingAgeHours:policy.maxListingAgeHours||null,admitted:report?.admitted??null,repeatedListings:report?.repeatedListings??null,
     trialDiagnostics:policy.enableDiagnostics?summarizeDiagnostics((await sql(env,'SELECT report FROM radar_scan_reports WHERE pilot_id=? ORDER BY slot',pilotId).all()).results):[],
     researchTest:researchTest?.report?JSON.parse(researchTest.report):researchTest?{state:researchTest.state}:null,
-    dealScoringEnabled:policy.dealScoring?.enabled===true,dealRatingStates,dealScoresLastScan:report?.dealScores||null,
+    dealScoringEnabled:policy.dealScoring?.enabled===true,dealRatingStates,dealRatingAttemptsToday:dealRatingDaily?.attempts||0,dealRatingDailyLimit:RATING_DAILY_LIMIT,dealScoresLastScan:report?.dealScores||null,
     researchEnabled:policy.researchEnabled===true,researchStates,researchHistoryStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
     bundleCheck: policy.bundleChecks?.enabled?'bounded_idle_wake_lookup':'inactive',bundleCheckLimit:policy.bundleChecks?.maxAttempts||0,bundleChecksUsed:bundleBudget?.attempts||0,bundleStates, active: inWindow(now,policy), endsAt: policy.endsAt,
     lastWakeAt: row?.last_wake_at ? new Date(row.last_wake_at).toISOString() : null,

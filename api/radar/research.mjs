@@ -24,12 +24,19 @@ export function researchAssessment(item,config,now=Date.now(),{forBundle=false}=
   const authenticity=authenticityAssessment(item,config,now);
   if(!['unreviewed','reviewed_supported'].includes(authenticity.state))return reject('authenticity_contradiction');
   const check=assess(item,{...config,authenticityRequiredBrands:[]},now);
-  if(check.reason!=='Geen passende prijsreferentie: flipwaarde blijft onbekend')return reject(check.eligible?'priced_candidate':check.reason.includes('prijsgrens')?'price_limit':check.reason.includes('Beschikbaarheid')?'availability_unconfirmed':check.reason.includes('recent genoeg')||check.reason.includes('uploadtijd')?'source_freshness':check.reason.includes('imitatie')?'imitation_language':'financial_or_other_eligibility');
   const photos=item.photoUrls||[];
   if(photos.length<2)return reject('insufficient_photos');
   const preference=curation(item,config);
   if(!preference.allowed&&!forBundle)return reject('curation_excluded');
   if(!preference.allowed&&!preference.track)return reject('curation_excluded');
+  if(check.reason!=='Geen passende prijsreferentie: flipwaarde blijft onbekend'){
+    if(check.eligible)return reject('priced_candidate');
+    const curatorReason=['preferred_japanese_story','preferred_porter_tanker','preferred_porter_tanker_green_orange'].includes(preference.reason);
+    const highScore=item.dealRating?.state==='scored'&&item.dealRating.score>=75;
+    if((!curatorReason&&!highScore)||item.available!==true||item.price>100)return reject(check.eligible?'priced_candidate':check.reason.includes('prijsgrens')?'price_limit':check.reason.includes('Beschikbaarheid')?'availability_unconfirmed':check.reason.includes('recent genoeg')||check.reason.includes('uploadtijd')?'source_freshness':check.reason.includes('imitatie')?'imitation_language':'not_a_standout_find');
+    return {reason:'research_candidate',candidate:{type,reason:curatorReason?'curator_pick':'high_deal_score',curationReason:preference.reason,
+      priority:preference.boost+(highScore?item.dealRating.score:0)+15}};
+  }
   const distinctive=/\b(track|painter|velour|velvet|bandana|boro|sashiko|kountry|rebuild|jogging)\b/.test(text);
   return {reason:'research_candidate',candidate:{type,reason:'model_reference_missing',curationReason:preference.reason,priority:preference.boost+Number(distinctive)*2+Number(photos.length>=4)*3+Number(item.price<=35)+Number(item.condition!=='good')}};
 }
@@ -43,12 +50,15 @@ export function researchText(item,screen,candidate={}) {
     : screen?.state==='inconclusive'&&screen.reason==='missing_or_unreadable_evidence'
     ? 'Fotoanalyse: onvoldoende leesbaar merk- of waslabel. Vraag duidelijke labelfoto’s op.'
     : 'Nog niet visueel gecontroleerd — onderzoekskandidaat. Controleer zelf kledingstuk, merklabel en waslabel.';
-  return ['ONDERZOEK — GEEN KOOPADVIES',plain(item.title),`${plain(item.brand,60)} · €${item.price.toFixed(2)} · Maat ${plain(item.size,30)||'onbekend'}`,
+  const standout=candidate.reason==='curator_pick'||candidate.reason==='high_deal_score';
+  const selectionReason={preferred_japanese_story:'Jouw selectievoorkeur: het sterke Japanse verhaal maakt dit een opvallende Japansterdam-vondst.',preferred_porter_tanker:'Jouw selectievoorkeur: Porter Yoshida Tanker-tassen staan hoog op je lijst.',preferred_porter_tanker_green_orange:'Jouw favoriet: een Porter Yoshida Tanker in groen/olijf met oranje binnenkant.'}[candidate.curationReason];
+  return [standout?'JAPANSTERDAM PICK — DEZE VERDIENT EEN KIJK':'ONDERZOEK — GEEN KOOPADVIES',plain(item.title),`${plain(item.brand,60)} · €${item.price.toFixed(2)} · Maat ${plain(item.size,30)||'onbekend'}`,
     ...(item.dealRating?.state==='scored'?[`AI-dealscore: ${item.dealRating.score}/100 · indicatief — ${plain(item.dealRating.reason,160)}`]:[]),
     ...(item.publishedAt?['Geplaatst: '+item.publishedAt]:[]),
-    'Kandidaat binnen jouw selectie; model, uitvoering en vraagprijs verdienen nader onderzoek. Een passende prijsreferentie ontbreekt.',
+    standout?'Deze kwam bovendrijven als een uitzonderlijke match of hoge deal-score. Check zelf de uitvoering, recente verkochte prijzen en onderhandelruimte voordat je beslist.':'Kandidaat binnen jouw selectie; model, uitvoering en vraagprijs verdienen nader onderzoek. Een passende prijsreferentie ontbreekt.',
+    ...(selectionReason?[selectionReason]:[]),
     ...(candidate.curationReason==='preferred_needles_garment'?['Selectie: een van jouw voorkeurscategorieën van Needles; beoordeel de specifieke uitvoering.']:[]),
-    'Verkoopwaarde en marge: onbekend. Authenticiteit: niet bevestigd.',photo,
+    standout?'Verkoopwaarde en marge zijn niet bevestigd. Authenticiteit: niet bevestigd.': 'Verkoopwaarde en marge: onbekend. Authenticiteit: niet bevestigd.',photo,
     'Platformmaat en dames-/herencategorie zijn indicatief; controleer afmetingen en werkelijke pasvorm.',
     'Controleer eerst model, labels, gebreken en maten; onderzoek daarna vergelijkbare verkopen.',listingUrl(item.url)].join('\n');
 }

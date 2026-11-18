@@ -14,8 +14,15 @@ export function curation(item,config){
  const distinctive=/\b(rebuild|patchwork|mohair|jacquard|bandana|sashiko|boro|selvedge|selvage|velour|velours|velvet|kountry)\b/.test(text);
  const preferred=brand==='Needles'&&['outerwear','shirt','knit','set'].includes(type);
  const targeted=!!config.selectionProfiles?.[brand]&&['footwear','accessory'].includes(type);
- return {allowed:!track,boost:Number(preferred)*6+Number(targeted)*3+Number(distinctive)*3+Number(review?.verdict==='interesting')*4+Number(modelNumbers(item.description).length>0)*2,
-  reason:track?'needles_track_pants_require_set_and_label_evidence':preferred?'preferred_needles_garment':targeted?'selected_footwear_or_accessory':distinctive?'distinctive_execution':'brand_selection',
+ const profile=config.curationPreferences?.brandPreferences?.[brand];
+ const includes=terms=>terms?.some(term=>(' '+text+' ').includes(' '+normalize(term)+' '));
+ const japaneseStory=brand==='VANQUISH'&&includes(profile?.storyTerms);
+ const porterTanker=brand==='Porter Yoshida'&&includes(profile?.preferredTerms);
+ const porterColor=porterTanker&&includes(profile?.greenTerms)&&includes(profile?.orangeTerms);
+ const specialReason=porterColor?'preferred_porter_tanker_green_orange':japaneseStory?'preferred_japanese_story':porterTanker?'preferred_porter_tanker':null;
+ return {allowed:!track,
+  reason:track?'needles_track_pants_require_set_and_label_evidence':specialReason|| (preferred?'preferred_needles_garment':targeted?'selected_footwear_or_accessory':distinctive?'distinctive_execution':'brand_selection'),
+  boost:Number(preferred)*6+Number(targeted)*3+Number(distinctive)*3+Number(review?.verdict==='interesting')*4+Number(modelNumbers(item.description).length>0)*2+Number(japaneseStory)*10+Number(porterTanker)*8+Number(porterColor)*5,
   bundleWorthChecking:!!item.sellerRef&&(preferred||(distinctive&&['outerwear','trousers','shorts','set'].includes(type))||(brand==='orSlow'&&type==='outerwear'&&item.price<=35)||review?.verdict==='interesting'),track};
 }
 export function matchingCompanion(main,other,config){
