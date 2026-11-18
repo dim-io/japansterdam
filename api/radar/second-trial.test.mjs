@@ -6,7 +6,8 @@ import {scan,inWindow,status} from './worker.mjs';
 import {screenPhotos} from './vision.mjs';
 import {budgetDecision} from '../../tools/deal-radar/budget.mjs';
 import {compareCatalog} from './freshness.mjs';
-const now=Date.now(),start=Math.floor(now/3600000)*3600000;
+// Fix the clock at midday so tomorrow stays inside the 24-hour test window.
+const now=Date.parse('2026-11-06T12:00:00Z'),start=Math.floor(now/3600000)*3600000;
 const policy={id:'pilot-2026-11-06',enabled:true,mode:'both-brands',startsAt:new Date(start).toISOString(),endsAt:new Date(start+86400000).toISOString(),maxAttempts:24,maxResultsPerBrand:10,maxPhotoChecks:4,dailyVisionLimit:3,brands:{Kapital:'576107',Needles:'360271'}};
 const user={data:{isPaying:false,plan:{tier:'FREE',monthlyBasePriceUsd:0,monthlyUsageCreditsUsd:5}}};
 const limits={data:{limits:{maxMonthlyUsageUsd:5},current:{monthlyUsageUsd:0}}};
