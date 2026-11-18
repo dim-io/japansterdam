@@ -56,12 +56,6 @@
     "Wislom": {
       "searchText": "Wislom"
     },
-    "Evisu": {
-      "searchText": "Evisu"
-    },
-    "Kenzo": {
-      "searchText": "Kenzo"
-    },
     "Maison Kitsuné": {
       "searchText": "Maison Kitsuné"
     },
@@ -121,15 +115,11 @@
       "Wislom"
     ],
     [
-      "Evisu",
-      "Kenzo"
-    ],
-    [
       "Maison Kitsuné",
       "Denim by Vanquish & Fragment"
     ]
   ],
-  "revision": "native-monitor-day-budget-v11",
+  "revision": "native-monitor-readable-results-v12",
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,

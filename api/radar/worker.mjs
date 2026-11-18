@@ -1,3 +1,4 @@
+import {reviewResults} from './review-results.mjs';
 import {scanLimit,sourceReserve} from './trial-limits.mjs';
 import {monitorGroup} from './monitor-source.mjs';
 import {freshIntake} from './intake.mjs';
@@ -257,12 +258,13 @@ export async function status(env, now = Date.now(), policy = settings) {
     newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null, photoReviewSentLastScan:report?.photoReviewSent ?? null,
     error: row?.last_error ?? null, errorAt: row?.error_at ? new Date(row.error_at).toISOString() : null,
     overdue: inWindow(now,policy) && now - (row?.last_scan_at || Date.parse(policy.startsAt)) > 90 * 60000,
-    note: policy.sourceProvider==='topapi-monitor'?'Monitor onthoudt eerder gevonden items. Alleen kleding van maximaal zes uur oud komt door de intake. 34 merken per uur; brongeheugen blijft tussen proeven bewaard.':policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
+    note: policy.sourceProvider==='topapi-monitor'?`Monitor onthoudt eerder gevonden items. Alleen kleding van maximaal zes uur oud komt door de intake. ${Object.keys(policy.brands).length} merken per cyclus van ${(policy.brandGroups?.length||12)*5} minuten; brongeheugen blijft tussen proeven bewaard.`:policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
 }
 
 export default {
   async scheduled(_event, env) { await wake(env); },
   async fetch(request, env) {
+    if(new URL(request.url).pathname==='/results')return reviewResults(request,env,settings);
     if (request.method !== 'GET' || !['/', '/status'].includes(new URL(request.url).pathname)) return new Response('Not found', { status: 404 });
     try { return Response.json(await status(env), { headers: { 'Cache-Control': 'no-store' } }); }
     catch { return Response.json({ scheduler: 'cloudflare', error: 'Status tijdelijk niet beschikbaar' }, { status: 503 }); }

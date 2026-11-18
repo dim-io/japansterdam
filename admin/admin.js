@@ -1,3 +1,4 @@
+import { radarView } from './radar.js?v=results-1';
 import { accountingView } from './accounting.js?v=private-books-2';
 import { commerceView } from './commerce.js?v=stripe-1';
 import { FIT_SIZES, productFitsLike, suggestedFitsLike } from '../js/sizing.js?v=footwear-filter-1';
@@ -185,6 +186,15 @@ async function route(keepDirty = false) {
   try {
     if (view === 'products' && parts[1]) await viewEditor(parts[1]);
     else if (view === 'products') await viewProducts();
+    else if (view === 'radar') {
+      setTitle('Radar');
+      await radarView({root:el,h,toast,read:async offset=>{
+        const response=await fetch('https://japansterdam-radar.sam-jesse.workers.dev/results?offset='+offset,{headers:{Authorization:'Bearer '+token}});
+        const data=await response.json();
+        if(!response.ok)throw new Error(data.error||'Radar niet bereikbaar');
+        return data;
+      }});
+    }
     else if (view === 'pages') await viewPages(parts[1]);
     else if (view === 'accounting') {
       setTitle('Administratie');
