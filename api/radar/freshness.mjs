@@ -1,6 +1,7 @@
 // Read one public catalogue snapshot; no login, challenge bypass or extra scraper run.
 // An inaccessible/ambiguous page is unknown, never proof of fresh results.
-export async function compareCatalog(brandId,items,fetcher=fetch,maxPrice=40) {
+import config from '../../tools/deal-radar/config.json' with {type:'json'};
+export async function compareCatalog(brandId,items,fetcher=fetch,maxPrice=config.maxItemPrice) {
   const url=new URL('https://www.vinted.nl/catalog');
   url.search=new URLSearchParams({...(typeof brandId==='object'?{search_text:brandId.searchText}:{'brand_ids[]':brandId}),price_to:String(maxPrice),currency:'EUR',order:'newest_first'});
   try {

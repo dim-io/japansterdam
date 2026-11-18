@@ -13,7 +13,7 @@ test('broad rotation covers every selected brand without increasing the daily so
  for(let slot=0;slot<24;slot++){
   const selection=scanSelection(policy,slot);
   assert.equal(selection.length,2);
-  for(const [brand] of selection){assert.equal(identifyBrand(brand,config),brand);counts.set(brand,(counts.get(brand)||0)+1);assert.equal(itemPriceLimit(brand,config),['Needles','Kapital'].includes(brand)?70:40);}
+  for(const [brand] of selection){assert.equal(identifyBrand(brand,config),brand);counts.set(brand,(counts.get(brand)||0)+1);assert.equal(itemPriceLimit(brand,config),70);}
  }
  assert.equal(counts.size,20);assert.equal([...counts.values()].reduce((a,b)=>a+b),48);
  assert([...counts.values()].every(n=>n===2||n===3));

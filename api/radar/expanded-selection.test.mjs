@@ -15,7 +15,8 @@ const now=Date.parse('2026-11-18T00:00:00Z');
 const base={url:'https://www.vinted.nl/items/99999-test',price:30,currency:'EUR',available:true,condition:'very_good',size:'36',publishedAt:new Date(now-60000).toISOString(),observedAt:new Date(now).toISOString(),photoUrls:[1,2,3,4].map(n=>'https://images1.vinted.net/'+n+'.png')};
 const additions=['VANQUISH','A Vontade','Haversack','Junya Watanabe','Comme des Garçons Homme','Undercover','Sugar Cane','Resolute','Porter Yoshida','Moonstar','Shoes Like Pottery','ASICS'];
 test('all twelve additions run within the same bounded budget, with a truthful 75-minute full cycle',()=>{
- for(const brand of additions){assert(brand in policy.brands,brand);assert.equal(identifyBrand(brand,config),brand);assert(config.researchBrands.includes(brand));assert.equal(itemPriceLimit(brand,config),40);}
+ for(const brand of additions){assert(brand in policy.brands,brand);assert.equal(identifyBrand(brand,config),brand);assert(config.researchBrands.includes(brand));}
+ for(const brand of Object.keys(policy.brands))assert.equal(itemPriceLimit(brand,config),70,brand);
  assert.equal(Object.keys(policy.brands).length,43);assert.equal(policy.brandGroups.length*5,75);
  const seen=policy.brandGroups.flatMap((_,slot)=>scanSelection(policy,slot).map(([brand])=>brand));assert.equal(new Set(seen).size,43);assert.equal(seen.length,43);
  assert.equal(policy.sourceBudget.maxMonthlyUsageUsd,19);assert.equal(policy.maxCostPerMonitorRunUsd,.015);assert.equal(policy.maxAttempts,288);
@@ -26,6 +27,7 @@ test('every group has capped keyword searches; exclusive ASICS never adds an unr
  for(const names of policy.brandGroups){
   const input=monitorInput(names.map(brand=>[brand,policy.brands[brand]]));
   assert(input.maxItems<=30);assert(input.searchQueries.length<=9);assert.equal(input.skipFirstRun,true);assert.equal(input.resetMonitor,false);assert.deepEqual(input.catalogIds,['5','1904']);
+  assert.equal(input.priceTo,70);for(const query of input.searchQueries)if(query.startsWith('https:'))assert.equal(new URL(query).searchParams.get('price_to'),'70');
  }
  const names=policy.brandGroups.find(g=>g.includes('ASICS'));const input=monitorInput(names.map(b=>[b,policy.brands[b]]));
  assert(!input.brands.includes('ASICS'));assert(!input.includeKeywords.includes('ASICS'));assert.equal(input.maxItems,30);assert.equal(input.maxItemsPerSearch,4);
@@ -75,10 +77,11 @@ test('both Japanese shoe brands and selected ASICS can pass with small sizes and
 });
 test('shoe condition, price, availability and photos remain necessary',()=>{
  const item={...base,brand:'ASICS',title:'ASICS NOVALIS GEL-TEREMOA'};
- for(const patch of [{price:41},{available:false},{condition:'satisfactory'},{flaws:['worn sole']},{photoUrls:[]}])assert.equal(researchCandidate({...item,...patch},config,now),null);
+ assert(researchCandidate({...item,price:70},config,now));
+ for(const patch of [{price:70.01},{available:false},{condition:'satisfactory'},{flaws:['worn sole']},{photoUrls:[]}])assert.equal(researchCandidate({...item,...patch},config,now),null);
  assert.equal(freshIntake({...item,publishedAt:undefined},config,now),'upload_time_unknown');
  const source={url:base.url,title:item.title,brand_title:'ASICS',price_amount:30,price_currency:'EUR',condition:'Very good',category_path:['Women','Shoes'],uploaded_ago:'a minute ago',availability:'InStock'};
- assert.equal(monitorRow(source,base.observedAt).brand,'ASICS');assert.equal(monitorRow({...source,price_amount:41},base.observedAt),null);
+ assert.equal(monitorRow(source,base.observedAt).brand,'ASICS');assert.equal(monitorRow({...source,price_amount:70},base.observedAt).price,70);assert.equal(monitorRow({...source,price_amount:70.01},base.observedAt),null);
  assert.equal(monitorRow({...source,brand_title:'Other'},base.observedAt),null);
 });
 test('shoe and bag triage still requires a readable brand and material/article label',()=>{

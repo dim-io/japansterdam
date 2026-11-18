@@ -1,12 +1,13 @@
 import {publicationTime} from '../../api/radar/intake.mjs';
 import { listingUrl } from './scoring.mjs';
+import config from './config.json' with {type:'json'};
 
 const API = 'https://api.apify.com/v2';
 const ACTOR = 'omkar-cloud~vinted-scraper';
 const MAX_COST = .02;
 // Vinted's catalog identifies the fashion label Needles as brand 360271.
 // A plain keyword also returns sewing needles and unrelated tagged items.
-const INPUT = { searchQueries: ['https://www.vinted.nl/catalog?brand_ids%5B%5D=360271&price_to=40&currency=EUR&order=newest_first'], brandIds: '360271', country: 'nl', sortBy: 'newest_first', maxPrice: 40, maxResults: 3, includeDetails: true, language: 'en' };
+const INPUT = { brandIds: '360271', country: 'nl', sortBy: 'newest_first', maxResults: 3, includeDetails: true, language: 'en' };
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'TIMED-OUT', 'ABORTED']);
 
 export function listingPhotos(row) {
@@ -27,7 +28,7 @@ export function sellerReference(row) {
 
 // Keep missing fields unknown. A successful search is not evidence that a
 // returned listing is still available or that it is a profitable deal.
-export function normalizeRow(row, observedAt, maxPrice=40) {
+export function normalizeRow(row, observedAt, maxPrice=config.maxItemPrice) {
   const url = listingUrl(row.link || row.url);
   const price = typeof row.price === 'number' ? row.price : Number(row.price?.amount);
   const currency = row.currency || row.price?.currency_code;
@@ -45,7 +46,7 @@ export function normalizeRow(row, observedAt, maxPrice=40) {
   return item;
 }
 
-export async function probe({ token, brandIds = '360271', searchText = null, fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now(), maxResults = 3, maxCostUsd = MAX_COST, maxPrice=40 }) {
+export async function probe({ token, brandIds = '360271', searchText = null, fetcher = fetch, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)), now = () => Date.now(), maxResults = 3, maxCostUsd = MAX_COST, maxPrice=config.maxItemPrice }) {
   if (!token || /\s/.test(token)) throw new Error('Sla eerst je Apify API-token op als GitHub-secret APIFY_TOKEN.');
   const api = async (endpoint, { method = 'GET', body } = {}) => {
     let response;

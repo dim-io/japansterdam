@@ -240,7 +240,7 @@
       "ASICS"
     ]
   ],
-  "revision": "native-monitor-curated-brands-v15-live",
+  "revision": "native-monitor-curated-brands-v16-all-70",
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
