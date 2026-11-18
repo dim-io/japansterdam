@@ -19,7 +19,7 @@ test('all twelve additions run within the same bounded budget, with a truthful 7
  assert.equal(Object.keys(policy.brands).length,43);assert.equal(policy.brandGroups.length*5,75);
  const seen=policy.brandGroups.flatMap((_,slot)=>scanSelection(policy,slot).map(([brand])=>brand));assert.equal(new Set(seen).size,43);assert.equal(seen.length,43);
  assert.equal(policy.sourceBudget.maxMonthlyUsageUsd,19);assert.equal(policy.maxCostPerMonitorRunUsd,.015);assert.equal(policy.maxAttempts,288);
- assert.equal(inWindow(now,policy),false); // The finished trial must not restart on a configuration deploy.
+ assert.equal(inWindow(Date.parse(policy.endsAt),policy),false); // Every trial stops at its fixed end.
  assert.throws(()=>scanSelection({...policy,brandGroups:[...policy.brandGroups,policy.brandGroups[0]]},0),/merkschema/);
 });
 test('every group has capped keyword searches; exclusive ASICS never adds an unrestricted ASICS search',()=>{

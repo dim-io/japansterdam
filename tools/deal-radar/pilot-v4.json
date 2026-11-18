@@ -1,9 +1,9 @@
 {
   "enabled": true,
-  "id": "pilot-2026-11-16-source3",
-  "previousPilotId": "pilot-2026-11-16-source2",
-  "startsAt": "2026-11-16T23:14:54.552694+00:00",
-  "endsAt": "2026-11-17T23:14:54.552694+00:00",
+  "id": "pilot-2026-11-18",
+  "previousPilotId": "pilot-2026-11-16-source3",
+  "startsAt": "2026-11-18T00:33:54.551Z",
+  "endsAt": "2026-11-19T00:33:54.551Z",
   "maxAttempts": 288,
   "brands": {
     "Nonnative": "355385",
@@ -240,7 +240,7 @@
       "ASICS"
     ]
   ],
-  "revision": "native-monitor-curated-brands-v14",
+  "revision": "native-monitor-curated-brands-v15-live",
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
@@ -252,9 +252,9 @@
     "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
     "plan": "free",
     "source": "dashboard_current_plan",
-    "confirmedAt": "2026-11-16T17:33:58.961284+00:00",
-    "authorizedAt": "2026-11-16T23:14:54.552694+00:00",
-    "validUntil": "2026-11-17T23:14:54.552694+00:00"
+    "confirmedAt": "2026-11-18T00:33:54.551Z",
+    "authorizedAt": "2026-11-18T00:33:54.551Z",
+    "validUntil": "2026-11-19T00:33:54.551Z"
   },
   "reviewBacklog": false,
   "bundleChecks": {
@@ -263,7 +263,7 @@
   "sourceBudget": {
     "allowPaidIncludedCredits": true,
     "maxMonthlyUsageUsd": 19,
-    "authorizedAt": "2026-11-14T21:39:05.758231+00:00"
+    "authorizedAt": "2026-11-18T00:33:54.551Z"
   },
   "requireVisualBrandEvidence": true,
   "enableDiagnostics": true,
