@@ -40,6 +40,13 @@ test('selected small women’s pieces are eligible; personal contact data and li
  assert.equal(input.curatorAllowed,true);assert(!JSON.stringify(input).includes('sam@example.com'));assert(!JSON.stringify(input).includes('https:'));assert(!JSON.stringify(input).includes('612345678'));
  assert.equal(ratingInput({...item(),price:71},config,[],policy),null);assert.equal(ratingInput({...item(),brand:'Kenzo'},config,[],policy),null);
 });
+test('wrongly tagged lookalike brands cannot earn high scores from a trusted-looking brand field',()=>{
+ for(const title of ['Vintage Ironhead Canada Hoodie','Top Ironbeasts taille S','Iron and Resin']){
+  const input=ratingInput({...item(),brand:'Iron Heart',title},config,[],{...policy,brands:{'Iron Heart':'492896'}});
+  assert.equal(input.brandConflict,true);const score=parseRating(output(input),input);assert(score.score<=25);assert.equal(score.parts.fit,0);assert.equal(score.parts.evidence,0);assert.match(score.reason,/ander merk/);
+ }
+ const valid=ratingInput({...item(),brand:'Iron Heart',title:'Iron Heart IHSH-99 work shirt'},config,[],{...policy,brands:{'Iron Heart':'492896'}});assert.equal(valid.brandConflict,false);
+});
 test('SQL cache avoids inference on refresh and observation-only updates; a changed price invalidates it',async()=>{
  const {env,db,calls}=setup();const first=item();
  await queueDealRatings(env,[first],config,[],policy,{now});
