@@ -56,9 +56,6 @@
     "Wislom": {
       "searchText": "Wislom"
     },
-    "Maison Kitsuné": {
-      "searchText": "Maison Kitsuné"
-    },
     "Denim by Vanquish & Fragment": {
       "searchText": "Denim by Vanquish & Fragment"
     }
@@ -111,15 +108,14 @@
     ],
     [
       "Nulabel",
-      "Portvel",
-      "Wislom"
+      "Portvel"
     ],
     [
-      "Maison Kitsuné",
+      "Wislom",
       "Denim by Vanquish & Fragment"
     ]
   ],
-  "revision": "native-monitor-readable-results-v12",
+  "revision": "native-monitor-curated-brands-v13",
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,

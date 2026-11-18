@@ -23,7 +23,7 @@ test('review reads bounded existing datasets, includes non-alert results, and ex
  assert.equal(response.status,200);assert.equal(response.headers.get('Access-Control-Allow-Origin'),origin);assert.match(response.headers.get('Cache-Control'),/no-store/);
  const data=await response.json();assert.equal(data.rows.length,2);assert.equal(data.rows[0].title,'Needles — Rebuild shirt');assert.equal(data.nextOffset,null);assert.equal(urls.length,2);
  const serialized=JSON.stringify(data);for(const text of ['secret',token,'private-seller','not part of review'])assert(!serialized.includes(text));
- assert(!data.selectedBrands.includes('Kenzo'));assert(!data.selectedBrands.includes('Evisu'));
+ assert(!data.selectedBrands.includes('Kenzo'));assert(!data.selectedBrands.includes('Evisu'));assert(!data.selectedBrands.includes('Maison Kitsuné'));
 });
 test('review refuses unsafe links, retains unknown upload time and omits non-item rows',()=>{
  assert.equal(reviewItem({...row,url:'https://evil.example/items/123'},run),null);
@@ -31,7 +31,7 @@ test('review refuses unsafe links, retains unknown upload time and omits non-ite
  const item=reviewItem({...row,uploaded_ago:'unknown',photo_url:'https://evil.example/p.png'},run);assert.equal(item.image,null);assert.equal(item.uploadedAt,null);
 });
 test('all requested favorites remain selected and Rebuild is an explicit search within the existing Needles monitor',()=>{
- for(const brand of ['Sage de Cret','Nonnative','Nanamica','Engineered Garments','Ts(s)','Remi Relief','Needles','WTAPS','Uniform Experiment','Fragment Design','Wacko Maria','Denim by Vanquish & Fragment','Ordinary Fits','Fumito Ganryu','Visvim'])assert(brand in policy.brands,brand);
+ for(const brand of ['orSlow','Fullcount','Auralee','Sage de Cret','Nonnative','Nanamica','Engineered Garments','Ts(s)','Remi Relief','Needles','WTAPS','Uniform Experiment','Fragment Design','Wacko Maria','Denim by Vanquish & Fragment','Ordinary Fits','Fumito Ganryu','Visvim'])assert(brand in policy.brands,brand);
  const group=policy.brandGroups.find(g=>g.includes('Needles'));const input=monitorInput(group.map(b=>[b,policy.brands[b]]));assert(input.searchQueries.includes('Rebuild by Needles'));assert.equal(input.monitorStoreName,monitorStore(group));assert.equal(input.resetMonitor,false);
 });
 test('run labels name every searched brand without modifying access or starting a second run',async()=>{
