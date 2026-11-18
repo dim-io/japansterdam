@@ -1,4 +1,4 @@
-const CACHE_NAME = 'japansterdam-admin-shell-v1';
+const CACHE_NAME = 'japansterdam-admin-shell-v2';
 const APP_ROOT = new URL('./', self.location.href).pathname;
 
 self.addEventListener('install', (event) => {
