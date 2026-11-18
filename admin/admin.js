@@ -1,4 +1,4 @@
-import { radarView } from './radar.js?v=results-2';
+import { radarView } from './radar.js?v=deal-scores-1';
 import { accountingView } from './accounting.js?v=private-books-2';
 import { commerceView } from './commerce.js?v=stripe-1';
 import { FIT_SIZES, productFitsLike, suggestedFitsLike } from '../js/sizing.js?v=footwear-filter-1';

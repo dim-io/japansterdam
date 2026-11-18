@@ -240,7 +240,8 @@
       "ASICS"
     ]
   ],
-  "revision": "native-curated-brands-v17-recent-results",
+  "revision": "native-curated-brands-v18-ai-deal-scores",
+  "dealScoring": { "enabled": true },
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,

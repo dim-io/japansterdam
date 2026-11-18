@@ -2,6 +2,9 @@ import {publicationTime} from './intake.mjs';
 import {listingUrl} from '../../tools/deal-radar/scoring.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import {canonicalListingBrand} from '../../tools/deal-radar/selection.mjs';
+import {monitorRow} from './monitor-source.mjs';
+import {readCatalog} from './catalog.mjs';
+import {queueDealRatings,readDealRatings} from './deal-ratings.mjs';
 
 const ORIGINS=new Set(['https://japansterdam.com','https://www.japansterdam.com','https://dim-io.github.io','https://japansterdam-web.sam-jesse.workers.dev']);
 const PAGE_SIZE=36;
@@ -39,18 +42,26 @@ export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
   const get=async path=>{const response=await fetcher('https://api.apify.com/v2'+path,{headers:{Authorization:'Bearer '+env.APIFY_TOKEN},redirect:'manual',signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('source_unavailable');return response.json();};
   const list=await get('/acts/topapi~vinted-scraper/runs?desc=true&limit='+PAGE_SIZE+'&offset='+offset);
   const runs=list.data?.items;if(!Array.isArray(runs))throw Error('invalid_source');
-  const rows=[],rounds=[];let failedDatasets=0;
-  // A page uses at most 38 subrequests, within Workers Free's request limit.
+  const rows=[],rounds=[],ratingItems=[];let failedDatasets=0;
+  // At most 41 reads including auth, catalog and rating cache; no model calls.
   // Four concurrent reads avoid opening too many upstream connections.
   for(let start=0;start<runs.length;start+=4)await Promise.all(runs.slice(start,start+4).map(async run=>{
    if(run.status!=='SUCCEEDED'||!/^[a-zA-Z0-9]+$/.test(run.defaultDatasetId||'')||!/^[a-zA-Z0-9]+$/.test(run.id||''))return;
    if(/Nothing was charged\.|First monitor run:/.test(run.statusMessage||'')){rounds.push({id:run.id,empty:true,startedAt:run.startedAt,label:clean(run.statusMessage,400)});return;}
    try{const data=await get('/datasets/'+run.defaultDatasetId+'/items?clean=true&limit=30');if(!Array.isArray(data))throw Error('invalid_dataset');
     rows.push(...data.map(row=>reviewItem(row,run)).filter(Boolean));
+    if(policy.dealScoring?.enabled&&env.RADAR_DB)ratingItems.push(...data.map(row=>monitorRow(row,run.finishedAt||run.startedAt)).filter(Boolean));
     rounds.push({id:run.id,count:data.length,startedAt:run.startedAt,label:clean(run.statusMessage,400)});
    }catch{failedDatasets++;}
   }));
   rows.sort((a,b)=>Date.parse(b.observedAt)-Date.parse(a.observedAt));
+  if(policy.dealScoring?.enabled&&env.RADAR_DB){
+   try{
+    try{const products=await readCatalog(env,fetcher);await queueDealRatings(env,ratingItems,config,products,policy);}catch{/* Keep existing ratings usable when the public catalog is down. */}
+    const ratings=await readDealRatings(env,rows,policy);
+    for(const row of rows)row.dealRating=ratings.get(row.id)||{state:policy.brands[row.brand]&&row.currency==='EUR'&&row.price<=70?'queued':'not_eligible'};
+   }catch{for(const row of rows)row.dealRating={state:'unavailable'};}
+  }
   return reply({rows,rounds,runIds:runs.map(run=>run.id),sourceMode:policy.sourceMode||'new-only',selectedBrands:Object.keys(policy.brands),nextOffset:offset+runs.length<(list.data.total??Infinity)&&runs.length===PAGE_SIZE?offset+PAGE_SIZE:null,
    loadedRuns:runs.length,failedDatasets,trial:policy.id,endsAt:policy.endsAt,active:policy.enabled&&Date.now()>=Date.parse(policy.startsAt)&&Date.now()<Date.parse(policy.endsAt),
    cycleMinutes:(policy.brandGroups?.length||12)*5});

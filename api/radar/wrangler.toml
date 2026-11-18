@@ -16,6 +16,7 @@ SHOP_CATALOG_URL = "https://japansterdam-api.sam-jesse.workers.dev/public/produc
 binding = "RADAR_DB"
 database_name = "japansterdam-radar"
 database_id = "41d7b993-8791-4b19-b8fa-5a5db6eeda7e"
+migrations_dir = "migrations"
 
 [ai]
 binding = "AI"

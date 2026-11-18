@@ -16,6 +16,7 @@ function setup(attempts = 0) {
   db.exec(fs.readFileSync(new URL('../migrations/0004_radar_vision.sql', import.meta.url), 'utf8'));
   db.exec(fs.readFileSync(new URL('../migrations/0006_radar_research.sql', import.meta.url), 'utf8'));
   db.exec(fs.readFileSync(new URL('../migrations/0007_radar_research_test.sql', import.meta.url), 'utf8'));
+  db.exec(fs.readFileSync(new URL('./migrations/0001_deal_ratings.sql', import.meta.url), 'utf8'));
   for(const schema of BUNDLE_SCHEMA)db.exec(schema);
   db.exec(DIAGNOSTIC_SCHEMA);
   db.exec('CREATE TABLE products (data TEXT NOT NULL)');
@@ -95,6 +96,14 @@ test('HTTP interface is read-only and cannot start or reconfigure a scan',async(
   assert.equal((await worker.fetch(new Request('https://radar/status',{method:'POST'}),env)).status,404);
   assert.equal((await worker.fetch(new Request('https://radar/run'),env)).status,404);
   assert.equal((await worker.fetch(new Request('https://radar/status'),env)).status,200);db.close();
+});
+
+test('a high AI priority score never bypasses the existing authenticity and notification gates',async()=>{
+ const {env,db}=setup(1);let modelCalls=0,messages=0;
+ env.VISION_FREE_CONFIRMED='true';env.AI={run:async(_model,input)=>{modelCalls++;return {response:{ratings:JSON.parse(input.messages[1].content).map(row=>({id:row.id,price:40,fit:25,condition:20,evidence:15,reason:'Opvallend voordelig volgens de advertentie.'}))}};}};
+ const current={...item,photoUrls:[],publishedAt:new Date(now).toISOString()};
+ const result=await scan(env,{...options,authenticityReviews:{},policy:{...policy,dealScoring:{enabled:true}},fetcher:async(url)=>{if(String(url).includes('workers.dev'))return Response.json([product]);messages++;throw Error('unexpected message');},probeFn:async()=>({runId:'scoring',items:[current]})});
+ assert.equal(modelCalls,1);assert.equal(result.dealScores.scored,1);assert.equal(result.sent,0);assert.equal(messages,0);assert.equal(db.prepare('SELECT attempts FROM radar_control').get().attempts,2);db.close();
 });
 
 

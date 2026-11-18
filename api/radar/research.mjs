@@ -44,6 +44,7 @@ export function researchText(item,screen,candidate={}) {
     ? 'Fotoanalyse: onvoldoende leesbaar merk- of waslabel. Vraag duidelijke labelfoto’s op.'
     : 'Nog niet visueel gecontroleerd — onderzoekskandidaat. Controleer zelf kledingstuk, merklabel en waslabel.';
   return ['ONDERZOEK — GEEN KOOPADVIES',plain(item.title),`${plain(item.brand,60)} · €${item.price.toFixed(2)} · Maat ${plain(item.size,30)||'onbekend'}`,
+    ...(item.dealRating?.state==='scored'?[`AI-dealscore: ${item.dealRating.score}/100 · indicatief — ${plain(item.dealRating.reason,160)}`]:[]),
     ...(item.publishedAt?['Geplaatst: '+item.publishedAt]:[]),
     'Kandidaat binnen jouw selectie; model, uitvoering en vraagprijs verdienen nader onderzoek. Een passende prijsreferentie ontbreekt.',
     ...(candidate.curationReason==='preferred_needles_garment'?['Selectie: een van jouw voorkeurscategorieën van Needles; beoordeel de specifieke uitvoering.']:[]),

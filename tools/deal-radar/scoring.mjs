@@ -121,6 +121,7 @@ export function assess(item, config, now = Date.now()) {
 export function alertText(deal) {
   return [
     `JAPANSTERDAM FIND · ${deal.score}/10`,
+    ...(deal.dealRating?.state==='scored'?[`AI-dealscore: ${deal.dealRating.score}/100 · indicatief`]:[]),
     `${deal.brand} — ${deal.title}`, `Maat: ${deal.size} · Vraagprijs: ${euro(deal.price)}`,
     `Flipbaarheid ${deal.scores.flip}/10 · Prijs ${deal.scores.price}/10 · Staat ${deal.scores.condition}/10 · Fit ${deal.scores.fit}/10`,
     deal.valuationKind === 'estimate'

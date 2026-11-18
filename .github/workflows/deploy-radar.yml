@@ -48,6 +48,8 @@ jobs:
         run: node radar/source-schema-check.mjs
       - name: Nieuwe proef initialiseren met behoud van historie
         run: node radar/bootstrap-trial.mjs
+      - name: Opslag voor AI-dealscores voorbereiden
+        run: npx wrangler d1 migrations apply japansterdam-radar --remote --config radar/wrangler.toml
       - name: Radar op eigen account publiceren
         run: npx wrangler deploy --config radar/wrangler.toml
       - name: Bestaande Apify- en Telegramkoppeling aansluiten
@@ -62,6 +64,10 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: node radar/initial-round.mjs
+      - name: Bestaande resultaten beoordelen zonder nieuwe scrape
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        run: node radar/bootstrap-deal-ratings.mjs
       - name: Laatste verkopersbroncontrole uitlezen zonder nieuwe scrape
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
