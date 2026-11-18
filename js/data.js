@@ -2,7 +2,7 @@ import { responsiveAttrs } from './responsive-images.js';
 import { brandPage } from './brand-pages.js?v=complete-list-1';
 // Data loading, caching and shared helpers.
 import { imageFrameStyle } from './image-frames.js';
-import { inBag } from './bag.js';
+import { inBag } from './bag.js?v=visitor-insights-3';
 import { API_BASE } from './config.js';
 import { createProductRoutes, productPath } from './product-urls.js';
 let snapshot;

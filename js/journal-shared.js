@@ -1,5 +1,5 @@
 import { responsiveAttrs, imageVariant } from './responsive-images.js';
-import { esc, productUrl } from './data.js';
+import { esc, productUrl } from './data.js?v=visitor-insights-3';
 
 export const storyUrl = (slug) => 'journal.html?story=' + encodeURIComponent(slug);
 export const publishedStories = (journal) => (journal?.articles || []).filter(a => a.published === true && a.slug && a.title);

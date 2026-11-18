@@ -1,12 +1,12 @@
-import { track } from './statistics.js';
+import { track } from './statistics.js?v=visitor-insights-3';
 import { responsiveAttrs } from './responsive-images.js';
 import { productFitsLike } from './sizing.js?v=footwear-filter-1';
-import { productStoriesHTML } from './journal-shared.js?v=inline-links-1';
+import { productStoriesHTML } from './journal-shared.js?v=visitor-insights-3';
 import { imageFrameStyle } from './image-frames.js';
-import './layout.js?v=checkout-1';
+import './layout.js?v=visitor-insights-3';
 import { measurementsBlock } from './measurements.js?v=restore-measurements-1';
-import { getContent, getProducts, getProduct, formatPrice, esc, stripHtml, productUrl, brandUrl, altFor, cardHTML, catNo, related, setMeta, jsonLd } from './data.js';
-import { inBag, addToBag, onBagChange } from './bag.js';
+import { getContent, getProducts, getProduct, formatPrice, esc, stripHtml, productUrl, brandUrl, altFor, cardHTML, catNo, related, setMeta, jsonLd } from './data.js?v=visitor-insights-3';
+import { inBag, addToBag, onBagChange } from './bag.js?v=visitor-insights-3';
 
 const root = document.getElementById('pdp-root');
 const slug = new URLSearchParams(location.search).get('p') || '';

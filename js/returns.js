@@ -1,6 +1,6 @@
-import './layout.js?v=checkout-1';
+import './layout.js?v=visitor-insights-3';
 import { API_BASE } from './config.js';
-import {esc} from './data.js';
+import {esc} from './data.js?v=visitor-insights-3';
 const root=document.getElementById('returns-root');
 let config={};try{const r=await fetch(API_BASE+'/checkout/config');if(r.ok)config=await r.json();}catch{}
 root.innerHTML=`<h1 class="page-title">Withdraw from an order</h1><p style="margin-top:24px">You can use this form to withdraw from your purchase. You can also contact Japansterdam by email. Submitting this form records your withdrawal; it does not automatically issue a refund.</p>${config.returnsText?`<div class="co-legal"><p>${esc(config.returnsText)}</p><p>Return address: ${esc(config.returnAddress)}</p></div>`:''}<form class="form withdrawal-form"><div class="field"><label for="return-order">Full order number</label><input id="return-order" name="orderNumber" placeholder="JPN-…" required autocomplete="off"></div><div class="field"><label for="return-email">Order email address</label><input id="return-email" name="email" type="email" required autocomplete="email"></div><div class="field"><label for="return-note">Items / note (optional; no reason required)</label><textarea id="return-note" name="note" maxlength="1000"></textarea></div><label class="co-consent"><input type="checkbox" name="confirmed" required><span>I confirm that I wish to withdraw from this purchase (or the items specified above).</span></label><p class="form__err" role="alert" id="return-error"></p><button class="btn btn--primary" type="submit">Confirm withdrawal</button></form><p>Questions? <a class="u" href="mailto:${esc(config.email||'info@japansterdam.com')}">${esc(config.email||'info@japansterdam.com')}</a></p>`;

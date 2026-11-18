@@ -24,7 +24,12 @@ export function trafficSource(raw){
  return 'Overig extern';
  }catch{return 'Direct / onbekend';}
 }
-export const EVENTS=new Set(['pageview','product','bag','substack','grailed','instagram','load']);
+export const EVENTS=new Set(['pageview','product','bag','substack','grailed','instagram','load','engaged','scroll_25','scroll_50','scroll_75','scroll_100']);
+export function visitorSoftware(ua=''){
+ const browser=/Edg(?:e|A|iOS)?\//i.test(ua)?'Edge':/SamsungBrowser\//i.test(ua)?'Samsung Internet':/OPR\//i.test(ua)?'Opera':/Firefox\/|FxiOS\//i.test(ua)?'Firefox':/Chrome\/|CriOS\//i.test(ua)?'Chrome':/Safari\//i.test(ua)?'Safari':'Overig';
+ const operatingSystem=/Windows NT/i.test(ua)?'Windows':/iPhone|iPad|iPod/i.test(ua)?'iOS':/Android/i.test(ua)?'Android':/CrOS/i.test(ua)?'ChromeOS':/Mac OS X/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Overig';
+ return {browser,operatingSystem};
+}
 export async function collect(request,env){
  const origin=request.headers.get('Origin');
  if(!['https://japansterdam.com','https://www.japansterdam.com'].includes(origin))return new Response(null,{status:403});
@@ -43,10 +48,11 @@ export async function collect(request,env){
   const p=await query(env,'SELECT slug FROM products WHERE slug=? AND COALESCE(json_extract(data,\'$.active\'),1)=1',b.product).first();if(!p)fail('Unknown product');product=p.slug;
  }
  const ua=request.headers.get('User-Agent')||'',device=/iPad|Tablet/i.test(ua)?'Tablet':/Mobile|Android|iPhone/i.test(ua)?'Mobiel':'Desktop';
+ const software=visitorSoftware(ua),hour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Amsterdam',hour:'2-digit',hourCycle:'h23'}).format(new Date()));
  const country=/^[A-Z]{2}$/.test(request.cf?.country||'')?request.cf.country:'Onbekend';
  const duration=event==='load'&&Number.isFinite(b.duration)&&b.duration>0&&b.duration<=60000?Math.round(b.duration):0;
  if(event==='load'&&!duration)return new Response(null,{status:204});
- await query(env,`INSERT INTO statistics_daily(day,event,page,product,source,device,country,count,duration_sum,duration_count) VALUES (?,?,?,?,?,?,?,1,?,?) ON CONFLICT(day,event,page,product,source,device,country) DO UPDATE SET count=count+1,duration_sum=duration_sum+excluded.duration_sum,duration_count=duration_count+excluded.duration_count`,dayKey(),event,page==='/index.html'?'/':page,product,trafficSource(b.referrer),device,country,duration,duration?1:0).run();
+ await query(env,`INSERT INTO statistics_daily(day,event,page,product,source,device,country,hour,browser,operating_system,count,duration_sum,duration_count) VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?) ON CONFLICT(day,event,page,product,source,device,country,hour,browser,operating_system) DO UPDATE SET count=count+1,duration_sum=duration_sum+excluded.duration_sum,duration_count=duration_count+excluded.duration_count`,dayKey(),event,page==='/index.html'?'/':page,product,trafficSource(b.referrer),device,country,hour,software.browser,software.operatingSystem,duration,duration?1:0).run();
  return new Response(null,{status:204,headers:{'Cache-Control':'no-store'}});
 }
 const sum=(rows,key)=>rows.reduce((s,r)=>s+Number(r[key]||0),0);
@@ -54,10 +60,16 @@ function ranked(rows,dimension,event='pageview'){
  const m=new Map();for(const r of rows)if(r.event===event)m.set(r[dimension],(m.get(r[dimension])||0)+r.count);
  return [...m].map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name));
 }
-export function summarize(rows,orders,p){
+export function summarize(rows,orders,p,insightsFromDay='9999-12-31',catalogBrands={}){
  const paid=orders.filter(o=>o.mode==='live'&&o.paid_at>=p.start&&o.paid_at<p.end);
  const created=orders.filter(o=>o.mode==='live'&&o.created_at>=p.start&&o.created_at<p.end);
  const counters={};for(const e of EVENTS)counters[e]=sum(rows.filter(r=>r.event===e),'count');
+ const insightRows=rows.filter(r=>r.day>=insightsFromDay&&Number(r.hour)>=0),pageviews=insightRows.filter(r=>r.event==='pageview');
+ const hours=Array.from({length:24},(_,hour)=>({hour,count:sum(pageviews.filter(r=>r.hour===hour),'count')}));
+ const weekdays=['zo','ma','di','wo','do','vr','za'].map((name,day)=>({day,name,count:sum(pageviews.filter(r=>new Date(r.day+'T12:00:00Z').getUTCDay()===day),'count')}));
+ const entryPages=ranked(pageviews.filter(r=>r.source!=='Intern'),'page');
+ const brandRows=insightRows.filter(r=>r.event==='product').map(r=>({...r,brand:catalogBrands[r.product]||'Overig'}));
+ const audience={hours,weekdays,entryPages,browsers:ranked(pageviews,'browser'),operatingSystems:ranked(pageviews,'operating_system'),brands:ranked(brandRows,'brand','product'),pageviews:sum(pageviews,'count'),engaged:sum(insightRows.filter(r=>r.event==='engaged'),'count'),scrollDepth:[25,50,75,100].map(depth=>({depth,count:sum(insightRows.filter(r=>r.event==='scroll_'+depth),'count')}))};
  const durationCount=sum(rows,'duration_count');
  const total=sum(paid,'total'),refunds=sum(paid,'refunded'),chargebacks=sum(paid,'chargeback');
  const daily=[];for(let d=p.from;d<=p.to;d=shiftDay(d,1))daily.push({day:d,views:sum(rows.filter(r=>r.day===d&&r.event==='pageview'),'count'),paid:paid.filter(o=>dayKey(o.paid_at)===d).length,revenue:sum(paid.filter(o=>dayKey(o.paid_at)===d),'total')});
@@ -65,17 +77,18 @@ export function summarize(rows,orders,p){
  const get=slug=>{if(!productMap.has(slug))productMap.set(slug,{slug,views:0,bag:0,sold:0,revenue:0});return productMap.get(slug);};
  for(const r of rows)if(r.product&&['product','bag'].includes(r.event))get(r.product)[r.event==='product'?'views':'bag']+=r.count;
  for(const o of paid){let items;try{items=JSON.parse(o.items);}catch{continue;}for(const item of items)if(item.slug){const v=get(item.slug);v.sold++;v.revenue+=Number(item.cents)||0;}}
- return {counters,orders:paid.length,created:created.length,paidFromCreated:created.filter(o=>o.paid_at!=null).length,gross:total,shipping:sum(paid,'shipping'),refunds,chargebacks,net:total-refunds-chargebacks,averageOrder:paid.length?Math.round(total/paid.length):null,loadMs:durationCount?Math.round(sum(rows,'duration_sum')/durationCount):null,loadSamples:durationCount,daily,pages:ranked(rows,'page'),sources:ranked(rows,'source'),devices:ranked(rows,'device'),countries:ranked(rows,'country'),products:[...productMap.values()].sort((a,b)=>b.views-a.views||b.sold-a.sold),statuses:created.reduce((m,o)=>(m[o.status]=(m[o.status]||0)+1,m),{})};
+ return {counters,audience,orders:paid.length,created:created.length,paidFromCreated:created.filter(o=>o.paid_at!=null).length,gross:total,shipping:sum(paid,'shipping'),refunds,chargebacks,net:total-refunds-chargebacks,averageOrder:paid.length?Math.round(total/paid.length):null,loadMs:durationCount?Math.round(sum(rows,'duration_sum')/durationCount):null,loadSamples:durationCount,daily,pages:ranked(rows,'page'),sources:ranked(rows,'source'),devices:ranked(rows,'device'),countries:ranked(rows,'country'),products:[...productMap.values()].sort((a,b)=>b.views-a.views||b.sold-a.sold),statuses:created.reduce((m,o)=>(m[o.status]=(m[o.status]||0)+1,m),{})};
 }
 export async function report(request,env){
  const p=period(new URL(request.url));
  const [traffic,orders,products,meta]=await Promise.all([
  query(env,'SELECT * FROM statistics_daily WHERE day>=? AND day<=?',p.previousFrom,p.to).all(),
  query(env,"SELECT mode,status,items,total,shipping,refunded,chargeback,created_at,paid_at FROM orders WHERE mode='live' AND (created_at>=? AND created_at<? OR paid_at>=? AND paid_at<?)",p.previousStart,p.end,p.previousStart,p.end).all(),
- query(env,'SELECT slug,data FROM products ORDER BY position').all(),query(env,"SELECT started_at FROM statistics_meta WHERE id='main'").first()]);
+ query(env,'SELECT slug,data FROM products ORDER BY position').all(),query(env,"SELECT started_at,visitor_insights_started_at FROM statistics_meta WHERE id='main'").first()]);
  const rows=traffic.results||[],allOrders=orders.results||[];
- const current=summarize(rows.filter(r=>r.day>=p.from),allOrders,p),previous=summarize(rows.filter(r=>r.day<p.from),allOrders,{...p,from:p.previousFrom,to:p.previousTo,start:p.previousStart,end:p.start});
  const catalog=products.results.map(r=>{const v=JSON.parse(r.data);return {slug:r.slug,name:v.name,brand:v.brand,price:v.price,active:v.active!==false,sold:v.sold===true};});
- return Response.json({period:p,current,previous,catalog,startedAt:meta?.started_at||null,generatedAt:Date.now(),timezone:'Europe/Amsterdam'},{headers:{'Cache-Control':'no-store','X-Robots-Tag':'noindex'}});
+ const insightsStartedAt=meta?.visitor_insights_started_at||null,insightsFromDay=insightsStartedAt?dayKey(insightsStartedAt):'9999-12-31',catalogBrands=Object.fromEntries(catalog.map(x=>[x.slug,x.brand||'Overig']));
+ const current=summarize(rows.filter(r=>r.day>=p.from),allOrders,p,insightsFromDay,catalogBrands),previous=summarize(rows.filter(r=>r.day<p.from),allOrders,{...p,from:p.previousFrom,to:p.previousTo,start:p.previousStart,end:p.start},insightsFromDay,catalogBrands);
+ return Response.json({period:p,current,previous,catalog,visitorInsightsStartedAt:insightsStartedAt,startedAt:meta?.started_at||null,generatedAt:Date.now(),timezone:'Europe/Amsterdam'},{headers:{'Cache-Control':'no-store','X-Robots-Tag':'noindex'}});
 }
 export async function cleanupStatistics(env){await query(env,'DELETE FROM statistics_daily WHERE day<?',shiftDay(dayKey(),-399)).run();}

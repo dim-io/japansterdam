@@ -1,4 +1,4 @@
-import { track } from './statistics.js';
+import { track } from './statistics.js?v=visitor-insights-3';
 // Shopping bag: array of product slugs in localStorage ("jp_bag"). Every piece is one-of-a-kind, so quantity is 1.
 const KEY = 'jp_bag';
 let memory = [];

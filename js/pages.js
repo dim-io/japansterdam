@@ -1,7 +1,7 @@
 import { renderPage } from './page-views.js';
 // Renders about, contact, faq, shipping, size guide and privacy from data/content.json.
-import './layout.js?v=checkout-1';
-import { getContent, esc } from './data.js';
+import './layout.js?v=visitor-insights-3';
+import { getContent, esc } from './data.js?v=visitor-insights-3';
 
 const c = await getContent();
 const root = document.getElementById('page-root');

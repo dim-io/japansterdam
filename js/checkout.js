@@ -1,8 +1,8 @@
 import { API_BASE } from './config.js';
 import { imageFrameStyle } from './image-frames.js';
-import './layout.js?v=checkout-1';
-import { getContent, getProducts, esc, productUrl } from './data.js';
-import { getBag, removeFromBag, clearBag, setBag, onBagChange } from './bag.js';
+import './layout.js?v=visitor-insights-3';
+import { getContent, getProducts, esc, productUrl } from './data.js?v=visitor-insights-3';
+import { getBag, removeFromBag, clearBag, setBag, onBagChange } from './bag.js?v=visitor-insights-3';
 
 const formatPrice=n=>new Intl.NumberFormat('en-IE',{style:'currency',currency:'EUR'}).format(Number(n));
 const [c, all, paymentConfig] = await Promise.all([getContent(), getProducts(), fetch(API_BASE + '/checkout/config').then(r => r.ok ? r.json() : null).catch(() => null)]);

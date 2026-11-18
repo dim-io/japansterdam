@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {collect,report,period,dayKey,midnight,shiftDay,trafficSource,cleanupStatistics} from '../src/statistics.mjs';
 import worker from '../src/index.js';
-function setup(){const db=new DatabaseSync(':memory:');for(const f of ['0001_init.sql','0008_checkout.sql','0010_statistics.sql'])db.exec(fs.readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));db.prepare('INSERT INTO products(slug,data,position,updated_at) VALUES (?,?,0,0)').run('test-jacket',JSON.stringify({slug:'test-jacket',name:'A jacket',active:true,price:120}));const env={ALLOWED_ORIGINS:'https://japansterdam.com',DB:{prepare(sql){let args=[];return{bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return{results:db.prepare(sql).all(...args)};},async run(){return db.prepare(sql).run(...args);}};}}};return{env,db};}
+function setup(){const db=new DatabaseSync(':memory:');for(const f of ['0001_init.sql','0008_checkout.sql','0010_statistics.sql','0011_visitor_insights.sql'])db.exec(fs.readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));db.prepare('INSERT INTO products(slug,data,position,updated_at) VALUES (?,?,0,0)').run('test-jacket',JSON.stringify({slug:'test-jacket',name:'A jacket',active:true,price:120}));const env={ALLOWED_ORIGINS:'https://japansterdam.com',DB:{prepare(sql){let args=[];return{bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return{results:db.prepare(sql).all(...args)};},async run(){return db.prepare(sql).run(...args);}};}}};return{env,db};}
 const event=(body,headers={})=>new Request('https://api.test/public/statistics/event',{method:'POST',headers:{Origin:'https://japansterdam.com','Content-Type':'application/json','User-Agent':'Mozilla/5.0 iPhone Mobile',...headers},body:JSON.stringify(body)});
 const request=p=>new Request('https://api.test/admin/statistics'+p);
 function order(db,id,{created,paid,total=12000,refund=0,chargeback=0,mode='live',status='paid'}={}){db.prepare(`INSERT INTO orders(id,access_hash,request_hash,mode,status,customer,items,policy,subtotal,shipping,total,payment_request,created_at,updated_at,paid_at,refunded,chargeback) VALUES (?,'a','b',?,?,'{}',?,'{}',11000,1000,?,'{}',?,?,?, ?,?)`).run(id,mode,status,JSON.stringify([{slug:'test-jacket',cents:11000}]),total,created,created,paid,refund,chargeback);}
@@ -18,7 +18,7 @@ test('Amsterdam days handle DST and windows are bounded, valid and inclusive',()
 test('events store only bounded anonymous aggregates, merging repeat events and stripping referrer data',async()=>{
  const {env,db}=setup();for(let i=0;i<2;i++)assert.equal((await collect(event({event:'pageview',page:'/shop.html',referrer:'https://www.google.com/search?q=private-email&secret=123'}),env)).status,204);
  const rows=db.prepare('SELECT * FROM statistics_daily').all();assert.equal(rows.length,1);assert.equal(rows[0].count,2);assert.equal(rows[0].source,'Zoekmachines');assert.equal(rows[0].device,'Mobiel');assert(!JSON.stringify(rows).includes('private-email'));
- assert.deepEqual(Object.keys(rows[0]),['day','event','page','product','source','device','country','count','duration_sum','duration_count']);
+ assert.deepEqual(Object.keys(rows[0]),['day','event','page','product','source','device','country','hour','browser','operating_system','count','duration_sum','duration_count']);
  await collect(event({event:'load',page:'/shop.html',duration:1234}),env);const r=await (await report(request(''),env)).json();assert.equal(r.current.loadMs,1234);assert.equal(r.current.loadSamples,1);assert.equal(r.current.counters.pageview,2);
 });
 test('bad origins, known bots and privacy opt-outs never increment counters; arbitrary URLs/products are rejected',async()=>{
@@ -46,10 +46,38 @@ test('retention removes old aggregates, never orders; sources cannot include arb
 
 import vm from 'node:vm';
 const clientCode=fs.readFileSync(new URL('../../js/statistics.js',import.meta.url),'utf8').replace("import { API_BASE } from './config.js';","const API_BASE='https://api.test';").replace('export function track','function track');
-function browserContext({owner=false,dnt='0',gpc=false,include=false}={}){const sent=[],listeners={},storage=new Map(owner?[['jp_admin_token','secret-token']]:[]);if(include)storage.set('jp_stats_include_owner','yes');const context={location:{hostname:'japansterdam.com',pathname:'/checkout.html',search:'?id=private-order&accessToken=secret'},navigator:{doNotTrack:dnt,globalPrivacyControl:gpc},localStorage:{getItem:k=>storage.get(k)},document:{visibilityState:'visible',referrer:'https://www.google.com/search?email=private@example.com',readyState:'complete',addEventListener:(k,fn)=>listeners[k]=fn},window:{addEventListener(){}},performance:{getEntriesByType:()=>[{loadEventEnd:1400,startTime:0}]},URL,JSON,setTimeout:fn=>fn(),fetch:(url,options)=>{sent.push({url,options,body:JSON.parse(options.body)});return Promise.resolve();}};vm.createContext(context);vm.runInContext(clientCode,context);return{context,sent,listeners};}
+function browserContext({owner=false,dnt='0',gpc=false,include=false}={}){const sent=[],listeners={},storage=new Map(owner?[['jp_admin_token','secret-token']]:[]);if(include)storage.set('jp_stats_include_owner','yes');const context={location:{hostname:'japansterdam.com',pathname:'/checkout.html',search:'?id=private-order&accessToken=secret'},navigator:{doNotTrack:dnt,globalPrivacyControl:gpc},localStorage:{getItem:k=>storage.get(k)},document:{visibilityState:'visible',referrer:'https://www.google.com/search?email=private@example.com',readyState:'complete',addEventListener:(k,fn)=>listeners[k]=fn},window:{addEventListener(){}},performance:{getEntriesByType:()=>[{loadEventEnd:1400,startTime:0}]},URL,JSON,Date:class extends Date{},clearTimeout(){},setTimeout:()=>1,fetch:(url,options)=>{sent.push({url,options,body:JSON.parse(options.body)});return Promise.resolve();}};vm.createContext(context);vm.runInContext(clientCode,context);return{context,sent,listeners};}
 test('client excludes owner browsers and privacy opt-outs; public events never send query strings, tokens or referrer paths',()=>{
  for(const opts of [{owner:true},{dnt:'1'},{gpc:true}])assert.equal(browserContext(opts).sent.length,0);
  const {sent,context}=browserContext();assert.equal(sent.length,2);assert.equal(sent[0].body.page,'/checkout.html');assert.equal(sent[0].body.referrer,'https://www.google.com');assert.equal(sent[1].body.duration,1400);assert(!JSON.stringify(sent).includes('secret'));assert(!JSON.stringify(sent).includes('private@'));
  for(let i=0;i<40;i++)vm.runInContext("track('bag','test-jacket')",context);assert.equal(sent.length,30);
  assert.equal(browserContext({owner:true,include:true}).sent.length,2);
+});
+
+test('visitor insight migration retains old totals without fabricating historical software or hours',async()=>{
+ const {env,db}=setup();
+ db.prepare("INSERT INTO statistics_daily(day,event,page,source,device,country,count) VALUES (?,'pageview','/','Direct / onbekend','Desktop','NL',8)").run(dayKey());
+ await collect(event({event:'pageview',page:'/',referrer:''},{'User-Agent':'Mozilla/5.0 (Windows NT 10.0) Chrome/130.0 Safari/537.36'}),env);
+ const r=await (await report(request(''),env)).json();
+ assert(r.visitorInsightsStartedAt>0);assert.equal(r.current.counters.pageview,9);
+ assert.equal(r.current.audience.pageviews,1);assert.equal(r.current.audience.hours.reduce((n,x)=>n+x.count,0),1);
+ assert.deepEqual(r.current.audience.browsers,[{name:'Chrome',count:1}]);assert.deepEqual(r.current.audience.operatingSystems,[{name:'Windows',count:1}]);
+});
+test('additional insights separate entry estimates, product brand attention and engagement from sales',async()=>{
+ const {env,db}=setup();db.prepare('UPDATE products SET data=? WHERE slug=?').run(JSON.stringify({name:'A jacket',brand:'Needles',active:true}),'test-jacket');
+ for(const referrer of ['', 'https://japansterdam.com/'])await collect(event({event:'pageview',page:'/',referrer}),env);
+ await collect(event({event:'product',page:'/product.html',product:'test-jacket'}),env);
+ for(const e of ['engaged','scroll_25','scroll_50','scroll_75','scroll_100'])await collect(event({event:e,page:'/'}),env);
+ const r=await (await report(request(''),env)).json(),a=r.current.audience;
+ assert.equal(a.pageviews,2);assert.deepEqual(a.entryPages,[{name:'/',count:1}]);assert.deepEqual(a.brands,[{name:'Needles',count:1}]);assert.equal(a.engaged,1);assert.deepEqual(a.scrollDepth.map(x=>x.count),[1,1,1,1]);assert.equal(r.current.orders,0);
+});
+test('visibility timer pauses in background; scroll thresholds fire only once',()=>{
+ const {context,sent,listeners}=browserContext();
+ vm.runInContext("document.documentElement={scrollHeight:2000,scrollTop:0};window.innerHeight=1000;window.scrollY=0;let now=1000;Date.now=()=>now;visibleSince=1000;",context);
+ vm.runInContext('now=11000',context);context.document.visibilityState='hidden';listeners.visibilitychange();
+ vm.runInContext('now=111000',context);context.document.visibilityState='visible';listeners.visibilitychange();
+ assert.equal(sent.filter(x=>x.body.event==='engaged').length,0);
+ vm.runInContext('now=116000;checkEngagement();checkEngagement();window.scrollY=1000;',context);listeners.scroll();listeners.scroll();
+ assert.equal(sent.filter(x=>x.body.event==='engaged').length,1);
+ assert.deepEqual(sent.filter(x=>x.body.event.startsWith('scroll_')).map(x=>x.body.event),['scroll_25','scroll_50','scroll_75','scroll_100']);
 });

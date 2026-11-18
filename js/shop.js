@@ -1,8 +1,8 @@
 import { brandOptions, brandCounts, matchesBrand, shortBrand, brandSearchKey } from './brands.js?v=individual-labels-2';
 import { filterSizes, matchesFit } from './sizing.js?v=footwear-filter-1';
-import './layout.js?v=checkout-1';
-import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from './data.js';
-import { onBagChange } from './bag.js';
+import './layout.js?v=visitor-insights-3';
+import { getContent, getProducts, byNewest, byAvailability, cardHTML, esc } from './data.js?v=visitor-insights-3';
+import { onBagChange } from './bag.js?v=visitor-insights-3';
 
 const [c, products] = await Promise.all([getContent(), getProducts()]);
 const CATS = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Footwear'];

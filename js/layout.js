@@ -1,10 +1,10 @@
-import './statistics.js';
+import './statistics.js?v=visitor-insights-3';
 import { initCardImages } from './card-images.mjs';
 initCardImages();
 import { imageFrameStyle } from './image-frames.js';
 // Header, footer, mobile menu and bag drawer: the single source for shared chrome.
-import { getContent, getProducts, formatPrice, esc, productUrl } from './data.js';
-import { getBag, bagCount, removeFromBag, setBag, onBagChange } from './bag.js';
+import { getContent, getProducts, formatPrice, esc, productUrl } from './data.js?v=visitor-insights-3';
+import { getBag, bagCount, removeFromBag, setBag, onBagChange } from './bag.js?v=visitor-insights-3';
 
 import { renderChrome } from './chrome.js?v=checkout-1';
 const page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();

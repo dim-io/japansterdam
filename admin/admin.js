@@ -1,4 +1,4 @@
-import { statisticsView } from './statistics.js?v=statistics-1';
+import { statisticsView } from './statistics.js?v=visitor-insights-3';
 import { radarView } from './radar.js?v=placement-time-1';
 import { accountingView } from './accounting.js?v=private-books-2';
 import { commerceView } from './commerce.js?v=stripe-1';

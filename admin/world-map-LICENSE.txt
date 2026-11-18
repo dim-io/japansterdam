@@ -1,0 +1,1 @@
+Country geometry: Natural Earth, public domain. Source: https://github.com/datasets/geo-countries (data/countries.geojson). Simplified and projected for this dashboard. Boundaries are approximate.
