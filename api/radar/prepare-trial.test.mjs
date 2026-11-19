@@ -11,13 +11,13 @@ test('new trial requires the full free source reserve before any image inference
  assert.equal(calls,0);
 });
 test('successful preparation checks readiness without scraper or message side effects',async()=>{
- const result=await prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async(token,fetcher,reserve)=>{assert.equal(reserve,1.69);return{freePlanConfirmed:true,enoughCredit:true};},readiness:async()=>({shopReferences:true,telegramReady:true,photoState:'ready'})});
+ const result=await prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async(token,fetcher,reserve)=>{assert.equal(reserve,1.69);return{freePlanConfirmed:true,enoughCredit:true};},readiness:async()=>({shopReferences:true,telegramReady:true,workersAiFreePlan:true,photoState:'ready'})});
  assert.deepEqual(result,{includedSourceBudgetConfirmed:true,photoState:'ready',newScraperStarts:0,messagesSent:0});
 });
 
 
 test('the bundle pilot reserves four extra bounded actor calls inside Free credit',async()=>{
- await prepareTrial({}, {now,testPolicy:{...testPolicy,bundleChecks:{enabled:true}},query:async()=>[],budget:async(token,fetcher,reserve)=>{assert.equal(reserve,1.81);return{freePlanConfirmed:true,enoughCredit:true};},readiness:async()=>({shopReferences:true,telegramReady:true,photoState:'ready'})});
+ await prepareTrial({}, {now,testPolicy:{...testPolicy,bundleChecks:{enabled:true}},query:async()=>[],budget:async(token,fetcher,reserve)=>{assert.equal(reserve,1.81);return{freePlanConfirmed:true,enoughCredit:true};},readiness:async()=>({shopReferences:true,telegramReady:true,workersAiFreePlan:true,photoState:'ready'})});
 });
 
 test('replacement monitor reuses only recent same-account photo proof and rechecks shop and Telegram',async()=>{
