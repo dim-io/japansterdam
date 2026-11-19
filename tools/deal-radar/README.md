@@ -154,4 +154,10 @@ Maison Kitsuné was removed at the owner’s request. orSlow, Fullcount and Aura
 
 A verified numeric Vinted brand filter is now retained as explicit source evidence through intake and research selection. Genuine listings with generic or mistyped titles can therefore survive the text-brand check; searches based only on a text query still require supporting brand text. Product-line restrictions, freshness, availability and authenticity gates remain in place.
 
-The AI-score route to a Telegram standout is raised from 70 to 85/100. Explicit curator exceptions remain for the Vanquish Japan-story preference and Porter Yoshida Tanker preference. This score is still a research priority based on listing text and Japansterdam shop asking references, not a verified resale price or profit guarantee. The November 18 trial window has ended; these refinements do not restart scans, change its recorded budget, or authorize a new trial.
+The AI-score route to a Telegram standout is raised from 70 to 85/100. Explicit curator exceptions remain for the Vanquish Japan-story preference and Porter Yoshida Tanker preference. This score is still a research priority based on listing text and Japansterdam shop asking references, not a verified resale price or profit guarantee.
+
+### Authorized 43-brand follow-up trial (19 November 2026)
+
+Sam explicitly authorized a new bounded 24-hour window, `pilot-2026-11-19`, from 19 November 18:15 UTC to 20 November 18:15 UTC. It retains the 43-brand, 15-group selection, stable monitor stores, global item-ID deduplication, €100 item ceiling, 288 scan-slot limit, $0.015 maximum per source run and $19 monthly included-credit ceiling. The maximum reserved source charge is $4.32; the workflow stops before scanning if current included credit or the account-plan check is insufficient. No paid plan, top-up or automatic purchase is authorized.
+
+The private backend result browser now restricts results to runs from this trial and merges repeated source rows by Vinted item ID, keeping the newest snapshot. Viewed items are hidden by default on this device; a price drop of at least 20% makes one eligible to appear again. Prior trial runs cannot refill the new result list. The existing scan-level deduplication and Telegram reservation history are carried into the new trial.

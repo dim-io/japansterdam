@@ -48,10 +48,12 @@ export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
   const get=async path=>{const response=await fetcher('https://api.apify.com/v2'+path,{headers:{Authorization:'Bearer '+env.APIFY_TOKEN},redirect:'manual',signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('source_unavailable');return response.json();};
   const list=await get('/acts/topapi~vinted-scraper/runs?desc=true&limit='+PAGE_SIZE+'&offset='+offset);
   const runs=list.data?.items;if(!Array.isArray(runs))throw Error('invalid_source');
+  const trialStart=Date.parse(policy.startsAt),trialEnd=Date.parse(policy.endsAt);
+  const trialRuns=runs.filter(run=>{const started=Date.parse(run.startedAt);return Number.isFinite(started)&&started>=trialStart&&started<trialEnd;});
   const rows=[],rounds=[],ratingItems=[];let failedDatasets=0;
   // At most 41 reads including auth, catalog and rating cache; no model calls.
   // Four concurrent reads avoid opening too many upstream connections.
-  for(let start=0;start<runs.length;start+=4)await Promise.all(runs.slice(start,start+4).map(async run=>{
+  for(let start=0;start<trialRuns.length;start+=4)await Promise.all(trialRuns.slice(start,start+4).map(async run=>{
    if(run.status!=='SUCCEEDED'||!/^[a-zA-Z0-9]+$/.test(run.defaultDatasetId||'')||!/^[a-zA-Z0-9]+$/.test(run.id||''))return;
    if(/Nothing was charged\.|First monitor run:/.test(run.statusMessage||'')){rounds.push({id:run.id,empty:true,startedAt:run.startedAt,label:clean(run.statusMessage,400)});return;}
    try{const data=await get('/datasets/'+run.defaultDatasetId+'/items?clean=true&limit=30');if(!Array.isArray(data))throw Error('invalid_dataset');
@@ -60,7 +62,11 @@ export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
     rounds.push({id:run.id,count:data.length,startedAt:run.startedAt,label:clean(run.statusMessage,400)});
    }catch{failedDatasets++;}
   }));
-  rows.sort((a,b)=>Date.parse(b.observedAt)-Date.parse(a.observedAt));
+  // Keep only the newest source snapshot for each Vinted listing ID. This
+  // prevents the same piece from being repeated across monitor rounds.
+  const latestById=new Map();
+  for(const row of rows){const old=latestById.get(row.id);if(!old||Date.parse(row.observedAt)>=Date.parse(old.observedAt))latestById.set(row.id,row);}
+  rows.splice(0,rows.length,...[...latestById.values()].sort((a,b)=>Date.parse(b.observedAt)-Date.parse(a.observedAt)));
   if(policy.dealScoring?.enabled&&env.RADAR_DB){
    try{
     try{const products=await readCatalog(env,fetcher);await queueDealRatings(env,ratingItems,config,products,policy);}catch{/* Keep existing ratings usable when the public catalog is down. */}
@@ -68,8 +74,8 @@ export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
     for(const row of rows)row.dealRating=ratings.get(row.id)||{state:policy.brands[row.brand]&&row.currency==='EUR'&&row.price<=itemPriceLimit(row.brand,config)?'queued':'not_eligible'};
    }catch{for(const row of rows)row.dealRating={state:'unavailable'};}
   }
-  return reply({rows,rounds,runIds:runs.map(run=>run.id),sourceMode:policy.sourceMode||'new-only',selectedBrands:Object.keys(policy.brands),nextOffset:offset+runs.length<(list.data.total??Infinity)&&runs.length===PAGE_SIZE?offset+PAGE_SIZE:null,
-   loadedRuns:runs.length,failedDatasets,trial:policy.id,endsAt:policy.endsAt,active:policy.enabled&&Date.now()>=Date.parse(policy.startsAt)&&Date.now()<Date.parse(policy.endsAt),
+  return reply({rows,rounds,runIds:trialRuns.map(run=>run.id),sourceMode:policy.sourceMode||'new-only',selectedBrands:Object.keys(policy.brands),nextOffset:trialRuns.length===PAGE_SIZE?offset+PAGE_SIZE:null,
+   loadedRuns:trialRuns.length,failedDatasets,trial:policy.id,endsAt:policy.endsAt,active:policy.enabled&&Date.now()>=Date.parse(policy.startsAt)&&Date.now()<Date.parse(policy.endsAt),
    cycleMinutes:(policy.brandGroups?.length||12)*5});
  }catch{return reply({error:'Bronresultaten tijdelijk niet beschikbaar. Er is geen nieuwe zoekopdracht gestart.'},503);}
 }

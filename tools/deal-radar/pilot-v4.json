@@ -1,9 +1,9 @@
 {
   "enabled": true,
-  "id": "pilot-2026-11-18",
-  "previousPilotId": "pilot-2026-11-16-source3",
-  "startsAt": "2026-11-18T00:33:54.551Z",
-  "endsAt": "2026-11-19T00:33:54.551Z",
+  "id": "pilot-2026-11-19",
+  "previousPilotId": "pilot-2026-11-18",
+  "startsAt": "2026-11-19T18:15:00Z",
+  "endsAt": "2026-11-20T18:15:00Z",
   "maxAttempts": 288,
   "brands": {
     "Nonnative": "355385",
@@ -252,10 +252,10 @@
   "visionAccountConfirmation": {
     "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
     "plan": "free",
-    "source": "dashboard_current_plan",
-    "confirmedAt": "2026-11-18T00:33:54.551Z",
-    "authorizedAt": "2026-11-18T00:33:54.551Z",
-    "validUntil": "2026-11-19T00:33:54.551Z"
+    "source": "owner_confirmation",
+    "confirmedAt": "2026-11-19T18:09:40Z",
+    "authorizedAt": "2026-11-19T18:09:40Z",
+    "validUntil": "2026-11-20T18:15:00Z"
   },
   "reviewBacklog": false,
   "bundleChecks": {
@@ -264,7 +264,7 @@
   "sourceBudget": {
     "allowPaidIncludedCredits": true,
     "maxMonthlyUsageUsd": 19,
-    "authorizedAt": "2026-11-18T00:33:54.551Z"
+    "authorizedAt": "2026-11-19T18:09:40Z"
   },
   "requireVisualBrandEvidence": true,
   "enableDiagnostics": true,

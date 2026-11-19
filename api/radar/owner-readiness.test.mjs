@@ -23,6 +23,7 @@ test('expired readiness window or wrong account stops before database and extern
 test('one real inference reservation is shared across retries; scraper and delivery counters remain untouched',async()=>{
   const {db,query,testPolicy,now}=setup();let gpu=0;
   const fetcher=async(url,opts)=>{
+    if(url.endsWith('/subscriptions'))return Response.json({success:true,result:[],result_info:{total_count:0}});
     if(url.endsWith('/public/products'))return Response.json([{name:'Needles jacket',brand:'Needles',price:200}]);
     if(url.endsWith('/users/me'))return Response.json({data:{isPaying:false,plan:{monthlyBasePriceUsd:0,tier:'FREE',monthlyUsageCreditsUsd:5}}});
     if(url.endsWith('/users/me/limits'))return Response.json({data:{current:{monthlyUsageUsd:0},limits:{maxMonthlyUsageUsd:5}}});

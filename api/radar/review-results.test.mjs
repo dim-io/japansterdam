@@ -5,7 +5,8 @@ import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
 import {monitorInput,monitorStore} from './monitor-source.mjs';
 import {candidateRun} from './source-candidates.mjs';
 const token='a'.repeat(64),origin='https://japansterdam.com';
-const run={id:'Run1',status:'SUCCEEDED',defaultDatasetId:'Data1',startedAt:'2026-11-17T20:00:00Z',finishedAt:'2026-11-17T20:00:03Z',statusMessage:'Done: 1 listing'};
+const trialRunAt=new Date(Date.parse(policy.startsAt)+60000).toISOString();
+const run={id:'Run1',status:'SUCCEEDED',defaultDatasetId:'Data1',startedAt:trialRunAt,finishedAt:new Date(Date.parse(trialRunAt)+3000).toISOString(),statusMessage:'Done: 1 listing'};
 const row={record_type:'item',id:123,url:'https://www.vinted.nl/items/123-example',brand_title:'Needles',title:'Rebuild shirt',price_amount:35,price_currency:'EUR',uploaded_ago:'a minute ago',photo_url:'https://images1.vinted.net/photo.webp',seller_login:'private-seller',description:'not part of review response'};
 test('source review requires a real shop session before reading private results',async()=>{
  let calls=0;const env={APIFY_TOKEN:'secret',SHOP_API:{fetch:async()=>{calls++;return new Response('',{status:401});}}};

@@ -3,13 +3,14 @@ import {client,TARGET,SOURCE} from './account-migration.mjs';
 import {screenPhotos} from './vision.mjs';
 import {readCatalog} from './catalog.mjs';
 import {preflight} from '../../tools/deal-radar/budget.mjs';
+import {freePlanDecision} from './free-plan.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import policy from './owner-readiness.json' with {type:'json'};
 
 export function allowed(p,now=Date.now()){
   const start=Date.parse(p.startsAt),end=Date.parse(p.endsAt),confirmed=Date.parse(p.freeAccountEvidence?.confirmedAt);
   return p.enabled&&p.accountId===TARGET.account&&p.maxPhotoChecks===1&&p.dailyVisionLimit===3
-    &&p.freeAccountEvidence?.plan==='free'&&p.freeAccountEvidence.source==='dashboard_current_plan'
+    &&p.freeAccountEvidence?.plan==='free'&&['dashboard_current_plan','owner_confirmation'].includes(p.freeAccountEvidence.source)
     &&confirmed<=now&&now-confirmed<=3600000&&start<=now&&now<end&&end-start<=3600000;
 }
 export function databaseAdapter(query){return {prepare(sql){return {bind(...params){return {async first(){return (await query(sql,params))[0]||null;},async run(){await query(sql,params);},async all(){return {results:await query(sql,params)};}};}};}};}
@@ -32,10 +33,16 @@ export async function check(env,{query,fetcher=fetch,now=Date.now(),testPolicy=p
   if(!allowed(testPolicy,now))throw Error('readiness_window_closed');
   const marker=await query('SELECT verified FROM radar_transfer WHERE id=?',[SOURCE.database]);
   if(marker[0]?.verified!==1)throw Error('migration_not_verified');
-  const summary={migrationVerified:true,shopReferences:false,apifyFree:false,apifyIncludedPlan:false,apifyReady:false,telegramReady:false,newScraperStarts:0,messagesSent:0};
+  const summary={migrationVerified:true,shopReferences:false,apifyFree:false,apifyIncludedPlan:false,apifyReady:false,workersAiFreePlan:false,telegramReady:false,newScraperStarts:0,messagesSent:0};
+  try{
+    const response=await fetcher('https://api.cloudflare.com/client/v4/accounts/'+TARGET.account+'/subscriptions',{headers:{Authorization:'Bearer '+env.CLOUDFLARE_API_TOKEN},redirect:'manual',signal:AbortSignal.timeout(15000)});
+    const data=await response.json();
+    summary.workersAiFreePlan=freePlanDecision({ok:response.ok,data,status:response.status},{...testPolicy,visionAccountConfirmation:null},now).allowed;
+  }catch{}
   try{await readCatalog({SHOP_CATALOG_URL:'https://japansterdam-api.sam-jesse.workers.dev/public/products'},fetcher);summary.shopReferences=true;}catch{}
   try{const budget=await preflight(env.APIFY_TOKEN,fetcher,.31,testPolicy.sourceBudget);summary.apifyFree=budget.freePlanConfirmed;summary.apifyIncludedPlan=budget.includedPlanConfirmed;summary.apifyReady=budget.enoughCredit;}catch{}
   summary.telegramReady=await telegramReadiness(env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher);
+  if(!summary.workersAiFreePlan){summary.photoState='disabled';summary.photoReason='workers_ai_free_plan_unconfirmed';return summary;}
   await query('INSERT OR IGNORE INTO radar_vision_control (id) VALUES (?)',[testPolicy.id]);
   const result=await screenPhotos({VISION_FREE_CONFIRMED:'true',AI:aiAdapter(env.CLOUDFLARE_API_TOKEN,fetcher),RADAR_DB:databaseAdapter(query)},{brand:'Kapital'},config,testPolicy,{now,fetcher,clock:Date.now,smoke:true});
   summary.photoState=result.state;summary.photoReason=result.reason;

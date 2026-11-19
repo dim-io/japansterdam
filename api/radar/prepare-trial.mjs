@@ -25,7 +25,7 @@ export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testP
     }
   }
   const ready=await readiness(env,{query,now,fetcher});
-  if(!ready.shopReferences||!ready.telegramReady||ready.photoState!=='ready')throw Error('trial_readiness_not_confirmed');
+  if(!ready.shopReferences||!ready.telegramReady||!ready.workersAiFreePlan||ready.photoState!=='ready')throw Error('trial_readiness_not_confirmed');
   return {includedSourceBudgetConfirmed:true,photoState:ready.photoState,newScraperStarts:0,messagesSent:0};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)prepareTrial(process.env,{query:client(TARGET,process.env.CLOUDFLARE_API_TOKEN)}).then(result=>console.log(JSON.stringify(result))).catch(error=>{console.error((error.message.startsWith('source_budget_not_confirmed:')||['trial_window_closed','trial_readiness_not_confirmed'].includes(error.message))?error.message:'trial_preparation_failed');process.exitCode=1;});
