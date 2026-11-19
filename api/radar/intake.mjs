@@ -44,7 +44,7 @@ export function freshIntake(item,config,now,maxAgeHours=6){
  if(!itemType(item))return 'garment_type_unknown';
  const brand=identifyBrand(item.brand,config);
  if(!brand)return 'brand_outside_selection';
- if(!brandClaimSupported(item,config))return 'brand_claim_unsupported';
+ if(!brandClaimSupported(item,config)&&item.brandEvidence!=='verified_vinted_brand_filter')return 'brand_claim_unsupported';
  const selection=selectionRejection(item,config);if(selection)return selection;
  if(/\b(replica|fake|counterfeit|dupe|inspired|style of|namaak|nep)\b/.test(text))return 'imitation_language';
  const published=Date.parse(item.publishedAt);

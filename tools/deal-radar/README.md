@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 12697)
+Total output lines: 302
+
 # Japansterdam vondstenradar
 
 **Huidige status (7 november 2026): een nieuwe, begrensde 24-uurs proef op Sams eigen Cloudflare-account.** Needles en Kapital worden tot €70 gezocht; Engineered Garments en orSlow tot €40. De webshop blijft op Dimi's account. Er is geen betaald abonnement afgesloten en de radar koopt nooit automatisch iets.
@@ -93,155 +96,7 @@ De test gebruikt het gratis Apify-tegoed als dat beschikbaar is. Hij sluit geen 
 
 ## Volledige eenmalige proef
 
-`trial.mjs` gebruikt de bestaande Apify- en Telegram-secrets, haalt maximaal drie verse Needles-advertenties op en controleert de actuele Japansterdam-prijsreferenties. Hij verstuurt maximaal één bericht met **PROEFMELDING**, ook wanneer geen kandidaat de koopjesdrempel haalt. Een afgewezen kandidaat wordt niet alsnog als goede koop aangeprezen. Ontbreken prijsreferenties, dan bevat de melding alleen de gevonden gegevens en de reden waarom er geen waardering mogelijk is.
-
-[De volledige proef](https://github.com/dim-io/japansterdam/actions/workflows/deal-radar-trial.yml) start handmatig of bij een expliciete nieuwe `trial-request.json` op `main`. Hij start geen uurmonitor. Na bevestigde Telegrambezorging wordt het request-ID onthouden; dezelfde proef wordt bij een herhaling overgeslagen zolang de cache beschikbaar is. De Apify-kostenlimiet blijft $0,02 per uitvoering. Het standaard-uurschema is nog niet met deze Apify-proef verbonden: uitbreiding van merken, maandbudget en echte dekking worden eerst apart bepaald.
-
-## Begrensde 24-uurs pilot op Cloudflare
-
-De GitHub-uurplanning bleek onvoldoende betrouwbaar en is vervangen door de afzonderlijke Worker `japansterdam-radar` in `api/radar/`. De geplande functie wordt elke vijf minuten wakker; een atomaire D1-reservering staat maximaal één echte Apify-scan per UTC-uur toe. De eerste cloud-uitvoering moet worden geverifieerd via de status en opgeslagen scanresultaten. Nieuwe Cron Triggers kunnen volgens Cloudflare tot 15 minuten nodig hebben om wereldwijd actief te worden.
-
-`pilot.json` blijft het enige vaste proefvenster; dat is niet verlengd. De worker controleert dit vóór toegang tot secrets of de bron en nogmaals vóór een betaalde aanvraag of melding. Na de eindtijd blijven cron-aanroepen inert: geen scans of notificaties. Er wordt geen abonnement of nieuw tegoed gekocht. De code bewaart de maximaal 25 bestaande scanpogingen en $0,02 providerlimiet per scan. Status/teller en Telegram-bezorgreserveringen staan nu blijvend in D1, buiten de tijdelijke Actions-cache. Een onzekere Telegram-bezorging wordt niet automatisch herhaald; er is geen exact-eenmaalgarantie bij netwerkuitval. Een prijsdaling van minstens 20% kan opnieuw een melding geven.
-
-Kapital en Needles wisselen per echte scanpoging af. Per scan worden maximaal drie als nieuwste gesorteerde resultaten van één merk opgevraagd. Elk merk komt bij een werkend uurschema eens per twee uur aan bod. De uploaddatum is hiermee niet onafhankelijk bewezen. Een verkeerd toegewezen merk in Vinted blijft mogelijk; de beoordelaar controleert de ontvangen merknaam en signalen voor replica's. Er is geen automatische foto-authenticatie.
-
-Alleen kandidaten die de score-, marge- en conditievoorwaarden halen worden gemeld. Shopvraagprijzen blijven **SCHATTINGEN**, geen gerealiseerde verkopen. Zonder passende referentie blijft de waarde onbekend. Uniqlo/GU-samenwerkingen worden niet vergeleken met de hoofdcollectie.
-
-De alleen-lezen route `/status` van de radarworker toont de laatste wake-up, laatste afgeronde scan, pogingenteller, aantallen en een eventuele fout. Hij toont geen advertenties, verkopers, chat-ID of tokens en kan geen scan starten. `overdue` wordt waar als er binnen het venster meer dan 90 minuten geen geslaagde scan was; dit is een zichtbare status, geen onafhankelijke storingsmelding.
-
-### Publicatie en overdracht
-
-De bestaande workflow **Backend live zetten** test alle radarcode, past uitsluitend nieuwe D1-migraties toe en neemt eenmalig de bestaande `radar-pilot-`-cache over. Zonder geldige status wordt de eerste overdracht afgebroken om budget- of bezorggeschiedenis niet te resetten. Latere publicaties hergebruiken de database en zijn niet afhankelijk van cachebehoud. De bestaande drie Apify-/Telegram-secrets gaan via stdin naar Cloudflares versleutelde Worker-secrets; ze worden niet afgedrukt of in bestanden opgeslagen.
-
-De oude GitHub-pilotworkflow kan geen scans meer starten en heeft geen cron. De generieke feedworkflow blijft apart uit via `RADAR_ENABLED`. De radar kan stoppen via `enabled:false` in `pilot.json` plus publicatie. Voor een volgende proef moet het venster bewust opnieuw worden vastgesteld; een nieuw status-ID/budget mag de bestaande limiet niet stilzwijgend resetten.
-
-Bron: [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/).
-
-## Authenticiteit en bruikbaarheid van prijsreferenties
-
-De werkjas `1069814625` was een vals-positieve melding: de ingevulde merknaam werd als identiteit gebruikt en een algemene jas werd met een bandana-archivejack vergeleken. Het item staat nu als `brand_mismatch` in het vertrouwde reviewregister van `config.json`. De scanner wijst die merkclaim af; dit zegt niet dat het kledingstuk een nagemaakt Kapital-product is.
-
-Voor Kapital, Needles en Visvim is een voorafgaande review vereist vóór een koopjesmelding of numerieke dealscore. Een verkopersclaim, merkveld, `authenticity:verified` uit de feed of aanwezige foto-URL's telt niet als review. De status blijft `unreviewed` en wordt niet door een lage prijs gecompenseerd. Gewone koopjesmeldingen gebruiken geen automatische authenticiteitsgoedkeuring. De afzonderlijke begrensde fotovoorselectie wordt hieronder beschreven. De huidige twee proefmerken leveren dus geen nieuwe koopjesmeldingen op zolang hun items niet afzonderlijk zijn beoordeeld.
-
-Een positieve review komt uitsluitend uit het repository-register, niet uit de scraperdata. Het register bindt de beoordeling aan item-ID, merk, titel en foto-URL's, bevat een beoordelaar en referentie en benoemt het kledingstuk, merklabel en waslabel als bekeken bewijs. Een review verloopt na zeven dagen of na een gewijzigde momentopname. De status `reviewed_supported` is een onderbouwde eerste controle, geen authenticiteitscertificaat; gewijzigde inhoud achter dezelfde foto-URL kan hiermee niet worden gedetecteerd. De fotovoorselectie hieronder helpt bij het signaleren van evidente tegenstrijdigheden; een uitgebreidere menselijke beoordelingsroute blijft vervolgwerk.
-
-De provider normaliseert maximaal twaalf unieke HTTPS-foto-URL's van de Vinted-imagehosts, zonder fotoaanwezigheid als echtheidsbewijs te behandelen. Fotoanalyse kan later eerst op een beperkte voorselectie worden uitgevoerd. Daar is nu geen nieuwe betaalde dienst voor aangesloten.
-
-Shopprijzen worden alleen gebruikt bij hetzelfde merk en kledingtype én overeenkomstige modelkenmerken of een overeenkomstige modelcode. Een algemene `Veste de travail`/`Work jacket` matcht niet meer met een bijzonder bandana-/patchworkmodel. Ook zo blijft een shopschatting een grove indicatie, geen verkochte vergelijkingsprijs. Dit is geen visuele modelherkenning.
-
-Spelfout- en merkloos-zoekroutes zijn nog niet toegevoegd. Die vragen een aparte ontdekkingsroute en dezelfde of strengere bewijscontrole. Er wordt momenteel niet op maat gefilterd; fout ingevulde maten worden dus niet uitsluitend daardoor gemist. Werkelijke maten en labelfoto's moeten worden gecontroleerd voordat een maatfout als kans wordt aangemerkt.
-
-## Lokaal
-
-Node 22+, geen npm-afhankelijkheden:
-
-```sh
-node --test tools/deal-radar/radar.test.mjs
-node tools/deal-radar/search-plan.mjs
-# Configureer RADAR_FEED_URL en eventueel RADAR_FEED_TOKEN veilig in je omgeving:
-RADAR_DRY_RUN=true node tools/deal-radar/radar.mjs
-```
-
-Bronnen: [Vinted-voorwaarden §6](https://www.vinted.nl/terms-and-conditions), [Vinted Pro Integrations](https://pro-docs.svc.vinted.com/), [Telegram Bot API](https://core.telegram.org/bots/api).
-
-### Bevinding eerste volledige proef
-
-Een zoekopdracht op alleen het woord Needles bleek ook naainaalden en irrelevante advertenties op te leveren. De beoordelaar wees die af op merk. De bronzoekopdracht is daarom aangescherpt naar de officiële Vinted-merkfilter `360271` ([catalogus](https://www.vinted.nl/catalog/582-verryttelyasut/brand/360271-needles)), zonder categorie- of maatbeperking, met €40 als bovengrens. Een geslaagde HTTP-aanroep alleen is onvoldoende: ook de relevantie van de ontvangen advertenties wordt gecontroleerd.
-
-## Automatische fotovoorselectie (begrensde proef)
-
-De Cloudflare-worker kan via zijn eigen Workers AI-binding een beperkte fototriage uitvoeren. Er wordt geen nieuw abonnement afgesloten. Publicatie controleert met het bestaande accounttoken of het account geen abonnementen heeft; bij ontbrekende rechten of een onbekend account is een expliciete bevestiging van de eigenaar nodig. Die is alleen geldig voor dit account en tot de bestaande proef-eindtijd. Een gedetecteerd betaald Workers-plan blijft altijd geblokkeerd. Zonder bevestiging blijft `VISION_FREE_CONFIRMED` false en wordt geen AI-aanvraag gedaan. Een lege abonnementsrespons is een conservatieve bevestiging van het gratis account. Er wordt nooit automatisch een modelovereenkomst geaccepteerd of naar een betaald plan overgeschakeld.
-
-Maximaal drie GPU-aanvragen over het bestaande proefvenster, inclusief één blanco-beeldtest. De database reserveert vóór elke aanvraag en bewaart mislukkingen; gelijktijdige starts, herpublicatie en gelijke foto-momentopnamen geven geen extra GPU-pogingen. De gepubliceerde token-/contextlimieten van Llama 4 Scout blijven met deze drie aanvragen onder 10.000 neuronen. Op een bevestigd gratis account worden overschrijdingen van de gedeelde dagquota geweigerd; ze worden niet bijgeboekt. De bestaande Apify-limieten en stoptijd blijven gelijk.
-
-De blanco-beeldtest moet correct melden dat er geen kledingstuk of labels zichtbaar zijn. Pas daarna wordt de triage actief. Dit test alleen de verbinding en conservatieve afhandeling van ontbrekend beeld, niet de kwaliteit van kledingauthenticatie. Mislukte toegang, quota, modelvoorwaarden of ongeldige output blijven zichtbaar in `/status` en leveren geen authenticiteitsgoedkeuring op.
-
-Alleen een financieel interessante voorselectie met passende modelreferenties en zonder eerdere afwijzing gaat door. Er worden maximaal vier foto’s gebruikt. Per foto: uitsluitend de vaste HTTPS Vinted-imagehosts, geen redirects, maximaal 256 KiB en een ondersteund rasterformaat. Ontbrekend/onleesbaar of te groot beeld blijft onzeker. Fototeksten zijn onbetrouwbare broninhoud; het model krijgt geen tools, geheimen, kooprechten of vrijheid om links op te vragen.
-
-Uitkomsten: `rejected`, `inconclusive` of `visually_consistent`. De laatste status is uitsluitend een visuele eerste controle: het kledingstuk en leesbare merk-/waslabels lijken samenhangend. AI-resultaten worden nooit in het vertrouwde handmatige reviewregister geschreven. Een kandidaat kan hooguit één aparte **FOTOCHECK — MENSELIJKE BEOORDELING NODIG**-melding krijgen, zonder dealscore of bevestigde flipwaarde. Een gewone koopjesmelding blijft een voorafgaande expliciete review vereisen.
-
-Bronnen: [model](https://developers.cloudflare.com/workers-ai/models/llama-4-scout-17b-16e-instruct/), [gratis quotum en prijzen](https://developers.cloudflare.com/workers-ai/platform/pricing/).
-
-## Vervolg: verkopers en bundels (nog niet actief)
-
-Sam wil na een echt sterke vondst ook interessante andere items van dezelfde verkoper kunnen vinden. Bouw dit pas na een geslaagde itembeoordeling: één begrensde kastcontrole, op een bevestigde verkoper-ID, met aparte beoordeling per extra item. Merken, authenticiteit, staat en prijsgrens blijven gelden. Bereken bundelkosten met werkelijk bevestigde verzend-/koperskosten en een echte bundelprijs; veronderstel geen korting of transportbesparing. Toon één overzicht van hoofditem en geschikte aanvullingen. Neem geen contact op met verkopers en koop niets automatisch. De huidige zoekbron levert nog geen volledige kledingkast; daarvoor zijn een aparte adapter en een apart begrensd bronbudget nodig. Deze uitbreiding staat uitsluitend op de vervolglijst.
-
-
-## Tweede proef — 6 november 2026
-
-Op uitdrukkelijk verzoek start een afzonderlijke 24-uursproef van 5 november 22:55 UTC tot 6 november 22:55 UTC. Instellingen staan in `pilot-v2.json`; de oorspronkelijke proef blijft ongewijzigd en verlopen. Elk van maximaal 24 uurblokken zoekt Kapital én Needles, maximaal 10 resultaten per merk, €40 per stuk, nieuwste eerst. Dit zijn maximaal 48 scraperstarts / 480 resultaten, met een harde Apify-runlimiet van $0,03 (maximaal $1,44 aan scraperbudget, plus $0,25 vrije reserve). Vooraf is via de Apify-API uitsluitend ja/nee bevestigd dat het account Free is en voldoende ongebruikt tegoed heeft; accountgegevens en saldo zijn niet gepubliceerd. Iedere ronde controleert plan en vrije ruimte opnieuw; een onbekend plan of te weinig ruimte stopt scans. Er wordt geen abonnement of accountlimiet aangepast.
-
-Migratie 0005 houdt nieuwe tellers apart, neemt deduplicatie over en bewaart de eerste proef. Fotoanalyse blijft triage en geeft nooit authenticiteitsgoedkeuring. Maximaal vier pogingen in de tweede proef én drie per UTC-dag over beide proeven samen; de eerdere twee pogingen tellen mee. De oorspronkelijke geslaagde beeldtest blijft geldig; geen onnodige extra blanke test. Bij een daglimiet wordt een kandidaat niet permanent als geanalyseerd gemarkeerd.
-
-De eerste ronde vergelijkt de resultaten met één rechtstreeks opgehaalde openbare Vinted-catalogus per merk. Een blokkade, onleesbare pagina of verschil wordt expliciet opgeslagen als niet geverifieerd of afwijkend, nooit als geslaagde versheidscontrole. `consistent_snapshot` betekent uitsluitend dat de eerste drie gevonden kaartlinks overeenkomen, geen garantie op volledigheid. De status toont aantallen per merk en deze uitkomst, zonder advertenties of verkopers te publiceren. Een sterk afwijkende bron moet handmatig worden onderzocht voordat kwaliteit wordt geclaimd. De cron herstart of verlengt de proef niet na de eindtijd.
-
-## Onderzoeksroute zonder modelreferentie
-
-`pilot-v2.json.researchEnabled` activeert een aparte wachtrij (`radar_research`, migratie 0006). Een ontbrekende modelreferentie is geen bewijs dat een stuk oninteressant is. Alleen beschikbare, recent gecontroleerde items binnen €40 met een herkend kledingtype, goede gerapporteerde staat, meerdere foto's en een expliciete merkvermelding in titel/beschrijving kunnen deze route in. Replica's, afgewezen merkclaims, kinderkleding, bekende Uniqlo/Gu-samenwerkingen en overige eerdere afwijsgronden blijven uitgesloten. De merkvermelding is een selectiesignaal, geen echtheidsbewijs.
-
-Fotoanalyse gebruikt dezelfde vier proefpogingen en dezelfde globale daglimiet van drie. De selectie gebruikt de cover plus de laatste drie foto's als er meer dan vier zijn, omdat labeldetails vaak achteraan staan. Sterke reeds geprijsde kandidaten houden voorrang op dit gedeelde budget. Kandidaten blijven intern bewaard als het budget of bruikbaar beeld ontbreekt. Een tegenstrijdig beeldresultaat wordt afgewezen. De statusendpoint toont uitsluitend aantallen per wachtrijstatus, geen advertentiegegevens.
-
-Aparte **ONDERZOEK — GEEN KOOPADVIES**-meldingen hebben geen limiet per proef (`researchNoticeLimit:null` in de status). De historische pogingenteller blijft bewaard; deduplicatie voorkomt herhaalde meldingen voor hetzelfde item. Na een geslaagde fototriage of een daadwerkelijk beoordeeld maar onvoldoende leesbaar label kan zo'n melding vragen om handmatig model, labels, staat en vergelijkbare verkopen te onderzoeken. De melding geeft geen dealscore, verkoopwaarde of marge. Deze route kan nooit een gewone koopjesmelding of vertrouwde authenticiteitsgoedkeuring opleveren. Eerdere fotocheckmeldingen delen dezelfde deduplicatiesleutel. Onzekere Telegram-bezorging wordt niet automatisch herhaald. Publicatie reset geen scan-, AI- of meldingsbudget en verlengt de proef niet.
-
-
-### Begrensde verwerking op Workers Free
-
-Het bijhouden van twintig geziene items gebeurt met één leesquery en één bulk-upsert (maximaal 80 parameters, onder de D1-limiet van 100). Apify-aanvragen wachten aan de serverkant maximaal twintig seconden; per gestarte run volgen maximaal drie statuscontroles en eventueel één abort. Een onzekere run wordt nooit opnieuw gestart. Dit voorkomt onbeperkt pollverkeer en houdt de uitvoering binnen de limieten van Workers Free.
-
-Per ronde worden maximaal vijf ongeprijsde onderzoekskandidaten vastgelegd, maximaal één kandidaat aan fotoanalyse aangeboden en maximaal twee Telegram-notificaties totaal verstuurd. Eerder afgeronde onderzoeken worden overgeslagen, zodat volgende kandidaten in latere rondes aan bod kunnen komen. De bestaande totale AI- en bronbudgetten, authenticiteitsregels en eindtijd blijven gelden; er is geen aparte limiet op onderzoeksmeldingen per proef. Een test telt database-, foto-, AI- en meldingsverzoeken voor een volle ronde van twintig items mee en reserveert ook ruimte voor beide bronaanvragen en hun begrensde statuscontroles.
-
-### Eenmalige controle met opgeslagen resultaten
-
-Op verzoek van de eigenaar wordt de nieuwe onderzoeksroute één keer op recente, bestaande Apify-resultaten gecontroleerd (`researchTestOnce`). De cron reserveert deze controle apart in `radar_research_tests` (migratie 0007), leest uitsluitend reeds voltooide runs en datasets, en onderzoekt hoogstens één geselecteerde kandidaat. Er worden geen Actors gestart of herstart. De originele controletijd van de advertentie blijft behouden; resultaten ouder dan 90 minuten worden niet gebruikt.
-
-De test gebruikt dezelfde foto- en meldingsbudgetten, deduplicatie, gratis-accountbevestiging en eindtijd. Scanpogingen, uurreservering en `last_scan_at` worden niet aangepast: een controle op opgeslagen data wordt niet als verse scrape gepresenteerd. Herpublicaties of gelijktijdige cron-events herhalen de test niet. De publieke status toont alleen de geaggregeerde uitkomst onder `researchTest`; een onzekere fout blijft als mislukt/pending zichtbaar en wordt niet automatisch opnieuw geprobeerd.
-
-
-## Derde proef: vier merken en merkspecifieke prijsgrenzen
-
-`pilot-v3.json` bepaalt één nieuw 24-uurs venster met maximaal 24 gereserveerde scanrondes. Per uur worden twee merken met maximaal tien resultaten per merk onderzocht: Kapital + Engineered Garments, vervolgens Needles + orSlow. Iedere merkselectie komt eens per twee uur terug. Dit houdt het maximum op 48 Apify-starts, elk met maximaal $0,03, plus een verplichte tegoedcontrole en reserve. Gratis plan of tegoed niet bevestigd betekent stoppen; er wordt geen tegoed of abonnement gekocht.
-
-De artikelgrens is €70 voor Kapital/Needles en €40 voor de andere merken, exclusief verzending/koperskosten. Zowel de zoek-URL, Actor-input, normalisatie als beoordeling gebruiken die grens. Authenticiteit blijft voor alle vier de proefmerken een harde voorwaarde voor een koopadvies. Een foto-uitkomst is nooit authenticatie; de aparte onderzoeksroute meldt expliciet ontbrekende labels of prijsreferenties. De eerdere foutieve Kapital-werkjas staat ook onder zijn juiste advertentie-ID in het afwijsregister.
-
-`bootstrap-trial.mjs` kopieert alleen de eerdere deduplicatie-/onderzoeksstatus naar het nieuwe proef-ID en gebruikt de geslaagde beeldtest op Sams account. Oude tellers en het gedeelde dagelijkse fotobudget worden niet gereset. De nieuwe proef heeft maximaal vier foto-aanvragen, terwijl het gedeelde maximum van drie per UTC-dag blijft gelden (inclusief de eerdere readiness-test). Per ronde hoogstens één fotocontrole; de eerdere limiet van twee onderzoeksmeldingen per proef is verwijderd. Niet elk gevonden product krijgt dus een fotoanalyse. Na de eindtijd of 24 rondes zijn verdere wakeups inert; er wordt niets automatisch verlengd.
-
-
-### Maat en platformcategorie
-
-Kleine maten (inclusief XXS en XS) en een damescategorie vormen geen afwijzingsgrond of automatische verlaging van de onderzoeksprioriteit. De bronzoekopdrachten hebben geen maat- of genderfilter. Platformgegevens kunnen fout zijn; werkelijke afmetingen, pasvorm en het model moeten handmatig worden beoordeeld. Dit kan juist een verkeerd gecategoriseerde kans opleveren. Kinderartikelen en expliciete replica's blijven uitgesloten. De orSlow-denimjas van €35 in XXS blijft volgens deze regels geschikt voor onderzoek, zonder daarmee authenticiteit of marge te bevestigen.
-
-
-### Onderzoekstips zonder verplichte AI-fotocheck
-
-Een geschikte, recent als beschikbaar waargenomen kandidaat mag ook zonder automatische fototriage worden gemeld: **Nog niet visueel gecontroleerd — onderzoekskandidaat**. Dit geeft nooit een dealscore, marge, authenticiteitsgoedkeuring of koopadvies. Een ontbrekende/uitgeschakelde fotocheck wordt niet als onleesbare labels gepresenteerd. Een tegenstrijdige foto-uitkomst, bekende verkeerde productlijn of handmatig geconstateerde gebreken blijven uitgesloten. De hoogst gerangschikte kandidaten krijgen eerst toegang tot de ongewijzigde fotoquota. Per scan blijven hoogstens twee berichten mogelijk om de Free-verzoekgrens te respecteren; er is geen maximum per proef.
-
-`research-backlog.mjs` controleert de bestaande wachtlijst eenmalig met recent succesvol opgehaalde Apify-resultaten (hoogstens 90 minuten oud). De originele waarnemingstijd blijft behouden; afwezige, oude of niet beschikbaar bevestigde advertenties worden niet doorgestuurd. Geen nieuwe actorstarts, AI-aanvragen, betaalde upgrades of verlenging van de proef. De historische deduplicatiesleutel blijft behouden; eerdere `skipped`-meldingen kunnen worden geclaimd, maar `sent` en onzekere `pending` nooit. Alleen geaggregeerde resultaten komen in de workflowlogs; de wachtlijst blijft privé.
-
-
-### Vervolgproef 8 november
-
-De apart geautoriseerde vervolgproef gebruikt ID `pilot-2026-11-08` en neemt de historie van `pilot-2026-11-07` over. De vier merken, 70/40-eurogrenzen, 24 uur, 24 rondes en bron-/fotobudgetten blijven gelijk. Onderzoekstips vereisen geen AI-controle. Voor initialisatie bevestigt `prepare-trial.mjs` eerst het gratis Apify-plan en de volledige reserve van $1,69. Daarna volgt één begrensde nieuwe blanco beeldtest op Sams opnieuw gecontroleerde Free-account; deze telt mee in het bestaande dagelijkse totaal van drie aanvragen. Een bestaande proef slaat deze voorbereiding over, zodat een herpublicatie nooit een nieuw budget of nieuwe beeldtest krijgt. Er worden geen top-ups of betaalde plannen geactiveerd.
-
-
-### Curatie- en bundelproef 11 november
-
-Sams expliciete feedback staat in `config.json → curationPreferences`: de vier afgewezen advertenties zijn negatieve voorbeelden; de blauwe veloursbroek met bijpassende top is positief. Het bod van €105 wordt niet als gerealiseerde aankoop, verkoopprijs of marktwaarde gebruikt. Oude modellen, kleine maten en damescategorieën blijven toegestaan. Andere Needles-kleding en bijzondere uitvoeringen krijgen voorrang. Herkenbare losse Needles-trackpants worden zowel in de onderzoekroute als de geprijsde meldingsroute tegengehouden.
-
-Een kansrijk item met een geldige openbare verkopersreferentie kan de privébundelwachtrij in. Maximaal vier aparte verkoperscontroles per proef, elk maximaal $0,03 en tien kledingstukken (plus hoogstens één profielrij die niet wordt bewaard); geen reviews of persoonsgegevensverrijking. De bron is de gedocumenteerde `omkar-cloud/vinted-seller-scraper`. Controles draaien uitsluitend op een idle wake, zodat ze nooit met een volle merkenscan de Free-verzoekgrens delen. Atomische item-, verkoper- en budgetreserveringen verhinderen dubbel starten. De volledige gratis Apify-reserve is $1,81: maximaal 48 merkstarts + 4 verkoperstarts à $0,03, met $0,25 extra reserve. Iedere bronaanroep blijft onder het Free-plan en bestaande tegoed; geen top-ups of betaald abonnement.
-
-Een potentiële combinatie vereist dezelfde verkoper en hetzelfde merk, een boven- en onderstuk en overeenkomstige kleur én uitvoering/materiaal. Het hoofditem moet opnieuw in de actuele garderobe zijn aangetroffen. Beide stukken houden hun afzonderlijke prijsgrens. Prijzen worden opgeteld als vraagprijzen; bundelkorting en verzendbesparing worden niet aangenomen. Voor een combinatie met Needles-trackpants zijn bovendien bij beide stukken visueel samenhangende labels met leesbare modelcodes en een overeenkomstig codeprefix nodig. RN/CA-bedrijfsnummers tellen niet als modelnummer. Dit blijft een mogelijke set voor handmatige controle, nooit een authenticiteitsgoedkeuring. De beperkte fotoquota worden in deze proef voor deze dubbele labelcontroles gereserveerd; geen extra AI-budget. Bij ontbrekende codes, tegenstrijdige labels, onbereikbare bron of onzekere verzending volgt geen bundelaanbeveling. De bundeluitkomst en tellers zijn geaggregeerd zichtbaar in de status; advertenties en verkopersreferenties blijven privé.
-
-### Fresh-only trial (16 November 2026)
-
-Production uses `pilot-v4.json`. It covers 34 brands per hour in 12 groups of 2–3, one reserved group every five minutes, for a bounded two-hour trial (maximum 68 brand searches / $2.04 in actor caps). The existing $19 monthly included-credit ceiling remains in force; preflight reserves $2.16 and prevents starts if remaining credit is insufficient. Numeric brand filters are retained where verified. Other shop labels use exact-name searches, and returned brand identity is still checked independently. This is a candidate sample (up to ten newest results per brand), not guaranteed complete coverage of every listing.
-
-Before research, valuation or vision, reject non-clothing, unsupported brand claims, unknown upload times, uploads older than six hours and IDs seen in **any** previous trial. Fetch time never establishes upload time. Canonical numeric listing IDs prevent renamed URLs from receiving a second alert. Small sizes and women's categories remain eligible. A higher research-priority floor favours distinctive garments and model evidence; the photo/label gate remains mandatory. Unknown value and AI visual consistency are never described as proven resale value or authentication. Backlog and seller-bundle scans are off during this noise-reduction test.
-
-Review `/status` after the trial: compare `checked`, `admitted`, `repeatedListings` and per-brand rejection reasons. Sparse notifications are expected when there are no fresh, adequately evidenced candidates or the free photo quota is exhausted. Do not broaden freshness or remove visual evidence just to increase output.
-
-#### Source incident: paused on 16 November
-
-`pilot-v4.json.enabled` is false. The fresh-only consumer filter did **not** establish a fresh source: the audit found out-of-order old listings (weeks/months) in the actor's purported newest-first results. A separate three-query verification used the documented plain-keyword + typed brand filters instead of catalog URLs; it returned the same old listing sets. Its maximum total charge was $0.09 and it sent no messages, ran no AI and changed no database records. Do not re-enable this source on the strength of passing local tests or downstream deduplication. Verify genuinely current source-side results and correct sorting/category behaviour before another recurring test. Source audit reads existing datasets only; it does not start scrapes.
+`trial.mjs` gebruikt de bestaande Apify- en Telegram-secrets, haalt maximaal drie verse Needles-advertenties op en controleert de actuele Japansterdam-prijsrefer…6697 tokens truncated… behaviour before another recurring test. Source audit reads existing datasets only; it does not start scrapes.
 
 ### Replacement monitor (Top API)
 
@@ -294,3 +149,9 @@ Verified numeric brand filters no longer also require the brand name as a keywor
 The private overview refreshes its first page every minute while visible and active, offers a manual refresh button and initially reads up to four stored pages when recent batches contain few results. It merges by item ID, counts unique loaded run IDs, preserves filters/read markers, and stops refreshing when its view is removed. Reading/refreshing the overview never starts a scraper.
 
 Maison Kitsuné was removed at the owner’s request. orSlow, Fullcount and Auralee were already selected and remain enabled in the source configuration. The final two groups are rebalanced to Nulabel + Portvel and Wislom + Denim by Vanquish & Fragment, preserving 11 groups and the existing caps. The changed groups will establish silent baselines under their group-specific stores; historical D1 alert deduplication remains in force. No ended scan window is extended.
+
+### Post-trial selection refinements (19 November 2026)
+
+A verified numeric Vinted brand filter is now retained as explicit source evidence through intake and research selection. Genuine listings with generic or mistyped titles can therefore survive the text-brand check; searches based only on a text query still require supporting brand text. Product-line restrictions, freshness, availability and authenticity gates remain in place.
+
+The AI-score route to a Telegram standout is raised from 70 to 85/100. Explicit curator exceptions remain for the Vanquish Japan-story preference and Porter Yoshida Tanker preference. This score is still a research priority based on listing text and Japansterdam shop asking references, not a verified resale price or profit guarantee. The November 18 trial window has ended; these refinements do not restart scans, change its recorded budget, or authorize a new trial.

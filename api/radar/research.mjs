@@ -5,6 +5,9 @@ import {brandClaimSupported,selectionRejection} from '../../tools/deal-radar/sel
 
 // null in the public status means no per-trial notice cap. Delivery deduplication remains active.
 export const MAX_RESEARCH_NOTICES = null;
+// Telegram highlights should be rare. Strong curator exceptions (the
+// Japansterdam story and preferred Porter Tanker line) remain independent.
+export const TELEGRAM_STANDOUT_SCORE = 85;
 const sql=(env,query,...args)=>env.RADAR_DB.prepare(query).bind(...args);
 const plain=(text,max=140)=>String(text||'').replace(/(?:https?:\/\/|www\.)\S+/gi,'').replace(/\s+/g,' ').trim().slice(0,max);
 
@@ -18,7 +21,7 @@ export function researchAssessment(item,config,now=Date.now(),{forBundle=false}=
   if(!type)return reject('garment_type_unknown');
   if(!['new_with_tags','new_without_tags','very_good','good'].includes(item.condition)||item.flaws?.length)return reject('condition_or_flaws');
   const text=normalize(item.title+' '+(item.description||''));
-  if(!brandClaimSupported(item,config))return reject('brand_claim_unsupported'); // A misfilled brand field alone is insufficient.
+  if(!brandClaimSupported(item,config)&&item.brandEvidence!=='verified_vinted_brand_filter')return reject('brand_claim_unsupported'); // A verified source filter supports generic titles; a seller field alone does not.
   const selection=selectionRejection(item,config);if(selection)return reject(selection);
   if(/\b(uniqlo|gu|baby|babies|kids|child|children|bimba|bimbo|enfant|garcon|fille|kinder|maanden|months)\b/.test(text))return reject('excluded_collaboration_or_child_item');
   const authenticity=authenticityAssessment(item,config,now);
@@ -30,7 +33,7 @@ export function researchAssessment(item,config,now=Date.now(),{forBundle=false}=
   if(!preference.allowed&&!forBundle)return reject('curation_excluded');
   if(!preference.allowed&&!preference.track)return reject('curation_excluded');
   const curatorReason=['preferred_japanese_story','preferred_porter_tanker','preferred_porter_tanker_green_orange'].includes(preference.reason);
-  const highScore=item.dealRating?.state==='scored'&&item.dealRating.score>=70;
+  const highScore=item.dealRating?.state==='scored'&&item.dealRating.score>=TELEGRAM_STANDOUT_SCORE;
   if(!check.eligible&&item.available===true&&item.price<=100&&(curatorReason||highScore)){
     return {reason:'research_candidate',candidate:{type,reason:curatorReason?'curator_pick':'high_deal_score',curationReason:preference.reason,
       priority:preference.boost+(highScore?item.dealRating.score:0)+15}};

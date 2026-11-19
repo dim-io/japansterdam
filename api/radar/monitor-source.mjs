@@ -46,6 +46,12 @@ const namesLabel=selection=>selection.map(([brand])=>brand==='Needles'?'Needles 
 export async function monitorGroup(selection,{token,fetcher=fetch,maxCostUsd=.015,mode='new-only'}={}){
  const input=monitorInput(selection,{mode});
  const r=await candidateRun('topapi~vinted-scraper',input,{token,fetcher,maxCostUsd,maxItems:selection.length*10,runLabel:'Japansterdam — '+namesLabel(selection)+(mode==='recent-snapshot'?' · recente selectie':'')});
- const normalized=r.rows.map(row=>monitorRow(row,r.observedAt)).filter(Boolean);
+ const normalized=r.rows.map(row=>monitorRow(row,r.observedAt)).filter(Boolean).map(item=>{
+  // The input uses explicit numeric Vinted brand filters for verified labels.
+  // Keep that provenance so generic/mistyped titles do not lose valid results
+  // at intake; line restrictions and authenticity checks still run separately.
+  const match=selection.find(([brand])=>identifyBrand(brand,config)===identifyBrand(item.brand,config));
+  return match&&typeof match[1]==='string'&&/^\d+$/.test(match[1])?{...item,brandEvidence:'verified_vinted_brand_filter'}:item;
+ });
  return selection.map(([brand])=>({brand,runId:r.runId,returned:r.rows.filter(row=>canonicalListingBrand({brand:row.brand_title,title:row.title,description:row.description,category:row.category_path},config)===brand).length,normalizedCount:normalized.filter(i=>identifyBrand(i.brand,config)===brand).length,items:normalized.filter(i=>identifyBrand(i.brand,config)===brand),freshness:{state:mode==='recent-snapshot'?'source_recent_snapshot':'source_monitor_new_only',baseline:input.skipFirstRun?'skip_first_run':'none',store:input.monitorStoreName}}));
 }
