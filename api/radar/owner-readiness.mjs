@@ -37,7 +37,14 @@ export async function check(env,{query,fetcher=fetch,now=Date.now(),testPolicy=p
   try{
     const response=await fetcher('https://api.cloudflare.com/client/v4/accounts/'+TARGET.account+'/subscriptions',{headers:{Authorization:'Bearer '+env.CLOUDFLARE_API_TOKEN},redirect:'manual',signal:AbortSignal.timeout(15000)});
     const data=await response.json();
-    summary.workersAiFreePlan=freePlanDecision({ok:response.ok,data,status:response.status},{...testPolicy,visionAccountConfirmation:null},now).allowed;
+    // A current owner confirmation may resolve an unavailable or unrelated
+    // subscription listing, but an explicitly detected paid Workers plan wins.
+    const evidence=testPolicy.freeAccountEvidence;
+    const decision=freePlanDecision({ok:response.ok,data,status:response.status},{...testPolicy,visionAccountConfirmation:evidence?{
+      accountId:testPolicy.accountId,plan:evidence.plan,source:evidence.source,confirmedAt:evidence.confirmedAt,
+      authorizedAt:evidence.confirmedAt,validUntil:testPolicy.endsAt,
+    }:null},now);
+    summary.workersAiFreePlan=decision.allowed;summary.workersAiFreePlanBasis=decision.basis;
   }catch{}
   try{await readCatalog({SHOP_CATALOG_URL:'https://japansterdam-api.sam-jesse.workers.dev/public/products'},fetcher);summary.shopReferences=true;}catch{}
   try{const budget=await preflight(env.APIFY_TOKEN,fetcher,.31,testPolicy.sourceBudget);summary.apifyFree=budget.freePlanConfirmed;summary.apifyIncludedPlan=budget.includedPlanConfirmed;summary.apifyReady=budget.enoughCredit;}catch{}

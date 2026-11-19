@@ -37,3 +37,19 @@ test('one real inference reservation is shared across retries; scraper and deliv
   assert.equal(db.prepare('SELECT COUNT(*) n FROM radar_alerts').get().n,0);
   assert.equal(db.prepare('SELECT attempts FROM radar_vision_daily').get().attempts,1);db.close();
 });
+test('owner Free confirmation resolves unrelated subscription entries but never overrides a paid Workers plan',async()=>{
+ const {db,query,testPolicy,now}=setup();
+ const env={CLOUDFLARE_API_TOKEN:'fixture',APIFY_TOKEN:'fixture',TELEGRAM_BOT_TOKEN:'123:fixture',TELEGRAM_CHAT_ID:'42'};
+ const base=async url=>{
+  if(String(url).endsWith('/subscriptions'))return Response.json({success:true,result:[{rate_plan:{id:'free',public_name:'Business Plan'}}],result_info:{total_count:1}});
+  if(String(url).includes('/public/products'))return Response.json([{name:'Needles jacket',brand:'Needles',price:200}]);
+  if(String(url).includes('/users/me'))return Response.json({data:{isPaying:false,plan:{monthlyBasePriceUsd:0,tier:'FREE',monthlyUsageCreditsUsd:5}}});
+  if(String(url).includes('/users/me/limits'))return Response.json({data:{current:{monthlyUsageUsd:0},limits:{maxMonthlyUsageUsd:5}}});
+  if(/\/(getMe|getChat)$/.test(String(url)))return Response.json({ok:true,result:{}});
+  if(String(url).includes('/ai/run/@cf/meta/llama-4-scout'))return Response.json({success:true,result:{response:{garment_visible:false,brand_text:'',care_text:'',brand_photo:-1,care_photo:-1,contradiction:false,reason:'not_clothing'}}});
+  throw Error('unexpected outbound call');
+ };
+ const unrelated=await check(env,{query,fetcher:base,now,testPolicy});assert.equal(unrelated.workersAiFreePlan,true);
+ const paid=await check(env,{query,fetcher:async(url,opts)=>String(url).endsWith('/subscriptions')?Response.json({success:true,result:[{rate_plan:{id:'workers_paid',public_name:'Workers Paid'}}]}):base(url,opts),now,testPolicy});
+ assert.equal(paid.workersAiFreePlan,false);assert.equal(paid.photoReason,'workers_ai_free_plan_unconfirmed');db.close();
+});
