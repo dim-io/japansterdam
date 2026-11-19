@@ -99,7 +99,7 @@ test('input size stays bounded even with long multilingual descriptions; missing
 test('private results read cached scores without any model call and never return stored prompts',async()=>{
  const {env,db,calls}=setup();env.SHOP_CATALOG_URL='https://japansterdam-api.sam-jesse.workers.dev/public/products';env.SHOP_API={fetch:async()=>Response.json({id:1})};
  const raw={url:item().url,brand_title:'Kapital',title:item().title,description:item().description,price_amount:30,price_currency:'EUR',condition:'Very good',photo_url:item().photoUrls[0],photos:item().photoUrls,is_sold:false,is_reserved:false,is_hidden:false,can_buy:true};
- const run={id:'Run1',status:'SUCCEEDED',defaultDatasetId:'Data1',finishedAt:new Date(now).toISOString()};
+ const run={id:'Run1',status:'SUCCEEDED',defaultDatasetId:'Data1',startedAt:new Date().toISOString(),finishedAt:new Date().toISOString()};
  await queueDealRatings(env,[item()],config,[],policy,{now:Date.now()});
  // Use the test window while reading source history; GET may only enqueue.
  const p={...policy,startsAt:new Date(Date.now()-60000).toISOString(),endsAt:new Date(Date.now()+3600000).toISOString()};
