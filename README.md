@@ -148,3 +148,5 @@ the existing admin frontend, no private backend code, and no product-data
 snapshot. Unpublished Journal articles are omitted from the fallback content.
 
 Radar results are limited to the active trial window and deduplicated by Vinted item ID. The backend shows unread items first; previously read items return only after a price drop of at least 20%.
+
+Radar readiness accepts the owner’s current Workers AI Free confirmation when the account subscription API cannot identify a Workers plan. An explicit paid Workers plan remains a hard stop.
