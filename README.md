@@ -146,3 +146,5 @@ Build with `node api/web/build.mjs` and test with
 `node --test api/web/*.test.mjs`. The build includes only public frontend files,
 the existing admin frontend, no private backend code, and no product-data
 snapshot. Unpublished Journal articles are omitted from the fallback content.
+
+Radar results are limited to the active trial window and deduplicated by Vinted item ID. The backend shows unread items first; previously read items return only after a price drop of at least 20%.
