@@ -196,11 +196,11 @@ ${p.sold ? '' : `<div class="buybar" id="buybar"><div class="buybar__info"><span
   }, { passive: true });
 
   // mobile gallery dots
-  const track = root.querySelector('.gallery__track');
+  const galleryTrack = root.querySelector('.gallery__track');
   const dotEls = root.querySelectorAll('.gallery__dots span');
   if (dotEls.length) {
-    track.addEventListener('scroll', () => {
-      const i = Math.round(track.scrollLeft / track.clientWidth);
+    galleryTrack.addEventListener('scroll', () => {
+      const i = Math.round(galleryTrack.scrollLeft / galleryTrack.clientWidth);
       dotEls.forEach((d, n) => d.classList.toggle('is-active', n === i));
     }, { passive: true });
   }
