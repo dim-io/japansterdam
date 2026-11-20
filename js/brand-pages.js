@@ -208,6 +208,22 @@ export const BRAND_PAGES = [
     "description": "Explore pre-owned WISLOM clothing at Japansterdam. Discover the current selection, individually curated in Amsterdam, with product-specific condition and sizing details.",
     "intro": "Practical details and a considered everyday silhouette. Our WISLOM selection looks for garments that balance useful construction with an individual feel, ready to be worn and layered in a new wardrobe.",
     "detail": "Read the individual condition notes, original label size and measurements where supplied before ordering. Our collection changes as pieces find new owners; the available garments below update with the shop."
+  },
+  {
+    "slug": "moonstar",
+    "brand": "Moonstar",
+    "title": "Pre-Owned Moonstar Shoes",
+    "description": "Explore pre-owned Moonstar shoes at Japansterdam. Discover thoughtfully made Japanese footwear, selected individually in Amsterdam.",
+    "intro": "Made in Kurume, Japan, Moonstar footwear brings practical design and careful shoemaking to everyday pairs. Our selection focuses on comfortable, well-made shoes with a clear sense of purpose.",
+    "detail": "Explore the available footwear below. Check each listing for its condition, original label size and fit notes. Our selection changes as individual pairs find new owners."
+  },
+  {
+    "slug": "shoes-like-pottery",
+    "brand": "Shoes Like Pottery",
+    "title": "Pre-Owned Shoes Like Pottery Sneakers",
+    "description": "Discover pre-owned Shoes Like Pottery sneakers at Japansterdam. Japanese vulcanized footwear, individually selected in Amsterdam.",
+    "intro": "Shoes Like Pottery is made in Kurume by Moonstar using a traditional vulcanizing process. The result is a clean, everyday canvas sneaker with a distinctive blue sole and a story rooted in Japanese shoemaking.",
+    "detail": "Explore the pairs below and check each listing for condition and original label size. Read our <a class=\"u\" href=\"journal.html?story=out-of-the-kiln-into-the-everyday\">story on Shoes Like Pottery and the craft behind its kiln-fired sole</a>."
   }
 ];
 export const brandPage = brand => BRAND_PAGES.find(p=>shortBrand(p.brand).toLowerCase()===shortBrand(brand).toLowerCase());

@@ -5,6 +5,7 @@ const names = new Map(Object.entries({
   'sophnet':'SOPHNET.','visvim':'Visvim','nulabel':'Nulabel','nulabel cm1y0k42':'Nulabel',
   'ts s':'Ts(s)','tss':'Ts(s)','kapital':'KAPITAL','orslow':'orSlow','or slow':'orSlow',
   'sage de cret':'Sage de Cret','wislom':'WISLOM','wtaps':'WTAPS',
+  'shoes like pottery by moonstar':'Shoes Like Pottery',
   'denim by vanquish fragment':'Denim by Vanquish & Fragment',
 }));
 const omittedBrands = new Set(['carhartt', 'nike', 'the changes']);

@@ -6,12 +6,14 @@ import {staticPaths} from '../api/src/sitemap.mjs';
 import worker from '../api/web/worker.mjs';
 
 test('all listed brands have crawlable pages with live, isolated collections',async()=>{
- assert.equal(BRAND_PAGES.length,26);
+ assert.equal(BRAND_PAGES.length,28);
+ const sitemap=await readFile(new URL('../sitemap.xml',import.meta.url),'utf8');
  for(const b of BRAND_PAGES){
   const path=b.slug+'.html',html=await readFile(new URL('../'+path,import.meta.url),'utf8');
   assert.ok(html.includes('href="https://japansterdam.com/'+path+'"'),path);
   assert.ok(html.replaceAll('&amp;','&').toLowerCase().includes(('<h1 class="page-title">'+b.brand+'</h1>').toLowerCase()),path);
   assert.ok(staticPaths.includes(path));
+  assert.ok(sitemap.includes('<loc>https://japansterdam.com/'+path+'</loc>'),path+': static sitemap');
   const piece={slug:'available',name:'Available selection',brand:b.brand,category:'Tops',size:'M',price:100,images:[],addedOn:1};
   const env={SOURCE_FETCH:async url=>Response.json(url.endsWith('/products')?[
    piece,{...piece,slug:'hidden',active:false,name:'Hidden selection'},
@@ -31,5 +33,7 @@ test('brand destinations normalize existing CMS spellings without rewriting coll
  assert.equal(brandPage('Ts(S)').slug,'ts-s');
  assert.equal(brandPage('WTAPS').slug,'wtaps');
  assert.equal(brandPage('Uniform Experiment').slug,'uniform-experiment');
+ assert.equal(brandPage('Moonstar').slug,'moonstar');
+ assert.equal(brandPage('Shoes Like Pottery by Moonstar').slug,'shoes-like-pottery');
  assert.equal(brandPage('Unknown'),undefined);
 });
