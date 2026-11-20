@@ -7,7 +7,11 @@ import {brandClaimSupported,selectionRejection} from '../../tools/deal-radar/sel
 export const MAX_RESEARCH_NOTICES = null;
 // Telegram highlights should be rare. Strong curator exceptions (the
 // Japansterdam story and preferred Porter Tanker line) remain independent.
-export const TELEGRAM_STANDOUT_SCORE = 85;
+// A missing shop reference caps normal listing scores at 72 (or 74 for NWT),
+// so the former threshold of 85 could never alert on these candidates. Keep
+// the alert selective by pairing the attainable score with a bargain ceiling.
+export const TELEGRAM_STANDOUT_SCORE = 55;
+export const TELEGRAM_STANDOUT_MAX_PRICE = 40;
 const sql=(env,query,...args)=>env.RADAR_DB.prepare(query).bind(...args);
 const plain=(text,max=140)=>String(text||'').replace(/(?:https?:\/\/|www\.)\S+/gi,'').replace(/\s+/g,' ').trim().slice(0,max);
 
@@ -33,7 +37,7 @@ export function researchAssessment(item,config,now=Date.now(),{forBundle=false}=
   if(!preference.allowed&&!forBundle)return reject('curation_excluded');
   if(!preference.allowed&&!preference.track)return reject('curation_excluded');
   const curatorReason=['preferred_japanese_story','preferred_porter_tanker','preferred_porter_tanker_green_orange'].includes(preference.reason);
-  const highScore=item.dealRating?.state==='scored'&&item.dealRating.score>=TELEGRAM_STANDOUT_SCORE;
+  const highScore=item.dealRating?.state==='scored'&&item.dealRating.score>=TELEGRAM_STANDOUT_SCORE&&item.price<=TELEGRAM_STANDOUT_MAX_PRICE;
   if(!check.eligible&&item.available===true&&item.price<=100&&(curatorReason||highScore)){
     return {reason:'research_candidate',candidate:{type,reason:curatorReason?'curator_pick':'high_deal_score',curationReason:preference.reason,
       priority:preference.boost+(highScore?item.dealRating.score:0)+15}};
@@ -60,7 +64,7 @@ export function researchText(item,screen,candidate={}) {
   return [standout?'JAPANSTERDAM PICK — DEZE VERDIENT EEN KIJK':'ONDERZOEK — GEEN KOOPADVIES',plain(item.title),`${plain(item.brand,60)} · €${item.price.toFixed(2)} · Maat ${plain(item.size,30)||'onbekend'}`,
     ...(item.dealRating?.state==='scored'?[`AI-dealscore: ${item.dealRating.score}/100 · indicatief — ${plain(item.dealRating.reason,160)}`]:[]),
     ...(item.publishedAt?['Geplaatst: '+item.publishedAt]:[]),
-    standout?'Deze kwam bovendrijven als een uitzonderlijke match of hoge deal-score. Check zelf de uitvoering, recente verkochte prijzen en onderhandelruimte voordat je beslist.':'Kandidaat binnen jouw selectie; model, uitvoering en vraagprijs verdienen nader onderzoek. Een passende prijsreferentie ontbreekt.',
+    standout?'Deze voldoet aan de Telegram-selectiedrempel voor score en prijs. Check zelf de uitvoering, recente verkochte prijzen en onderhandelruimte voordat je beslist.':'Kandidaat binnen jouw selectie; model, uitvoering en vraagprijs verdienen nader onderzoek. Een passende prijsreferentie ontbreekt.',
     ...(selectionReason?[selectionReason]:[]),
     ...(candidate.curationReason==='preferred_needles_garment'?['Selectie: een van jouw voorkeurscategorieën van Needles; beoordeel de specifieke uitvoering.']:[]),
     standout?'Verkoopwaarde en marge zijn niet bevestigd. Authenticiteit: niet bevestigd.': 'Verkoopwaarde en marge: onbekend. Authenticiteit: niet bevestigd.',photo,

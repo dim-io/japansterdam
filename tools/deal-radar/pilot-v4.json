@@ -1,9 +1,9 @@
 {
   "enabled": true,
-  "id": "pilot-2026-11-19",
-  "previousPilotId": "pilot-2026-11-18",
-  "startsAt": "2026-11-19T18:15:00Z",
-  "endsAt": "2026-11-20T18:15:00Z",
+  "id": "pilot-2026-11-20",
+  "previousPilotId": "pilot-2026-11-19",
+  "startsAt": "2026-11-20T21:45:00Z",
+  "endsAt": "2026-11-21T21:45:00Z",
   "maxAttempts": 288,
   "brands": {
     "Nonnative": "355385",
@@ -27,7 +27,12 @@
     "Engineered Garments": "609050",
     "orSlow": "373463",
     "Ts(s)": {
-      "searchText": "Ts(s)"
+      "searchTerms": [
+        "Ts(s)",
+        "TSS",
+        "Ts s",
+        "T.S.S."
+      ]
     },
     "Sage de Cret": {
       "searchText": "Sage de Cret"
@@ -240,7 +245,7 @@
       "ASICS"
     ]
   ],
-  "revision": "native-curated-brands-v19-price-100-curator-picks",
+  "revision": "native-curated-brands-v20-ts-search-telegram-bargain-gate",
   "dealScoring": { "enabled": true },
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
@@ -253,9 +258,9 @@
     "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
     "plan": "free",
     "source": "owner_confirmation",
-    "confirmedAt": "2026-11-19T18:09:40Z",
-    "authorizedAt": "2026-11-19T18:09:40Z",
-    "validUntil": "2026-11-20T18:15:00Z"
+    "confirmedAt": "2026-11-20T21:35:00Z",
+    "authorizedAt": "2026-11-20T21:35:00Z",
+    "validUntil": "2026-11-21T21:45:00Z"
   },
   "reviewBacklog": false,
   "bundleChecks": {
@@ -264,7 +269,7 @@
   "sourceBudget": {
     "allowPaidIncludedCredits": true,
     "maxMonthlyUsageUsd": 19,
-    "authorizedAt": "2026-11-19T18:09:40Z"
+    "authorizedAt": "2026-11-20T21:35:00Z"
   },
   "requireVisualBrandEvidence": true,
   "enableDiagnostics": true,

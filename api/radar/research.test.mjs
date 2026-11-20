@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import fs from 'node:fs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
-import {researchCandidate,researchText,processResearch} from './research.mjs';
+import {researchCandidate,researchText,processResearch,TELEGRAM_STANDOUT_SCORE,TELEGRAM_STANDOUT_MAX_PRICE} from './research.mjs';
 import {BUNDLE_SCHEMA} from './bundles.mjs';
 import {selectPhotoUrls} from './vision.mjs';
 import {scan,status} from './worker.mjs';
@@ -32,6 +32,13 @@ test('unpriced research keeps availability, condition, freshness, brand identity
  for(const patch of [{price:100.01},{price:0},{currency:'GBP'},{available:false},{condition:'satisfactory'},{flaws:['hole']},{title:'Needles replica track pants'},{description:'Uniqlo collaboration'},{title:'Needles child jacket'},{title:'Work jacket',brand:'Kapital'},{title:'Needles handmade scarf'},{observedAt:new Date(now-2*3600000).toISOString()},{photoUrls:[]}])assert.equal(researchCandidate({...item,...patch},config,now),null,JSON.stringify(patch));
  const blocked={...config,authenticityReviews:{123456:{brand:'Needles',verdict:'brand_mismatch'}}};assert.equal(researchCandidate(item,blocked,now),null);
  const value=researchText(item,{state:'inconclusive'});assert(value.includes('Verkoopwaarde en marge: onbekend'));assert(value.includes('Authenticiteit: niet bevestigd'));assert(!value.includes('/10'));
+});
+test('Telegram standout threshold is attainable only for high-scoring bargains',()=>{
+ assert.equal(TELEGRAM_STANDOUT_SCORE,55);assert.equal(TELEGRAM_STANDOUT_MAX_PRICE,40);
+ const strong={...item,dealRating:{state:'scored',score:57}};
+ assert.equal(researchCandidate(strong,config,now)?.reason,'high_deal_score');
+ assert.notEqual(researchCandidate({...strong,price:41},config,now)?.reason,'high_deal_score');
+ assert.notEqual(researchCandidate({...strong,dealRating:{state:'scored',score:54}},config,now)?.reason,'high_deal_score');
 });
 test('unpriced items enter the queue and send a distinct human research notice, never an eligible deal',async()=>{
  const ctx=setup();const report=await scan(ctx.env,options(ctx));
