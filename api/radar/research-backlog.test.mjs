@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import {reviewBacklog} from './research-backlog.mjs';
 const now=Date.now();
 const policy={id:'pilot-2026-11-06',enabled:true,researchEnabled:true,startsAt:new Date(now-3600000).toISOString(),endsAt:new Date(now+3600000).toISOString()};
-const item=id=>({url:`https://www.vinted.nl/items/${id}-test`,title:'orSlow white denim jacket',brand:'orSlow',price:35,currency:'EUR',condition:'very_good',size:'XXS',available:true,observedAt:new Date(now-60000).toISOString(),photoUrls:['https://images1.vinted.net/a.png','https://images1.vinted.net/b.png'],comparables:[]});
+const item=id=>({url:`https://www.vinted.nl/items/${id}-test`,title:'orSlow white denim jacket',brand:'orSlow',price:35,currency:'EUR',condition:'very_good',size:'XXS',available:true,observedAt:new Date(now-60000).toISOString(),photoUrls:['https://images1.vinted.net/a.png','https://images1.vinted.net/b.png'],comparables:[],dealRating:{state:'scored',score:57,reason:'Strong bargain'}});
 function setup(ids){
  const db=new DatabaseSync(':memory:');
  for(const name of ['0002_radar.sql','0003_radar_transport_retry.sql','0004_radar_vision.sql','0005_radar_second_trial.sql','0006_radar_research.sql','0007_radar_research_test.sql'])db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8'));
@@ -21,7 +21,7 @@ test('backlog sends only recently available matching candidates, without AI or s
  const options={query:ctx.query,now,clock:()=>now,fetcher:ctx.fetcher,testPolicy:policy,readExisting:async()=>[item('1'),{...item('2'),available:false},{...item('3'),observedAt:new Date(now-2*3600000).toISOString()},item('10594928216')]};
  const report=await reviewBacklog(ctx.env,options);
  assert.equal(report.waiting,5);assert.equal(report.revalidated,1);assert.equal(report.sent,1);assert.equal(report.excluded,1);assert.equal(report.unconfirmed,3);assert.equal(report.newScraperStarts,0);assert.equal(report.aiCalls,0);
- assert(ctx.messages[0].includes('Nog niet visueel gecontroleerd'));assert(ctx.messages[0].includes('XXS'));
+ assert(ctx.messages[0].startsWith('JAPANSTERDAM PICK'));assert(ctx.messages[0].includes('XXS'));assert(ctx.messages[0].includes('Authenticiteit: niet bevestigd'));
  assert.equal(ctx.db.prepare("SELECT last_seen FROM radar_research WHERE item_id='2'").get().last_seen,now-500000);
  assert.deepEqual(await reviewBacklog(ctx.env,options),{state:'already_attempted'});assert.equal(ctx.messages.length,1);ctx.db.close();
 });

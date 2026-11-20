@@ -20,6 +20,8 @@ export function researchAssessment(item,config,now=Date.now(),{forBundle=false}=
   const reject=reason=>({candidate:null,reason});
   const id=/\/items\/(\d+)/.exec(listingUrl(item.url)||'')?.[1];
   if(config.researchExcludedItems?.[id])return reject('explicit_exclusion');
+  if(!Number.isFinite(item.price)||item.price<=0)return reject('invalid_price');
+  if(item.currency&&item.currency!=='EUR')return reject('unsupported_currency');
   const brand=identifyBrand(item.brand,config),type=itemType(item);
   if(!brand||![...config.coreBrands,...(config.researchBrands||[])].includes(brand))return reject('brand_outside_selection');
   if(!type)return reject('garment_type_unknown');
@@ -38,7 +40,8 @@ export function researchAssessment(item,config,now=Date.now(),{forBundle=false}=
   if(!preference.allowed&&!preference.track)return reject('curation_excluded');
   const curatorReason=['preferred_japanese_story','preferred_porter_tanker','preferred_porter_tanker_green_orange'].includes(preference.reason);
   const highScore=item.dealRating?.state==='scored'&&item.dealRating.score>=TELEGRAM_STANDOUT_SCORE&&item.price<=TELEGRAM_STANDOUT_MAX_PRICE;
-  if(!check.eligible&&item.available===true&&item.price<=100&&(curatorReason||highScore)){
+  const missingReference=check.reason==='Geen passende prijsreferentie: flipwaarde blijft onbekend';
+  if(!check.eligible&&missingReference&&item.available===true&&item.price<=100&&(curatorReason||highScore)){
     return {reason:'research_candidate',candidate:{type,reason:curatorReason?'curator_pick':'high_deal_score',curationReason:preference.reason,
       priority:preference.boost+(highScore?item.dealRating.score:0)+15}};
   }
@@ -58,6 +61,10 @@ export function researchText(item,screen,candidate={}) {
     ? 'Fotoanalyse: kledingstuk en leesbare labels lijken samenhangend; dit bewijst geen authenticiteit.'
     : screen?.state==='inconclusive'&&screen.reason==='missing_or_unreadable_evidence'
     ? 'Fotoanalyse: onvoldoende leesbaar merk- of waslabel. Vraag duidelijke labelfoto’s op.'
+    : screen?.state==='inconclusive'&&screen.reason==='photos_unavailable_or_too_large'
+    ? 'Fotoanalyse: advertentiefoto’s konden niet worden beoordeeld. Vraag duidelijke foto’s van merk- en waslabels op.'
+    : screen?.state==='disabled'
+    ? 'Fotoanalyse is niet uitgevoerd. Controleer zelf kledingstuk, merklabel en waslabel.'
     : 'Nog niet visueel gecontroleerd — onderzoekskandidaat. Controleer zelf kledingstuk, merklabel en waslabel.';
   const standout=candidate.reason==='curator_pick'||candidate.reason==='high_deal_score';
   const selectionReason={preferred_japanese_story:'Jouw selectievoorkeur: het sterke Japanse verhaal maakt dit een opvallende Japansterdam-vondst.',preferred_porter_tanker:'Jouw selectievoorkeur: Porter Yoshida Tanker-tassen staan hoog op je lijst.',preferred_porter_tanker_green_orange:'Jouw favoriet: een Porter Yoshida Tanker in groen/olijf met oranje binnenkant.'}[candidate.curationReason];
@@ -96,13 +103,18 @@ export async function queueResearch(env,item,candidate,policy,now) {
 export async function processResearch(env,item,candidate,policy,{now,clock,fetcher,screen,mayScreen=()=>true,maySend=()=>true,queued:existingQueue}) {
   const queued=existingQueue||await queueResearch(env,item,candidate,policy,now);
   if(!queued||['notified','rejected','notification_pending'].includes(queued.state))return {queued:!!queued,sent:false};
+  // Telegram is reserved for actual standouts: the attainable high-score
+  // bargain gate or an explicit curator pick. Generic unknown-reference leads
+  // stay in the backend results for manual review without Telegram noise.
+  if(!['high_deal_score','curator_pick'].includes(candidate?.reason))return {queued:true,sent:false};
   if(!maySend())return {queued:true,sent:false};
   const photo=mayScreen()?await screen():{state:'unreviewed',reason:'photo_check_not_run'};
   const state=photo?.state==='rejected'?'rejected':photo?.state==='visually_consistent'?'review_ready':
     photo?.state==='inconclusive'&&photo.reason==='missing_or_unreadable_evidence'?'needs_labels':'unreviewed';
   await sql(env,'UPDATE radar_research SET state=?,photo_state=? WHERE pilot_id=? AND item_id=?',state,photo?.state||null,policy.id,queued.id).run();
-  // Missing labels, unavailable models and exhausted photo quota never fall back to an unchecked alert.
-  if(policy.requireVisualBrandEvidence&&photo?.state!=='visually_consistent')return {queued:true,sent:false,photo};
+  // This is explicitly a research lead, never a purchase or authenticity
+  // approval. Contradictory visual evidence is still rejected above; uncertain
+  // or unavailable photos are called out in the Telegram message.
   if(!maySend()||!['review_ready','needs_labels','unreviewed'].includes(state)||clock()>=Date.parse(policy.endsAt)||clock()<Date.parse(policy.startsAt))return {queued:true,sent:false,photo};
   // Share the prior photo-review delivery key: an item does not receive a second human-review alert.
   const alertId='photo-review:'+queued.id;

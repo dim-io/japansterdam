@@ -9,7 +9,7 @@ import {selectPhotoUrls} from './vision.mjs';
 import {scan,status} from './worker.mjs';
 const now=Date.now();
 const policy={id:'pilot-2026-11-06',enabled:true,researchEnabled:true,startsAt:new Date(now-1000).toISOString(),endsAt:new Date(now+23*3600000).toISOString(),maxAttempts:24,maxPhotoChecks:4,dailyVisionLimit:3,brands:{Needles:'360271'}};
-const item={title:'Needles Rebuild patchwork shirt',brand:'Needles',price:35,currency:'EUR',size:'XL',condition:'very_good',available:true,description:'',observedAt:new Date(now).toISOString(),url:'https://www.vinted.nl/items/123456-test',photoUrls:['https://images1.vinted.net/front.png','https://images1.vinted.net/label.png'],comparables:[]};
+const item={title:'Needles Rebuild patchwork shirt',brand:'Needles',price:35,currency:'EUR',size:'XL',condition:'very_good',available:true,description:'',observedAt:new Date(now).toISOString(),url:'https://www.vinted.nl/items/123456-test',photoUrls:['https://images1.vinted.net/front.png','https://images1.vinted.net/label.png'],comparables:[],dealRating:{state:'scored',score:57,reason:'Sterke uitvoering voor deze vraagprijs.'}};
 function setup(outcome='consistent',failure=false){
  const db=new DatabaseSync(':memory:');
  for(const name of ['0002_radar.sql','0003_radar_transport_retry.sql','0004_radar_vision.sql','0005_radar_second_trial.sql','0006_radar_research.sql'])db.exec(fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8'));
@@ -31,7 +31,7 @@ test('unpriced research keeps availability, condition, freshness, brand identity
  assert(researchCandidate(item,config,now));
  for(const patch of [{price:100.01},{price:0},{currency:'GBP'},{available:false},{condition:'satisfactory'},{flaws:['hole']},{title:'Needles replica track pants'},{description:'Uniqlo collaboration'},{title:'Needles child jacket'},{title:'Work jacket',brand:'Kapital'},{title:'Needles handmade scarf'},{observedAt:new Date(now-2*3600000).toISOString()},{photoUrls:[]}])assert.equal(researchCandidate({...item,...patch},config,now),null,JSON.stringify(patch));
  const blocked={...config,authenticityReviews:{123456:{brand:'Needles',verdict:'brand_mismatch'}}};assert.equal(researchCandidate(item,blocked,now),null);
- const value=researchText(item,{state:'inconclusive'});assert(value.includes('Verkoopwaarde en marge: onbekend'));assert(value.includes('Authenticiteit: niet bevestigd'));assert(!value.includes('/10'));
+ const value=researchText(item,{state:'inconclusive'});assert(value.includes('Verkoopwaarde en marge: onbekend'));assert(value.includes('Authenticiteit: niet bevestigd'));assert(value.includes('AI-dealscore: 57/100'));
 });
 test('Telegram standout threshold is attainable only for high-scoring bargains',()=>{
  assert.equal(TELEGRAM_STANDOUT_SCORE,55);assert.equal(TELEGRAM_STANDOUT_MAX_PRICE,40);
@@ -40,13 +40,20 @@ test('Telegram standout threshold is attainable only for high-scoring bargains',
  assert.notEqual(researchCandidate({...strong,price:41},config,now)?.reason,'high_deal_score');
  assert.notEqual(researchCandidate({...strong,dealRating:{state:'scored',score:54}},config,now)?.reason,'high_deal_score');
 });
-test('unpriced items enter the queue and send a distinct human research notice, never an eligible deal',async()=>{
+test('only high-score bargain leads send a clearly qualified Telegram research notice',async()=>{
  const ctx=setup();const report=await scan(ctx.env,options(ctx));
  assert.equal(report.sent,0);assert.equal(report.researchQueued,1);assert.equal(report.researchSent,1);assert.equal(report.decisions[0].score,null);assert.equal(report.decisions[0].authenticity,'unreviewed');
- assert(ctx.messages[0].startsWith('ONDERZOEK — GEEN KOOPADVIES'));assert(ctx.messages[0].includes('onbekend'));assert(!ctx.messages[0].includes('/10'));
+ assert(ctx.messages[0].startsWith('JAPANSTERDAM PICK — DEZE VERDIENT EEN KIJK'));assert(ctx.messages[0].includes('AI-dealscore: 57/100'));assert(ctx.messages[0].includes('Authenticiteit: niet bevestigd'));
  await scan(ctx.env,options(ctx,{now:now+3600000,clock:()=>now+3600000,probeFn:async()=>({runId:'again',items:[{...item,observedAt:new Date(now+3600000).toISOString()}]})}));
  assert.equal(ctx.messages.length,1);assert.equal(ctx.calls(),1);
  const publicStatus=JSON.stringify(await status(ctx.env,now,policy));assert.equal(JSON.parse(publicStatus).researchNoticeLimit,null);assert(publicStatus.includes('researchEnabled'));assert(!publicStatus.includes('123456'));assert(!publicStatus.includes(item.title));ctx.db.close();
+});
+test('generic missing-reference candidates stay in the backend queue without Telegram noise or photo checks',async()=>{
+ const ctx=setup();let screens=0;
+ const candidate=researchCandidate({...item,dealRating:{state:'scored',score:54}},config,now);
+ assert.equal(candidate.reason,'model_reference_missing');
+ const result=await processResearch(ctx.env,item,candidate,policy,{now,clock:()=>now,fetcher:ctx.fetcher,screen:async()=>{screens++;return{state:'visually_consistent'};}});
+ assert.equal(result.queued,true);assert.equal(result.sent,false);assert.equal(screens,0);assert.equal(ctx.messages.length,0);ctx.db.close();
 });
 test('unreadable labels request manual evidence; contradictory labels never produce research alerts',async()=>{
  for(const outcome of ['unclear','rejected']){
@@ -68,7 +75,7 @@ test('the research route shares the existing GPU limits, does not cap notices an
  assert.equal(ctx.db.prepare('SELECT attempts FROM radar_research_limits').get().attempts,3);
  assert.equal(ctx.db.prepare('SELECT attempts FROM radar_vision_control WHERE id=?').get(policy.id).attempts,2);ctx.db.close();
  const blocked=setup();blocked.db.prepare('UPDATE radar_vision_control SET attempts=4 WHERE id=?').run(policy.id);
- const waiting=await scan(blocked.env,options(blocked));assert.equal(waiting.researchQueued,1);assert.equal(waiting.researchSent,1);assert.equal(blocked.calls(),0);assert.equal(blocked.db.prepare('SELECT state FROM radar_research').get().state,'notified');assert(blocked.messages[0].includes('Nog niet visueel gecontroleerd'));blocked.db.close();
+ const waiting=await scan(blocked.env,options(blocked));assert.equal(waiting.researchQueued,1);assert.equal(waiting.researchSent,1);assert.equal(blocked.calls(),0);assert.equal(blocked.db.prepare('SELECT state FROM radar_research').get().state,'notified');assert(blocked.messages[0].includes('Fotoanalyse is niet uitgevoerd'));blocked.db.close();
 });
 test('an ambiguous Telegram failure remains reserved and is not retried after another hourly scan',async()=>{
  const ctx=setup('consistent',true);await assert.rejects(scan(ctx.env,options(ctx)));
@@ -111,7 +118,7 @@ test('missing AI quota sends an explicitly unreviewed tip once without inventing
  const ctx=setup();ctx.db.prepare('UPDATE radar_vision_control SET attempts=4 WHERE id=?').run(policy.id);
  const report=await scan(ctx.env,options(ctx));
  assert.equal(report.sent,0);assert.equal(report.researchSent,1);assert.equal(ctx.calls(),0);
- assert(ctx.messages[0].includes('Nog niet visueel gecontroleerd'));
+ assert(/Fotoanalyse is niet uitgevoerd|Nog niet visueel gecontroleerd/.test(ctx.messages[0]));
  assert(!ctx.messages[0].includes('onvoldoende leesbaar'));
  assert.equal(ctx.db.prepare('SELECT attempts FROM radar_research_limits').get().attempts,1);
  ctx.db.close();
@@ -134,11 +141,13 @@ test('full scan plus a batched bundle queue retains the Free fifty-request ceili
  assert(ctx.dbCalls()+ctx.photoFetches()+ctx.calls()+ctx.messages.length+15<=50,JSON.stringify({db:ctx.dbCalls(),photos:ctx.photoFetches(),ai:ctx.calls(),messages:ctx.messages.length}));ctx.db.close();
 });
 
-test('strict Japanese-brand policy never sends an unchecked, contradictory or unreadable research tip',async()=>{
+test('high-score bargain leads can be messaged with uncertain photos, but contradictions stay blocked',async()=>{
  for(const result of [{state:'unreviewed'},{state:'inconclusive',reason:'missing_or_unreadable_evidence'},{state:'disabled',reason:'daily_photo_budget_reached'},{state:'rejected',reason:'contradictory_brand_or_details'}]) {
   const ctx=setup();const strict={...policy,requireVisualBrandEvidence:true};
   const out=await processResearch(ctx.env,item,researchCandidate(item,config,now),strict,{now,clock:()=>now,fetcher:ctx.fetcher,screen:async()=>result});
-  assert.equal(out.sent,false);assert.equal(ctx.messages.length,0);assert.equal(ctx.db.prepare('SELECT COUNT(*) n FROM radar_alerts').get().n,0);ctx.db.close();
+  const rejected=result.state==='rejected';assert.equal(out.sent,!rejected);assert.equal(ctx.messages.length,rejected?0:1);
+  if(!rejected)assert(ctx.messages[0].includes('Authenticiteit: niet bevestigd'));
+  else assert.equal(ctx.db.prepare('SELECT state FROM radar_research').get().state,'rejected');ctx.db.close();
  }
 });
 test('strict policy permits a label-supported research tip but still makes no authenticity promise',async()=>{
@@ -149,7 +158,7 @@ test('strict policy permits a label-supported research tip but still makes no au
 test('strict policy does not spend or send when there is no photo slot',async()=>{
  const ctx=setup();let calls=0;
  const out=await processResearch(ctx.env,item,researchCandidate(item,config,now),{...policy,requireVisualBrandEvidence:true},{now,clock:()=>now,fetcher:ctx.fetcher,mayScreen:()=>false,screen:async()=>{calls++;}});
- assert.equal(out.sent,false);assert.equal(calls,0);assert.equal(ctx.messages.length,0);ctx.db.close();
+ assert.equal(out.sent,true);assert.equal(calls,0);assert.equal(ctx.messages.length,1);assert(ctx.messages[0].includes('Nog niet visueel gecontroleerd'));ctx.db.close();
 });
 
 test('non-selected brands returned by the scraper never reach photo checks or Telegram',async()=>{

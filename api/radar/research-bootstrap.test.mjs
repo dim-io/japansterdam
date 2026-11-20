@@ -6,7 +6,7 @@ import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import {existingResults,runResearchTest} from './research-test.mjs';
 const now=Date.now();
 const policy={id:'pilot-2026-11-06',enabled:true,researchEnabled:true,researchTestOnce:true,startsAt:new Date(now-3600000).toISOString(),endsAt:new Date(now+3600000).toISOString(),maxPhotoChecks:4,dailyVisionLimit:3,brands:{Needles:'360271',Kapital:'576107'}};
-const item={url:'https://www.vinted.nl/items/123456-test',title:'Needles Rebuild patchwork shirt',brand:'Needles',price:35,currency:'EUR',condition:'very_good',available:true,observedAt:new Date(now-60000).toISOString(),photoUrls:['https://images1.vinted.net/a.png','https://images1.vinted.net/b.png'],comparables:[]};
+const item={url:'https://www.vinted.nl/items/123456-test',title:'Needles Rebuild patchwork shirt',brand:'Needles',price:35,currency:'EUR',condition:'very_good',available:true,observedAt:new Date(now-60000).toISOString(),photoUrls:['https://images1.vinted.net/a.png','https://images1.vinted.net/b.png'],comparables:[],dealRating:{state:'scored',score:57,reason:'Strong bargain'}};
 function setup(){
  const db=new DatabaseSync(':memory:');
  for(const migration of ['0002_radar.sql','0003_radar_transport_retry.sql','0004_radar_vision.sql','0005_radar_second_trial.sql','0006_radar_research.sql','0007_radar_research_test.sql'])db.exec(fs.readFileSync(new URL('../migrations/'+migration,import.meta.url),'utf8'));
@@ -16,7 +16,7 @@ function setup(){
  const env={APIFY_TOKEN:'fixture',TELEGRAM_BOT_TOKEN:'123:fixture',TELEGRAM_CHAT_ID:'42',VISION_FREE_CONFIRMED:'true',AI:{async run(){gpu++;return{response:{garment_visible:true,brand_text:'Needles',brand_photo:0,care_text:'100% cotton. Made in Japan.',care_photo:1,contradiction:false,reason:'consistent_visuals'}};}},RADAR_DB:{prepare(query){return{async all(){return{results:db.prepare(query).all()};},bind(...args){const s=db.prepare(query);return{async first(){return s.get(...args)||null;},async run(){return s.run(...args);},async all(){return{results:s.all(...args)};}};}};}}};
  const fetcher=async(url,init)=>{
   if(String(url).includes('vinted.net'))return new Response(new Uint8Array([0x89,0x50,0x4e,0x47]));
-  assert(String(url).startsWith('https://api.telegram.org/'));assert(JSON.parse(init.body).text.startsWith('ONDERZOEK'));messages++;return Response.json({ok:true,result:{message_id:messages}});
+  assert(String(url).startsWith('https://api.telegram.org/'));assert(JSON.parse(init.body).text.startsWith('JAPANSTERDAM PICK'));messages++;return Response.json({ok:true,result:{message_id:messages}});
  };
  return{db,env,fetcher,gpu:()=>gpu,messages:()=>messages};
 }
