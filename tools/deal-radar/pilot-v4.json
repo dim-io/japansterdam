@@ -2,8 +2,8 @@
   "enabled": true,
   "id": "pilot-2026-11-20",
   "previousPilotId": "pilot-2026-11-19",
-  "startsAt": "2026-11-20T21:45:00Z",
-  "endsAt": "2026-11-21T21:45:00Z",
+  "startsAt": "2026-11-20T22:00:00Z",
+  "endsAt": "2026-11-21T22:00:00Z",
   "maxAttempts": 288,
   "brands": {
     "Nonnative": "355385",
@@ -260,7 +260,7 @@
     "source": "owner_confirmation",
     "confirmedAt": "2026-11-20T21:35:00Z",
     "authorizedAt": "2026-11-20T21:35:00Z",
-    "validUntil": "2026-11-21T21:45:00Z"
+    "validUntil": "2026-11-21T22:00:00Z"
   },
   "reviewBacklog": false,
   "bundleChecks": {

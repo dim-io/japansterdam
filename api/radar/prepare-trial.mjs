@@ -10,21 +10,27 @@ import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
 
 // Read-only account/source checks precede even the single bounded blank-image test.
 export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testPolicy=policy,readiness=check,budget=preflight}={}) {
-  if((await query('SELECT id FROM radar_control WHERE id=?',[testPolicy.id])).length)return {alreadyInitialized:true};
+  let existing;
+  try{existing=await query('SELECT id FROM radar_control WHERE id=?',[testPolicy.id]);}catch{throw Error('trial_database_unavailable');}
+  if(existing.length)return {alreadyInitialized:true};
   if(!testPolicy.enabled||now>=Date.parse(testPolicy.endsAt))throw Error('trial_window_closed');
-  const source=await budget(env.APIFY_TOKEN,fetcher,sourceReserve(testPolicy),testPolicy.sourceBudget);
+  let source;
+  try{source=await budget(env.APIFY_TOKEN,fetcher,sourceReserve(testPolicy),testPolicy.sourceBudget);}catch{throw Error('source_budget_unavailable');}
   if(!(source.includedPlanConfirmed??source.freePlanConfirmed))throw Error('source_budget_not_confirmed:plan_unconfirmed');
   if(!source.enoughCredit)throw Error('source_budget_not_confirmed:insufficient_included_credit');
   // Reuse the actual same-account blank-image test, retaining global daily AI usage.
   if(testPolicy.sourceProvider==='topapi-monitor'&&validOwnerConfirmation(testPolicy,now)){
-    const proof=(await query('SELECT state,created_at FROM radar_photo_checks WHERE pilot_id=? AND item_id=? AND evidence_key=?',[readinessPolicy.id,'smoke-v2','empty-pixel-regression-v2']))[0];
+    let proofRows;
+    try{proofRows=await query('SELECT state,created_at FROM radar_photo_checks WHERE pilot_id=? AND item_id=? AND evidence_key=?',[readinessPolicy.id,'smoke-v2','empty-pixel-regression-v2']);}catch{throw Error('trial_database_unavailable');}
+    const proof=proofRows[0];
     if(readinessPolicy.accountId===testPolicy.visionAccountConfirmation.accountId&&proof?.state==='ready'&&proof.created_at<=now&&now-proof.created_at<86400000){
       await readCatalog({SHOP_CATALOG_URL:'https://japansterdam-api.sam-jesse.workers.dev/public/products'},fetcher);
       if(!await telegramReadiness(env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher))throw Error('trial_readiness_not_confirmed');
       return {includedSourceBudgetConfirmed:true,photoState:'ready',reusedPhotoReadiness:true,newScraperStarts:0,messagesSent:0};
     }
   }
-  const ready=await readiness(env,{query,now,fetcher});
+  let ready;
+  try{ready=await readiness(env,{query,now,fetcher});}catch{throw Error('readiness_probe_unavailable');}
   if(!ready.shopReferences||!ready.telegramReady||!ready.workersAiFreePlan||ready.photoState!=='ready'){
     const status={shopReferences:!!ready.shopReferences,telegramReady:!!ready.telegramReady,workersAiFreePlan:!!ready.workersAiFreePlan,photoState:ready.photoState||'unknown',photoReason:ready.photoReason||null};
     throw Error('trial_readiness_not_confirmed:'+JSON.stringify(status));
@@ -34,7 +40,8 @@ export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testP
 export function preparationFailure(error){
   const message=String(error?.message||'');
   if(message==='Budgetcontrole niet beschikbaar')return 'source_budget_unavailable';
-  if(message==='database_transport_failed')return 'trial_database_unavailable';
+  if(['database_transport_failed','trial_database_unavailable'].includes(message))return 'trial_database_unavailable';
+  if(['source_budget_unavailable','readiness_probe_unavailable'].includes(message))return message;
   if(/^database_query_http_\d{3}$/.test(message))return message;
   if(message.startsWith('source_budget_not_confirmed:'))return message;
   if(message.startsWith('trial_readiness_not_confirmed:'))return message;

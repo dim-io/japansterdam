@@ -7,6 +7,11 @@ test('preflight failures expose only a safe cause category, never arbitrary prov
  assert.equal(preparationFailure(Error('database_query_http_503')),'database_query_http_503');
  assert.equal(preparationFailure(Error('https://api.example/?token=secret')),'trial_preparation_failed');
 });
+test('source, database and readiness transport errors are attributed to their preflight stage',async()=>{
+ await assert.rejects(prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async()=>{throw Error('fetch failed');}}),/source_budget_unavailable/);
+ await assert.rejects(prepareTrial({}, {now,testPolicy,query:async()=>{throw Error('HTTP 500 secret');}}),/trial_database_unavailable/);
+ await assert.rejects(prepareTrial({}, {now,testPolicy,query:async()=>[],budget:async()=>({includedPlanConfirmed:true,enoughCredit:true}),readiness:async()=>{throw Error('account detail');}}),/readiness_probe_unavailable/);
+});
 test('existing trials never spend a second readiness test or restart budgets',async()=>{
  assert.deepEqual(await prepareTrial({}, {query:async()=>[{id:'new'}],testPolicy,budget(){throw Error('must not run');},readiness(){throw Error('must not run');}}),{alreadyInitialized:true});
 });
