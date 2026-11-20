@@ -1,6 +1,6 @@
 import { productBrands } from './brands.js?v=individual-labels-2';
 import { imageFrameStyle } from './image-frames.js';
-import { publishedStories, storyCard } from './journal-shared.js?v=visitor-insights-3';
+import { publishedStories, storyCard } from './journal-shared.js?v=journal-love-piece-first-1';
 import './layout.js?v=visitor-insights-3';
 import { initHomeMotion } from './home-motion.js';
 import { getContent, getProducts, byNewest, cardHTML, esc, catNo, productUrl, brandUrl, formatPrice } from './data.js?v=visitor-insights-3';

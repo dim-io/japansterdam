@@ -1,8 +1,9 @@
 import { responsiveAttrs, imageVariant } from './responsive-images.js';
 import { esc, productUrl } from './data.js?v=visitor-insights-3';
+import { orderJournalStories } from './journal-order.js';
 
 export const storyUrl = (slug) => 'journal.html?story=' + encodeURIComponent(slug);
-export const publishedStories = (journal) => (journal?.articles || []).filter(a => a.published === true && a.slug && a.title);
+export const publishedStories = (journal) => orderJournalStories((journal?.articles || []).filter(a => a.published === true && a.slug && a.title));
 export const readingMinutes = (html) => Math.max(1, Math.ceil(String(html || '').replace(/<[^>]*>/g, ' ').trim().split(/\s+/).length / 220));
 export const storyDate = (date) => /^\d{4}-\d{2}-\d{2}$/.test(date || '') ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(date + 'T12:00:00Z')) : '';
 

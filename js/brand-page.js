@@ -1,7 +1,7 @@
 import './layout.js?v=visitor-insights-3';
 import { getProducts, getContent, cardHTML, esc } from './data.js?v=visitor-insights-3';
 import { matchesBrand } from './brands.js';
-import { storyCard, publishedStories } from './journal-shared.js?v=visitor-insights-3';
+import { storyCard, publishedStories } from './journal-shared.js?v=journal-love-piece-first-1';
 const brand=document.body.dataset.brand;
 const grid=document.getElementById('brand-pieces');
 try {

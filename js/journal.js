@@ -1,6 +1,6 @@
 import './layout.js?v=visitor-insights-3';
 import { getContent, getProducts, esc, cardHTML, setMeta, jsonLd } from './data.js?v=visitor-insights-3';
-import { publishedStories, storyUrl, storyCard, storyDate, readingMinutes, matchesProduct, safeArticleHTML } from './journal-shared.js?v=visitor-insights-3';
+import { publishedStories, storyUrl, storyCard, storyDate, readingMinutes, matchesProduct, safeArticleHTML } from './journal-shared.js?v=journal-love-piece-first-1';
 
 const root = document.getElementById('journal-root');
 document.querySelector('[data-ssr-schema]')?.remove();

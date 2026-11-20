@@ -97,6 +97,19 @@ test('Journal stories have unique server metadata, safe content and real draft 4
   assert.equal((await worker.fetch(new Request('https://japansterdam.com/journal.html?story=private'),e)).status,404);
  }finally{content=original;}
 });
+test('the server-rendered Journal pins For the love of the piece first',async()=>{
+ const original=content;
+ content={...content,journal:{articles:[
+  {slug:'out-of-the-kiln-into-the-everyday',published:true,title:'Out of the kiln. Into the everyday.',subtitle:'Shoes and craft',cover:'assets/img/site/about-sam.jpg'},
+  {slug:'for-the-love-of-the-piece',published:true,title:'For the love of the piece.',subtitle:'Where it begins',cover:'assets/img/site/about-sam.jpg'}
+ ]}};
+ try{
+  const e=env(),template=await readFile(new URL('../../journal.html',import.meta.url),'utf8');e.ASSETS.fetch=async()=>new Response(template);
+  const r=await worker.fetch(new Request('https://japansterdam.com/journal.html'),e),html=await r.text();
+  assert.equal(r.status,200);
+  assert.ok(html.indexOf('<h2>For the love of the piece.</h2>')<html.indexOf('<h2>Out of the kiln. Into the everyday.</h2>'));
+ }finally{content=original;}
+});
 test('new image uploads fall back to originals; unrelated optimized paths do not redirect',async()=>{
  const e=env();e.ASSETS.fetch=async()=>new Response('Missing',{status:404});
  const r=await worker.fetch(new Request('https://japansterdam.com/assets/optimized/uploads/new-photo.jpg-480.webp'),e);

@@ -1,7 +1,7 @@
 import { track } from './statistics.js?v=visitor-insights-3';
 import { responsiveAttrs } from './responsive-images.js';
 import { productFitsLike } from './sizing.js?v=footwear-filter-1';
-import { productStoriesHTML } from './journal-shared.js?v=visitor-insights-3';
+import { productStoriesHTML } from './journal-shared.js?v=journal-love-piece-first-1';
 import { imageFrameStyle } from './image-frames.js';
 import './layout.js?v=visitor-insights-3';
 import { measurementsBlock } from './measurements.js?v=restore-measurements-1';

@@ -1,9 +1,10 @@
 import sanitize from 'sanitize-html';
 import { esc, ORIGIN } from './render.mjs';
 import { responsiveAttrs } from '../../js/responsive-images.js';
+import { orderJournalStories } from '../../js/journal-order.js';
 const plain=s=>String(s||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
 const storyURL=a=>'journal.html?story='+encodeURIComponent(a.slug);
-export const liveStories=c=>(c.journal?.articles||[]).filter(a=>a.published===true&&a.slug&&a.title);
+export const liveStories=c=>orderJournalStories((c.journal?.articles||[]).filter(a=>a.published===true&&a.slug&&a.title));
 export function articleBody(html){
  return sanitize(String(html||''),{
   allowedTags:['p','h2','h3','h4','strong','em','b','i','a','ul','ol','li','blockquote','figure','figcaption','img','br','hr','sup','sub'],
