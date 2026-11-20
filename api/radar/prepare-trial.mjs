@@ -31,4 +31,14 @@ export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testP
   }
   return {includedSourceBudgetConfirmed:true,photoState:ready.photoState,newScraperStarts:0,messagesSent:0};
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)prepareTrial(process.env,{query:client(TARGET,process.env.CLOUDFLARE_API_TOKEN)}).then(result=>console.log(JSON.stringify(result))).catch(error=>{console.error((error.message.startsWith('source_budget_not_confirmed:')||error.message.startsWith('trial_readiness_not_confirmed:')||['trial_window_closed','trial_readiness_not_confirmed'].includes(error.message))?error.message:'trial_preparation_failed');process.exitCode=1;});
+export function preparationFailure(error){
+  const message=String(error?.message||'');
+  if(message==='Budgetcontrole niet beschikbaar')return 'source_budget_unavailable';
+  if(message==='database_transport_failed')return 'trial_database_unavailable';
+  if(/^database_query_http_\d{3}$/.test(message))return message;
+  if(message.startsWith('source_budget_not_confirmed:'))return message;
+  if(message.startsWith('trial_readiness_not_confirmed:'))return message;
+  if(['trial_window_closed','trial_readiness_not_confirmed','migration_not_verified'].includes(message))return message;
+  return 'trial_preparation_failed';
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)prepareTrial(process.env,{query:client(TARGET,process.env.CLOUDFLARE_API_TOKEN)}).then(result=>console.log(JSON.stringify(result))).catch(error=>{console.error(preparationFailure(error));process.exitCode=1;});

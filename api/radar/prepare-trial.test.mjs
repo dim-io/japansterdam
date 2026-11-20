@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {prepareTrial} from './prepare-trial.mjs';
+import {prepareTrial,preparationFailure} from './prepare-trial.mjs';
 const now=Date.now(),testPolicy={id:'new',enabled:true,endsAt:new Date(now+86400000).toISOString()};
+test('preflight failures expose only a safe cause category, never arbitrary provider details',()=>{
+ assert.equal(preparationFailure(Error('Budgetcontrole niet beschikbaar')),'source_budget_unavailable');
+ assert.equal(preparationFailure(Error('database_query_http_503')),'database_query_http_503');
+ assert.equal(preparationFailure(Error('https://api.example/?token=secret')),'trial_preparation_failed');
+});
 test('existing trials never spend a second readiness test or restart budgets',async()=>{
  assert.deepEqual(await prepareTrial({}, {query:async()=>[{id:'new'}],testPolicy,budget(){throw Error('must not run');},readiness(){throw Error('must not run');}}),{alreadyInitialized:true});
 });
