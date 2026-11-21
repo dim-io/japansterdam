@@ -5,8 +5,10 @@ import {probe} from '../../tools/deal-radar/provider.mjs';
 import {identifyBrand,itemPriceLimit} from '../../tools/deal-radar/scoring.mjs';
 import {researchCandidate} from './research.mjs';
 import {curation} from './curation.mjs';
-import config from '../../tools/deal-radar/config.json' with {type:'json'};
+import publicConfig from '../../tools/deal-radar/config.json' with {type:'json'};
 import policy from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
+const rejectedIds=['900101','900102','900103','900104','900105'];
+const config={...publicConfig,curationPreferences:{enabled:true,listingFeedback:Object.fromEntries(rejectedIds.map(id=>[id,{verdict:'skip',reason:'test fixture'}]))}};
 
 test('broad rotation covers every selected brand without increasing the daily source budget',()=>{
  const counts=new Map();
@@ -33,7 +35,7 @@ test('keyword search removes the default Needles filter, retains bounds, and nev
  assert.equal(result.items[0].brand,'Other');assert.notEqual(identifyBrand(result.items[0].brand,config),identifyBrand('BEAMS Plus',config));
 });
 test('all five rejected tips stay excluded without banning their garment categories',()=>{
- for(const id of ['10738630152','10760858891','10763768360','10780398934','10780529953'])assert(!curation({url:`https://www.vinted.nl/items/${id}-piece`,brand:'Needles',title:'jacket'},config).allowed);
+ for(const id of rejectedIds)assert(!curation({url:`https://www.vinted.nl/items/${id}-piece`,brand:'Needles',title:'jacket'},config).allowed);
  assert(curation({url:'https://www.vinted.nl/items/999-other',brand:'Needles',title:'jacket'},config).allowed);
 });
 

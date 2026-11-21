@@ -1,18 +1,8 @@
 {
-  "enabled": true,
-  "startsAt": "2026-11-04T22:29:16.260330+00:00",
-  "endsAt": "2026-11-05T22:29:16.260330+00:00",
-  "maxAttempts": 25,
+  "enabled": false,
   "brands": {
     "Kapital": "576107",
     "Needles": "360271"
   },
-  "revision": "rotation-and-diagnostics-1",
-  "visionAccountConfirmation": {
-    "accountId": "0e3359947b78095a7afd9ce36f5cac6f",
-    "plan": "free",
-    "source": "owner_confirmation",
-    "confirmedAt": "2026-11-05T19:30:08.939561+00:00",
-    "validUntil": "2026-11-05T22:29:16.260330+00:00"
-  }
+  "revision": "rotation-and-diagnostics-1"
 }

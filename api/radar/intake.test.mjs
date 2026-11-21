@@ -48,12 +48,11 @@ test('brand-tagged non-clothing and missing/old timestamps never enter the photo
 });
 test('fresh trial covers all selected canonical brands each cycle within an unchanged monthly ceiling',()=>{
  const selections=Array.from({length:policy.brandGroups.length},(_,slot)=>scanSelection(policy,slot));
- assert.equal(new Set(selections.flat().map(([b])=>b)).size,43);
+ assert.equal(new Set(selections.flat().map(([b])=>b)).size,51);
  assert(selections.every(g=>g.length>=2&&g.length<=3));
  assert.deepEqual(scanSelection(policy,policy.brandGroups.length),scanSelection(policy,0));
- assert.equal(policy.sourceBudget.maxMonthlyUsageUsd,19);
- assert.equal(Date.parse(policy.endsAt)-Date.parse(policy.startsAt),24*3600000);
  assert.equal(policy.requireVisualBrandEvidence,true);
+ assert.equal(policy.enabled,false);assert.equal('sourceBudget' in policy,false);
 });
 
 test('French and Spanish garment titles do not disappear solely because of their language',()=>{

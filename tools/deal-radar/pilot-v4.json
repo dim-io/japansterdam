@@ -1,10 +1,5 @@
 {
-  "enabled": true,
-  "id": "pilot-2026-11-20",
-  "previousPilotId": "pilot-2026-11-19",
-  "startsAt": "2026-11-20T22:00:00Z",
-  "endsAt": "2026-11-21T22:00:00Z",
-  "maxAttempts": 288,
+  "enabled": false,
   "brands": {
     "Nonnative": "355385",
     "Wacko Maria": "614622",
@@ -168,6 +163,59 @@
         "JJJJound",
         "HAL STUDIOS"
       ]
+    },
+    "A.PRESSE": {
+      "searchTerms": [
+        "A.PRESSE",
+        "A Presse"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Snow Peak": {
+      "searchTerms": [
+        "Snow Peak",
+        "Snowpeak"
+      ],
+      "exactQueriesOnly": true
+    },
+    "And Wander": {
+      "searchTerms": [
+        "And Wander"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Norbit": {
+      "searchTerms": [
+        "Norbit",
+        "Norbit by Hiroshi Nozawa"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Sacai": {
+      "searchTerms": [
+        "Sacai"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Comoli": {
+      "searchTerms": [
+        "Comoli"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Goldwin": {
+      "searchTerms": [
+        "Goldwin",
+        "Goldwin 0"
+      ],
+      "exactQueriesOnly": true
+    },
+    "Hender Scheme": {
+      "searchTerms": [
+        "Hender Scheme",
+        "HenderScheme"
+      ],
+      "exactQueriesOnly": true
     }
   },
   "brandGroups": [
@@ -243,10 +291,26 @@
       "Moonstar",
       "Shoes Like Pottery",
       "ASICS"
+    ],
+    [
+      "A.PRESSE",
+      "Snow Peak",
+      "And Wander"
+    ],
+    [
+      "Norbit",
+      "Sacai",
+      "Comoli"
+    ],
+    [
+      "Goldwin",
+      "Hender Scheme"
     ]
   ],
-  "revision": "native-curated-brands-v20-ts-search-telegram-bargain-gate",
-  "dealScoring": { "enabled": true },
+  "revision": "native-curated-brands-v21-eight-labels-neighborhood-title-gate",
+  "dealScoring": {
+    "enabled": true
+  },
   "mode": "fresh-rotation",
   "maxResultsPerBrand": 10,
   "maxCostPerRunUsd": 0.03,
@@ -254,22 +318,9 @@
   "dailyVisionLimit": 3,
   "researchEnabled": true,
   "researchTestOnce": false,
-  "visionAccountConfirmation": {
-    "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
-    "plan": "free",
-    "source": "owner_confirmation",
-    "confirmedAt": "2026-11-20T21:35:00Z",
-    "authorizedAt": "2026-11-20T21:35:00Z",
-    "validUntil": "2026-11-21T22:00:00Z"
-  },
   "reviewBacklog": false,
   "bundleChecks": {
     "enabled": false
-  },
-  "sourceBudget": {
-    "allowPaidIncludedCredits": true,
-    "maxMonthlyUsageUsd": 19,
-    "authorizedAt": "2026-11-20T21:35:00Z"
   },
   "requireVisualBrandEvidence": true,
   "enableDiagnostics": true,

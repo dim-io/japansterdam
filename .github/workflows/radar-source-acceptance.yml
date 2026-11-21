@@ -17,4 +17,5 @@ jobs:
       - name: Bronkwaliteit en herhalingen toetsen (maximaal 15 dollarcent)
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          RADAR_PRIVATE_CONFIG: ${{ secrets.RADAR_PRIVATE_CONFIG }}
         run: node api/radar/source-acceptance.mjs

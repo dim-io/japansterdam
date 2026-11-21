@@ -17,4 +17,5 @@ jobs:
       - name: Drie bronproeven zonder meldingen (maximaal 9 dollarcent)
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          RADAR_PRIVATE_CONFIG: ${{ secrets.RADAR_PRIVATE_CONFIG }}
         run: node api/radar/source-verification.mjs

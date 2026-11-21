@@ -10,15 +10,15 @@ import {queueDealRatings,readDealRatings} from './deal-ratings.mjs';
 const ORIGINS=new Set(['https://japansterdam.com','https://www.japansterdam.com','https://dim-io.github.io','https://japansterdam-web.sam-jesse.workers.dev']);
 const PAGE_SIZE=36;
 const clean=(s,n=240)=>String(s||'').replace(/\s+/g,' ').slice(0,n);
-export function reviewItem(row,run){
+export function reviewItem(row,run,radarConfig=config){
  const url=listingUrl(row.url||row.link);if(!url||row.record_type&&row.record_type!=='item')return null;
  const category=Array.isArray(row.category_path)?row.category_path.join(' / '):row.category_path;
  const candidate={brand:row.brand_title||row.brand,title:row.title,description:row.description,category};
- const brand=canonicalListingBrand(candidate,config)||clean(row.brand_title||row.brand,80);
+ const brand=canonicalListingBrand(candidate,radarConfig)||clean(row.brand_title||row.brand,80);
  const originalTitle=clean(row.title);const price=Number(row.price_amount??row.price);
  if(!brand||!originalTitle||!Number.isFinite(price)||price<=0)return null;
  candidate.brand=brand;
- if(selectionRejection(candidate,config)||price>itemPriceLimit(brand,config))return null;
+ if(selectionRejection(candidate,radarConfig)||price>itemPriceLimit(brand,radarConfig))return null;
  const photo=row.photo_url||row.image;let image=null;
  try{const u=new URL(photo);if(u.protocol==='https:'&&/^images\d*\.vinted\.net$/.test(u.hostname)&&!u.username&&!u.password&&!u.port)image=u.href;}catch{}
  const publication=publicationDetails(row,run.finishedAt||run.startedAt);
@@ -29,7 +29,7 @@ export function reviewItem(row,run){
 }
 
 // Read existing results only. Never start an Actor, send an alert or expose a key.
-export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
+export async function reviewResults(request,env,policy,{fetcher=fetch,config:radarConfig=config}={}){
  const origin=request.headers.get('Origin');
  const headers={'Cache-Control':'private, no-store','Vary':'Origin','Content-Type':'application/json'};
  if(origin&&!ORIGINS.has(origin))return new Response('{"error":"Origin not allowed"}',{status:403,headers});
@@ -57,7 +57,7 @@ export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
    if(run.status!=='SUCCEEDED'||!/^[a-zA-Z0-9]+$/.test(run.defaultDatasetId||'')||!/^[a-zA-Z0-9]+$/.test(run.id||''))return;
    if(/Nothing was charged\.|First monitor run:/.test(run.statusMessage||'')){rounds.push({id:run.id,empty:true,startedAt:run.startedAt,label:clean(run.statusMessage,400)});return;}
    try{const data=await get('/datasets/'+run.defaultDatasetId+'/items?clean=true&limit=30');if(!Array.isArray(data))throw Error('invalid_dataset');
-    rows.push(...data.map(row=>reviewItem(row,run)).filter(Boolean));
+    rows.push(...data.map(row=>reviewItem(row,run,radarConfig)).filter(Boolean));
     if(policy.dealScoring?.enabled&&env.RADAR_DB)ratingItems.push(...data.map(row=>monitorRow(row,run.finishedAt||run.startedAt)).filter(Boolean));
     rounds.push({id:run.id,count:data.length,startedAt:run.startedAt,label:clean(run.statusMessage,400)});
    }catch{failedDatasets++;}
@@ -69,9 +69,9 @@ export async function reviewResults(request,env,policy,{fetcher=fetch}={}){
   rows.splice(0,rows.length,...[...latestById.values()].sort((a,b)=>Date.parse(b.observedAt)-Date.parse(a.observedAt)));
   if(policy.dealScoring?.enabled&&env.RADAR_DB){
    try{
-    try{const products=await readCatalog(env,fetcher);await queueDealRatings(env,ratingItems,config,products,policy);}catch{/* Keep existing ratings usable when the public catalog is down. */}
+    try{const products=await readCatalog(env,fetcher);await queueDealRatings(env,ratingItems,radarConfig,products,policy);}catch{/* Keep existing ratings usable when the public catalog is down. */}
     const ratings=await readDealRatings(env,rows,policy);
-    for(const row of rows)row.dealRating=ratings.get(row.id)||{state:policy.brands[row.brand]&&row.currency==='EUR'&&row.price<=itemPriceLimit(row.brand,config)?'queued':'not_eligible'};
+    for(const row of rows)row.dealRating=ratings.get(row.id)||{state:policy.brands[row.brand]&&row.currency==='EUR'&&row.price<=itemPriceLimit(row.brand,radarConfig)?'queued':'not_eligible'};
    }catch{for(const row of rows)row.dealRating={state:'unavailable'};}
   }
   return reply({rows,rounds,runIds:trialRuns.map(run=>run.id),sourceMode:policy.sourceMode||'new-only',selectedBrands:Object.keys(policy.brands),nextOffset:trialRuns.length===PAGE_SIZE?offset+PAGE_SIZE:null,

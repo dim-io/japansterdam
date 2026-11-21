@@ -1,7 +1,8 @@
 // Three bounded source probes only, with no Telegram, AI or database writes.
 import {probe} from '../../tools/deal-radar/provider.mjs';
 import {preflight} from '../../tools/deal-radar/budget.mjs';
-import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
+import { privateRuntime } from './private-runtime.mjs';
+const {policy}=privateRuntime(process.env);
 if(!(await preflight(process.env.APIFY_TOKEN,fetch,.09,policy.sourceBudget)).enoughCredit)throw Error('Source verification budget blocked');
 const searches=[['Needles','360271',70],['BEAMS Plus','7373680',40],['Nanamica','596562',40]];
 for(const [brand,brandId,maxPrice]of searches){

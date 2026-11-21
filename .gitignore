@@ -1,2 +1,4 @@
 
 .site-dist/
+/tools/deal-radar/.private-runtime.json
+/api/radar/.wrangler.generated.toml

@@ -6,21 +6,21 @@ import {identifyBrand,itemPriceLimit} from '../../tools/deal-radar/scoring.mjs';
 import {canonicalListingBrand,selectionRejection} from '../../tools/deal-radar/selection.mjs';
 import {itemType,estimateFromShop} from '../../tools/deal-radar/valuation.mjs';
 import {monitorInput,monitorRow} from './monitor-source.mjs';
-import {scanSelection,inWindow} from './worker.mjs';
+import {scanSelection} from './worker.mjs';
 import {freshIntake} from './intake.mjs';
 import {researchCandidate} from './research.mjs';
 import {parseScreening} from './vision.mjs';
 
 const now=Date.parse('2026-11-18T00:00:00Z');
 const base={url:'https://www.vinted.nl/items/99999-test',price:30,currency:'EUR',available:true,condition:'very_good',size:'36',publishedAt:new Date(now-60000).toISOString(),observedAt:new Date(now).toISOString(),photoUrls:[1,2,3,4].map(n=>'https://images1.vinted.net/'+n+'.png')};
-const additions=['VANQUISH','A Vontade','Haversack','Junya Watanabe','Comme des Garçons Homme','Undercover','Sugar Cane','Resolute','Porter Yoshida','Moonstar','Shoes Like Pottery','ASICS'];
-test('all twelve additions run within the same bounded budget, with a truthful 75-minute full cycle',()=>{
+const additions=['VANQUISH','A Vontade','Haversack','Junya Watanabe','Comme des Garçons Homme','Undercover','Sugar Cane','Resolute','Porter Yoshida','Moonstar','Shoes Like Pottery','ASICS','A.PRESSE','Snow Peak','And Wander','Norbit','Sacai','Comoli','Goldwin','Hender Scheme'];
+test('all twenty additions run within the same bounded budget, with a truthful 90-minute full cycle',()=>{
  for(const brand of additions){assert(brand in policy.brands,brand);assert.equal(identifyBrand(brand,config),brand);assert(config.researchBrands.includes(brand));}
  for(const brand of Object.keys(policy.brands))assert.equal(itemPriceLimit(brand,config),100,brand);
- assert.equal(Object.keys(policy.brands).length,43);assert.equal(policy.brandGroups.length*5,75);
- const seen=policy.brandGroups.flatMap((_,slot)=>scanSelection(policy,slot).map(([brand])=>brand));assert.equal(new Set(seen).size,43);assert.equal(seen.length,43);
- assert.equal(policy.sourceBudget.maxMonthlyUsageUsd,19);assert.equal(policy.maxCostPerMonitorRunUsd,.015);assert.equal(policy.maxAttempts,288);
- assert.equal(inWindow(Date.parse(policy.endsAt),policy),false); // Every trial stops at its fixed end.
+ assert.equal(Object.keys(policy.brands).length,51);assert.equal(policy.brandGroups.length*5,90);
+ const seen=policy.brandGroups.flatMap((_,slot)=>scanSelection(policy,slot).map(([brand])=>brand));assert.equal(new Set(seen).size,51);assert.equal(seen.length,51);
+ assert.equal(policy.maxCostPerMonitorRunUsd,.015);
+ assert.equal(policy.enabled,false);assert.equal('sourceBudget' in policy,false);assert.equal('startsAt' in policy,false); // Private trial values are supplied by the Worker secret.
  assert.throws(()=>scanSelection({...policy,brandGroups:[...policy.brandGroups,policy.brandGroups[0]]},0),/merkschema/);
 });
 test('every group has capped keyword searches; exclusive ASICS never adds an unrestricted ASICS search',()=>{
@@ -34,6 +34,27 @@ test('every group has capped keyword searches; exclusive ASICS never adds an unr
  const queries=input.searchQueries.map(s=>new URL(s).searchParams.get('search_text'));
  for(const q of ['ASICS Kiko Kostadinov','ASICS NOVALIS','ASICS Cecilie Bahnsen','ASICS JJJJound','ASICS HAL STUDIOS'])assert(queries.includes(q));
  assert(!queries.includes('ASICS'));assert(!queries.includes('ASICS GEL-KAYANO 14'));
+});
+test('text-search brands use exact title-backed matches and stay within Vinted query caps',()=>{
+ for(const brand of ['A.PRESSE','Snow Peak','And Wander','Norbit','Sacai','Comoli','Goldwin','Hender Scheme']){
+  const group=policy.brandGroups.find(names=>names.includes(brand));
+  const input=monitorInput(group.map(name=>[name,policy.brands[name]]));
+  assert(input.searchQueries.length<=9,brand);
+  for(const url of input.searchQueries){const u=new URL(url);assert.equal(u.searchParams.has('brand_ids[]'),false);}
+ }
+ const hender={...base,brand:'Hender Scheme',title:'Hender Scheme handmade leather shoes',category:'Women > Shoes'};
+ assert.equal(freshIntake(hender,config,now),null);
+ assert.equal(freshIntake({...hender,title:'Hender Scheme leather bag',category:'Women > Bags'},config,now),null);
+ for(const title of ['Hender Scheme wool sweater','Hender Scheme cotton shirt'])assert.equal(freshIntake({...hender,title,category:'Women > Clothing'},config,now),'product_type_outside_selection');
+});
+test('Neighborhood must be visible in the listing itself, so generic cheap womenwear is excluded',()=>{
+ const generic={...base,brand:'Neighborhood',title:'Women blouse',category:'Women > Clothing'};
+ assert.equal(selectionRejection(generic,config),'selected_line_unconfirmed');
+ assert.equal(freshIntake(generic,config,now),'brand_claim_unsupported');
+ assert.equal(freshIntake({...generic,title:'Neighborhood logo work shirt'},config,now),null);
+ const miscategorized={...generic,brand:'Other',title:'NBHD utility jacket'};
+ assert.equal(canonicalListingBrand(miscategorized,config),'Neighborhood');
+ assert.equal(freshIntake({...miscategorized,brand:'Neighborhood'},config,now),null);
 });
 test('Japanese Vanquish is distinct from fitness and the separately selected Fragment collaboration',()=>{
  assert.equal(freshIntake({...base,brand:'VANQUISH',title:'Vanquish Shibuya Hachiko souvenir jacket'},config,now),null);

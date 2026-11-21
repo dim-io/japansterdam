@@ -7,20 +7,19 @@ import {brandDiagnostics,summarizeDiagnostics} from './diagnostics.mjs';
 import {curation} from './curation.mjs';
 import {queueBestBundle,checkNextBundle} from './bundles.mjs';
 import {readCatalog} from './catalog.mjs';
-import readinessPolicy from './owner-readiness.json' with {type:'json'};
 import {runResearchTest} from './research-test.mjs';
 import {researchCandidate,processResearch,queueResearchBatch,MAX_RESEARCH_NOTICES} from './research.mjs';
 import config from '../../tools/deal-radar/config.json' with { type: 'json' };
-import settings from '../../tools/deal-radar/pilot-v4.json' with { type: 'json' };
 import { preflight } from '../../tools/deal-radar/budget.mjs';
 import { compareCatalog } from './freshness.mjs';
 import { probe } from '../../tools/deal-radar/provider.mjs';
 import { assess, alertText, identifyBrand, itemPriceLimit, sendTelegram } from '../../tools/deal-radar/scoring.mjs';
 import { screenPhotos, reviewMessage, MAX_VISION_CALLS } from './vision.mjs';
 import { estimateFromShop, missingReferenceReason } from '../../tools/deal-radar/valuation.mjs';
+import { privateRuntime } from './private-runtime.mjs';
 
-export const PILOT_ID = 'pilot-2026-11-04';
-export function inWindow(now, policy = settings) {
+export const PILOT_ID = 'radar-private-runtime';
+export function inWindow(now, policy = privateRuntime().policy) {
   const start = Date.parse(policy.startsAt), end = Date.parse(policy.endsAt);
   return policy.enabled && Number.isInteger(policy.maxAttempts) && policy.maxAttempts > 0 && policy.maxAttempts <= scanLimit(policy)
     && Number.isFinite(start) && Number.isFinite(end) && end > start && end - start <= 86400000 && now >= start && now < end;
@@ -32,14 +31,17 @@ export function scanSelection(policy,slot,attempts=1){
   const brands=Object.entries(policy.brands);
   if(policy.mode==='rotating-brands'||policy.mode==='fresh-rotation'){
     const groups=policy.brandGroups;
-    if(!Array.isArray(groups)||groups.length<1||groups.length>(policy.mode==='fresh-rotation'?16:12)||groups.some(g=>!Array.isArray(g)||(policy.mode==='fresh-rotation'?(g.length<2||g.length>3):g.length!==2))
-      ||new Set(groups.flat()).size!==brands.length||groups.flat().length!==brands.length||groups.flat().some(b=>!policy.brands[b])||brands.length>(policy.mode==='fresh-rotation'?48:24)||brands.length<2)throw Error('Ongeldig merkschema');
+    if(!Array.isArray(groups)||groups.length<1||groups.length>(policy.mode==='fresh-rotation'?18:12)||groups.some(g=>!Array.isArray(g)||(policy.mode==='fresh-rotation'?(g.length<2||g.length>3):g.length!==2))
+      ||new Set(groups.flat()).size!==brands.length||groups.flat().length!==brands.length||groups.flat().some(b=>!policy.brands[b])||brands.length>(policy.mode==='fresh-rotation'?54:24)||brands.length<2)throw Error('Ongeldig merkschema');
     return groups[slot%groups.length].map(b=>[b,policy.brands[b]]);
   }
   return policy.mode==='both-brands'?brands:[brands[(attempts-1)%brands.length]];
 }
 
-export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = probe, authenticityReviews = config.authenticityReviews, policy = settings, clock = Date.now } = {}) {
+export async function scan(env, options = {}) {
+  const runtime=privateRuntime(env);
+  const config=options.config||runtime.config;
+  const { now = Date.now(), fetcher = fetch, probeFn = probe, authenticityReviews = config.authenticityReviews, policy = options.policy||runtime.policy, clock = Date.now } = options;
   // No credentials, database writes or provider requests outside the existing window.
   if (!inWindow(now, policy)) return { inactive: true };
   if (!env.APIFY_TOKEN || !/^\d+:[A-Za-z0-9_-]+$/.test(env.TELEGRAM_BOT_TOKEN || '') || !/^\d+$/.test(env.TELEGRAM_CHAT_ID || '')) {
@@ -212,8 +214,11 @@ export async function scan(env, { now = Date.now(), fetcher = fetch, probeFn = p
 }
 
 export async function wake(env, options = {}) {
+  let activePolicy = options.policy;
   try {
-    const checkTime = options.now ?? Date.now(), policy = options.policy ?? settings;
+    const runtime=privateRuntime(env), config=options.config||runtime.config;
+    const checkTime = options.now ?? Date.now(), policy = options.policy ?? runtime.policy;
+    activePolicy = policy;
     if(inWindow(checkTime,policy)&&policy.researchTestOnce) {
       const test=await runResearchTest(env,config,policy,{now:checkTime,clock:options.clock||Date.now,fetcher:options.fetcher||fetch});
       if(test)return test;
@@ -222,7 +227,7 @@ export async function wake(env, options = {}) {
       const ready=await sql(env,'SELECT smoke_ok FROM radar_vision_control WHERE id=?',policy.id || PILOT_ID).first();
       if(ready?.smoke_ok!==1)await screenPhotos(env,{brand:'Kapital'},config,policy,{now:checkTime,smoke:true});
     }
-    const result=await scan(env, options);
+    const result=await scan(env,{...options,config,policy});
     // Seller lookups run on idle wakes, never in the same Free request as a full scan.
     if(result.skipped&&inWindow(checkTime,policy))return {...result,...await checkNextBundle(env,config,policy,{now:checkTime,clock:options.clock||Date.now,fetcher:options.fetcher||fetch})};
     return result;
@@ -230,15 +235,15 @@ export async function wake(env, options = {}) {
   catch (error) {
     const code = ['RADAR_INVENTORY_FAILED', 'RADAR_PROVIDER_FAILED', 'RADAR_BUDGET_BLOCKED'].includes(error.message) ? error.message : 'RADAR_RUNTIME_FAILED';
     // Never persist arbitrary provider exceptions: their text may contain credentials.
-    if (inWindow(options.now ?? Date.now(), options.policy)) {
-      await sql(env, "UPDATE radar_control SET last_error=?, error_at=? WHERE id=?", 'Scan niet voltooid: ' + code, options.now ?? Date.now(), (options.policy ? options.policy.id || PILOT_ID : settings.id || PILOT_ID)).run();
+    if (activePolicy && inWindow(options.now ?? Date.now(), activePolicy)) {
+      await sql(env, "UPDATE radar_control SET last_error=?, error_at=? WHERE id=?", 'Scan niet voltooid: ' + code, options.now ?? Date.now(), activePolicy.id || PILOT_ID).run();
     }
     console.error(code);
     throw new Error('Radarcontrole niet voltooid');
   }
 }
 
-export async function status(env, now = Date.now(), policy = settings) {
+export async function status(env, now = Date.now(), policy = privateRuntime(env).policy, config = privateRuntime(env).config, readinessPolicy = privateRuntime(env).readiness) {
   const pilotId = policy.id || PILOT_ID;
   const row = await sql(env, 'SELECT * FROM radar_control WHERE id=?', pilotId).first();
   const vision = await sql(env,'SELECT attempts,smoke_ok,last_outcome FROM radar_vision_control WHERE id=?',pilotId).first();
@@ -274,15 +279,16 @@ export async function status(env, now = Date.now(), policy = settings) {
     newListings: report?.newListings ?? null, sentLastScan: report?.sent ?? null, photoReviewSentLastScan:report?.photoReviewSent ?? null,
     error: row?.last_error ?? null, errorAt: row?.error_at ? new Date(row.error_at).toISOString() : null,
     overdue: inWindow(now,policy) && now - (row?.last_scan_at || Date.parse(policy.startsAt)) > 90 * 60000,
-    note: policy.sourceProvider==='topapi-monitor'?`${policy.sourceMode==='recent-snapshot'?'Recente zoekresultaten worden ook in het overzicht opgenomen; eerdere item-ID’s worden vóór melding gededupliceerd.':'Monitor onthoudt eerder gevonden items.'} Alleen geselecteerde kleding, schoenen en accessoires van maximaal zes uur oud komen door de meldingsintake. ${Object.keys(policy.brands).length} merken per cyclus van ${(policy.brandGroups?.length||12)*5} minuten.`:policy.mode==='fresh-rotation'?'Alleen nieuwe kledingadvertenties van maximaal zes uur oud; 34 merken per uur in groepen van 2–3. Geen herhaalde meldingen.':'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
+    note: policy.sourceProvider==='topapi-monitor'?`${policy.sourceMode==='recent-snapshot'?'Recente zoekresultaten worden ook in het overzicht opgenomen; eerdere item-ID’s worden vóór melding gededupliceerd.':'Monitor onthoudt eerder gevonden items.'} Alleen geselecteerde kleding, schoenen en accessoires van maximaal zes uur oud komen door de meldingsintake. ${Object.keys(policy.brands).length} merken per cyclus van ${(policy.brandGroups?.length||12)*5} minuten.`:policy.mode==='fresh-rotation'?`Alleen nieuwe kledingadvertenties van maximaal zes uur oud; ${Math.round(Object.keys(policy.brands).length*12/(policy.brandGroups?.length||12)*10)/10} merken per uur in groepen van 2–3. Geen herhaalde meldingen.`:'Status bevat geen advertenties, persoonsgegevens of sleutels. Elke vijf minuten wakker, maximaal één scan per UTC-uur.' };
 }
 
 export default {
   async scheduled(_event, env) { await wake(env); },
   async fetch(request, env) {
-    if(new URL(request.url).pathname==='/results')return reviewResults(request,env,settings);
+    const runtime=privateRuntime(env);
+    if(new URL(request.url).pathname==='/results')return reviewResults(request,env,runtime.policy,{config:runtime.config});
     if (request.method !== 'GET' || !['/', '/status'].includes(new URL(request.url).pathname)) return new Response('Not found', { status: 404 });
-    try { return Response.json(await status(env), { headers: { 'Cache-Control': 'no-store' } }); }
+    try { return Response.json(await status(env,Date.now(),runtime.policy,runtime.config,runtime.readiness), { headers: { 'Cache-Control': 'no-store' } }); }
     catch { return Response.json({ scheduler: 'cloudflare', error: 'Status tijdelijk niet beschikbaar' }, { status: 503 }); }
   },
 };

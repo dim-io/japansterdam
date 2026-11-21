@@ -5,10 +5,10 @@ import {client,TARGET} from './account-migration.mjs';
 import {databaseAdapter} from './owner-readiness.mjs';
 import {existingResults} from './research-test.mjs';
 import {researchCandidate,processResearch} from './research.mjs';
-import config from '../../tools/deal-radar/config.json' with {type:'json'};
-import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
+import { privateRuntime } from './private-runtime.mjs';
 
-export async function reviewBacklog(env,{query,now=Date.now(),clock=Date.now,fetcher=fetch,readExisting=existingResults,testPolicy=policy}={}) {
+export async function reviewBacklog(env,{query,now=Date.now(),clock=Date.now,fetcher=fetch,readExisting=existingResults,testPolicy=privateRuntime(env).policy}={}) {
+  const config=privateRuntime(env).config;
   if(testPolicy.reviewBacklog===false)return {state:'disabled_for_this_trial'};
   if(!testPolicy.enabled||!testPolicy.researchEnabled||now<Date.parse(testPolicy.startsAt)||now>=Date.parse(testPolicy.endsAt))return {state:'outside_trial'};
   const key=testPolicy.id+':unreviewed-backlog-v2';

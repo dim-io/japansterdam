@@ -5,7 +5,7 @@ import {readCatalog} from './catalog.mjs';
 import {preflight} from '../../tools/deal-radar/budget.mjs';
 import {freePlanDecision} from './free-plan.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
-import policy from './owner-readiness.json' with {type:'json'};
+import { privateRuntime } from './private-runtime.mjs';
 
 export function allowed(p,now=Date.now()){
   const start=Date.parse(p.startsAt),end=Date.parse(p.endsAt),confirmed=Date.parse(p.freeAccountEvidence?.confirmedAt);
@@ -29,7 +29,7 @@ export async function telegramReadiness(token,chat,fetcher){
   }
   return true;
 }
-export async function check(env,{query,fetcher=fetch,now=Date.now(),testPolicy=policy}={}){
+export async function check(env,{query,fetcher=fetch,now=Date.now(),testPolicy=privateRuntime(env).readiness,config:radarConfig=privateRuntime(env).config}={}){
   if(!allowed(testPolicy,now))throw Error('readiness_window_closed');
   const marker=await query('SELECT verified FROM radar_transfer WHERE id=?',[SOURCE.database]);
   if(marker[0]?.verified!==1)throw Error('migration_not_verified');
@@ -43,7 +43,7 @@ export async function check(env,{query,fetcher=fetch,now=Date.now(),testPolicy=p
     const decision=freePlanDecision({ok:response.ok,data,status:response.status},{...testPolicy,visionAccountConfirmation:evidence?{
       accountId:testPolicy.accountId,plan:evidence.plan,source:evidence.source,confirmedAt:evidence.confirmedAt,
       authorizedAt:evidence.confirmedAt,validUntil:testPolicy.endsAt,
-    }:null},now);
+    }:null,deploymentAccountId:testPolicy.deploymentAccountId||testPolicy.accountId},now);
     summary.workersAiFreePlan=decision.allowed;summary.workersAiFreePlanBasis=decision.basis;
   }catch{}
   try{await readCatalog({SHOP_CATALOG_URL:'https://japansterdam-api.sam-jesse.workers.dev/public/products'},fetcher);summary.shopReferences=true;}catch{}
@@ -51,7 +51,7 @@ export async function check(env,{query,fetcher=fetch,now=Date.now(),testPolicy=p
   summary.telegramReady=await telegramReadiness(env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher);
   if(!summary.workersAiFreePlan){summary.photoState='disabled';summary.photoReason='workers_ai_free_plan_unconfirmed';return summary;}
   await query('INSERT OR IGNORE INTO radar_vision_control (id) VALUES (?)',[testPolicy.id]);
-  const result=await screenPhotos({VISION_FREE_CONFIRMED:'true',AI:aiAdapter(env.CLOUDFLARE_API_TOKEN,fetcher),RADAR_DB:databaseAdapter(query)},{brand:'Kapital'},config,testPolicy,{now,fetcher,clock:Date.now,smoke:true});
+  const result=await screenPhotos({VISION_FREE_CONFIRMED:'true',AI:aiAdapter(env.CLOUDFLARE_API_TOKEN,fetcher),RADAR_DB:databaseAdapter(query)},{brand:'Kapital'},radarConfig,testPolicy,{now,fetcher,clock:Date.now,smoke:true});
   summary.photoState=result.state;summary.photoReason=result.reason;
   summary.photoAttempts=(await query('SELECT attempts FROM radar_vision_control WHERE id=?',[testPolicy.id]))[0]?.attempts||0;
   return summary;

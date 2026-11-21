@@ -6,10 +6,10 @@ import {freePlanDecision} from './free-plan.mjs';
 import {monitorRow} from './monitor-source.mjs';
 import {readCatalog} from './catalog.mjs';
 import {queueDealRatings,scoreDealBatch} from './deal-ratings.mjs';
-import config from '../../tools/deal-radar/config.json' with {type:'json'};
-import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
+import { privateRuntime } from './private-runtime.mjs';
 
-export async function bootstrapRatings(env,{query,fetcher=fetch,now=Date.now(),testPolicy=policy}={}){
+export async function bootstrapRatings(env,{query,fetcher=fetch,now=Date.now(),testPolicy=privateRuntime(env).policy}={}){
+ const config=privateRuntime(env).config;
  if(!testPolicy.dealScoring?.enabled||!testPolicy.enabled||now<Date.parse(testPolicy.startsAt)||now>=Date.parse(testPolicy.endsAt))return {state:'inactive'};
  if(!freePlanDecision({},testPolicy,now).allowed)return {state:'free_plan_not_confirmed'};
  const runtime={RADAR_DB:databaseAdapter(query),AI:aiAdapter(env.CLOUDFLARE_API_TOKEN,fetcher),VISION_FREE_CONFIRMED:'true',SHOP_CATALOG_URL:'https://japansterdam-api.sam-jesse.workers.dev/public/products'};

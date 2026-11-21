@@ -2,10 +2,11 @@
 // and authenticated API requests: never in Git, logs, caches or artifacts.
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
-import policy from '../../tools/deal-radar/pilot-v2.json' with {type:'json'};
+import { privateRuntime } from './private-runtime.mjs';
 
-export const SOURCE={account:'0e3359947b78095a7afd9ce36f5cac6f',database:'4e52cd67-a370-400b-b79b-ca1527cc03de'};
-export const TARGET={account:'81a93f1ef55a892620ab77cf0f8163f6',database:'41d7b993-8791-4b19-b8fa-5a5db6eeda7e'};
+const deployment=privateRuntime(process.env).deployment;
+export const SOURCE={account:deployment.sourceAccountId||'test-source-account',database:deployment.sourceDatabaseId||'00000000-0000-0000-0000-000000000001'};
+export const TARGET={account:deployment.accountId||'test-account-id',database:deployment.databaseId||'00000000-0000-0000-0000-000000000002'};
 export const TABLES=['radar_control','radar_seen','radar_alerts','radar_vision_control','radar_photo_checks','radar_vision_daily','radar_research','radar_research_limits','radar_research_tests'];
 const ident=name=>{if(!/^[a-z_]+$/.test(name))throw Error('invalid_identifier');return '"'+name+'"';};
 export function digest(rows,columns){return createHash('sha256').update(JSON.stringify(rows.map(r=>columns.map(c=>r[c])).map(JSON.stringify).sort())).digest('hex');}
@@ -26,7 +27,7 @@ export function client(connection,token,fetcher=fetch){
     return data.result[0]?.results||[];
   };
 }
-export async function transfer(source,target,{migrate=false,now=Date.now()}={}){
+export async function transfer(source,target,{migrate=false,now=Date.now(),policy=privateRuntime(process.env).policy}={}){
   const exists=await target("SELECT name FROM sqlite_master WHERE type='table' AND name='radar_transfer'");
   if(exists.length){const marker=await target('SELECT verified FROM radar_transfer WHERE id=?',[SOURCE.database]);if(marker[0]?.verified===1)return {alreadyVerified:true};}
   if(!migrate)throw Error('migration_not_verified');

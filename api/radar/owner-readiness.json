@@ -1,19 +1,7 @@
 {
-  "id": "owner-readiness-2026-11-20",
-  "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
-  "enabled": true,
-  "startsAt": "2026-11-20T21:45:00Z",
-  "endsAt": "2026-11-20T22:45:00Z",
-  "maxPhotoChecks": 1,
-  "dailyVisionLimit": 3,
-  "freeAccountEvidence": {
-    "plan": "free",
-    "source": "owner_confirmation",
-    "confirmedAt": "2026-11-20T21:35:00Z"
-  },
-  "sourceBudget": {
-    "allowPaidIncludedCredits": true,
-    "maxMonthlyUsageUsd": 19,
-    "authorizedAt": "2026-11-20T21:35:00Z"
-  }
+  "id": "readiness-fixture",
+  "accountId": "test-account-id",
+  "enabled": false,
+  "maxPhotoChecks": 0,
+  "dailyVisionLimit": 0
 }

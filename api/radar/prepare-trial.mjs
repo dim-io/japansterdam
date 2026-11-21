@@ -1,15 +1,15 @@
 import {sourceReserve} from './trial-limits.mjs';
 import {validOwnerConfirmation} from './free-plan.mjs';
-import readinessPolicy from './owner-readiness.json' with {type:'json'};
 import {readCatalog} from './catalog.mjs';
 import {pathToFileURL} from 'node:url';
 import {client,TARGET} from './account-migration.mjs';
 import {check,telegramReadiness} from './owner-readiness.mjs';
 import {preflight} from '../../tools/deal-radar/budget.mjs';
-import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
+import { privateRuntime } from './private-runtime.mjs';
 
 // Read-only account/source checks precede even the single bounded blank-image test.
-export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testPolicy=policy,readiness=check,budget=preflight}={}) {
+export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testPolicy=privateRuntime(env).policy,testReadiness=privateRuntime(env).readiness,readiness=check,budget=preflight}={}) {
+  const readinessPolicy=testReadiness;
   let existing;
   try{existing=await query('SELECT id FROM radar_control WHERE id=?',[testPolicy.id]);}catch{throw Error('trial_database_unavailable');}
   if(existing.length)return {alreadyInitialized:true};
@@ -30,7 +30,7 @@ export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testP
     }
   }
   let ready;
-  try{ready=await readiness(env,{query,now,fetcher});}catch{throw Error('readiness_probe_unavailable');}
+  try{ready=await readiness(env,{query,now,fetcher,testPolicy:readinessPolicy});}catch{throw Error('readiness_probe_unavailable');}
   if(!ready.shopReferences||!ready.telegramReady||!ready.workersAiFreePlan||ready.photoState!=='ready'){
     const status={shopReferences:!!ready.shopReferences,telegramReady:!!ready.telegramReady,workersAiFreePlan:!!ready.workersAiFreePlan,photoState:ready.photoState||'unknown',photoReason:ready.photoReason||null};
     throw Error('trial_readiness_not_confirmed:'+JSON.stringify(status));

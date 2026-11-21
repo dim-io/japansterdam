@@ -3,11 +3,11 @@ import {wake,inWindow} from './worker.mjs';
 import {client,TARGET} from './account-migration.mjs';
 import {databaseAdapter,aiAdapter} from './owner-readiness.mjs';
 import {freePlanDecision} from './free-plan.mjs';
-import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
+import { privateRuntime } from './private-runtime.mjs';
 
 // Start only the first reserved round while a new Cron propagates. The same
 // atomic D1 reservation is shared with the production Worker: never two starts.
-export async function initialRound(env,{query,now=Date.now(),run=wake,testPolicy=policy}={}){
+export async function initialRound(env,{query,now=Date.now(),run=wake,testPolicy=privateRuntime(env).policy}={}){
   if(!inWindow(now,testPolicy)||now-Date.parse(testPolicy.startsAt)>=3600000)return {initialRound:'outside_first_hour'};
   const control=(await query('SELECT attempts FROM radar_control WHERE id=?',[testPolicy.id]))[0];
   if(!control)throw Error('Trial is niet geïnitialiseerd');

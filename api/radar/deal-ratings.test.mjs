@@ -7,6 +7,7 @@ import {ratingInput,ratingKey,queueDealRatings,scoreDealBatch,readDealRatings,pa
 import {reviewResults} from './review-results.mjs';
 import {bootstrapRatings} from './bootstrap-deal-ratings.mjs';
 import productionPolicy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
+import {ACCOUNT_ID} from './free-plan.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
 
 const now=Date.parse('2026-11-18T12:00:00Z');
@@ -115,7 +116,7 @@ test('evidence hash excludes source observation metadata but changes with the as
 
 test('deployment backfill reads existing datasets and scores them without starting a scrape or sending messages',async()=>{
  const {db}=setup();const time=Date.now();let modelCalls=0;const paths=[];
- const currentPolicy={...productionPolicy,startsAt:new Date(time-60000).toISOString(),endsAt:new Date(time+3600000).toISOString(),visionAccountConfirmation:{...productionPolicy.visionAccountConfirmation,confirmedAt:new Date(time-60000).toISOString(),authorizedAt:new Date(time-60000).toISOString(),validUntil:new Date(time+3600000).toISOString()}};
+ const currentPolicy={...productionPolicy,id:'fixture',enabled:true,startsAt:new Date(time-60000).toISOString(),endsAt:new Date(time+3600000).toISOString(),deploymentAccountId:ACCOUNT_ID,visionAccountConfirmation:{accountId:ACCOUNT_ID,plan:'free',source:'owner_confirmation',confirmedAt:new Date(time-60000).toISOString(),authorizedAt:new Date(time-60000).toISOString(),validUntil:new Date(time+3600000).toISOString()}};
  const result=await bootstrapRatings({CLOUDFLARE_API_TOKEN:'private',APIFY_TOKEN:'private'},{query:async(sql,params)=>db.prepare(sql).all(...params),testPolicy:currentPolicy,now:time,fetcher:async(url,options={})=>{
   paths.push(url);
   if(url.includes('/ai/run/')){assert.equal(options.method,'POST');modelCalls++;const input=JSON.parse(options.body);return Response.json({success:true,result:{response:{ratings:JSON.parse(input.messages[1].content).map(output)}}});}

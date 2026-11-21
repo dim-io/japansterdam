@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import config from '../../tools/deal-radar/config.json' with {type:'json'};
+import publicConfig from '../../tools/deal-radar/config.json' with {type:'json'};
 import {curation,modelNumbers,matchingCompanion,coherentLabelCodes} from './curation.mjs';
 import {researchCandidate} from './research.mjs';
 import {normalizeRow} from '../../tools/deal-radar/provider.mjs';
 const now=Date.now();
+const rejectedIds=['900001','900002','900003','900004'];
+const config={...publicConfig,curationPreferences:{enabled:true,listingFeedback:Object.fromEntries(rejectedIds.map(id=>[id,{verdict:'skip',reason:'test fixture'}]))}};
 const item={url:'https://www.vinted.nl/items/123-test',title:'Needles blue velour track pants',brand:'Needles',price:35,currency:'EUR',size:'XS',category:'Women',condition:'very_good',available:true,observedAt:new Date(now).toISOString(),photoUrls:['https://images1.vinted.net/a.png','https://images1.vinted.net/b.png'],sellerRef:{id:'42',username:'example'}};
 test('standalone Needles track pants cannot trigger research even at a very low price; other garments take priority',()=>{
  assert.equal(researchCandidate(item,config,now),null);
@@ -15,7 +17,7 @@ test('standalone Needles track pants cannot trigger research even at a very low 
  assert.equal(researchCandidate({...item,title:'Needles blue velour track pants replica'},config,now,{forBundle:true}),null);
 });
 test('negative feedback is specific to the rejected listings; age, small size and womens category do not exclude',()=>{
- for(const id of ['10720361203','10720892142','10718287439','10722206945'])assert(!curation({...item,url:`https://www.vinted.nl/items/${id}-test`},config).allowed);
+ for(const id of rejectedIds)assert(!curation({...item,url:`https://www.vinted.nl/items/${id}-test`},config).allowed);
  assert(researchCandidate({...item,brand:'Engineered Garments',title:'Engineered Garments archive jacket 1999'},config,now));
  assert(researchCandidate({...item,brand:'Kapital',title:'Kapital bandana shirt'},config,now));
 });

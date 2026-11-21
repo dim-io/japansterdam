@@ -1,12 +1,11 @@
 name = "japansterdam-radar"
-account_id = "81a93f1ef55a892620ab77cf0f8163f6"
 main = "worker.mjs"
 compatibility_date = "2026-10-30"
 workers_dev = true
 
 [triggers]
 # The fresh-only trial reserves one group of 2–3 brands per five-minute slot.
-# All 43 brands are checked in 75 minutes; a fixed window and charge cap gate every scan.
+# All 51 brands are checked in 90 minutes; a fixed window and charge cap gate every scan.
 crons = ["*/5 * * * *"]
 
 [vars]
@@ -15,7 +14,7 @@ SHOP_CATALOG_URL = "https://japansterdam-api.sam-jesse.workers.dev/public/produc
 [[d1_databases]]
 binding = "RADAR_DB"
 database_name = "japansterdam-radar"
-database_id = "41d7b993-8791-4b19-b8fa-5a5db6eeda7e"
+database_id = "__RADAR_DATABASE_ID__"
 migrations_dir = "migrations"
 
 [ai]

@@ -1,6 +1,7 @@
 import {candidateRun,candidateInput,candidates} from './source-candidates.mjs';
 import {preflight} from '../../tools/deal-radar/budget.mjs';
-import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
+import { privateRuntime } from './private-runtime.mjs';
+const {policy}=privateRuntime(process.env);
 if(!(await preflight(process.env.APIFY_TOKEN,fetch,.06,policy.sourceBudget)).enoughCredit)throw Error('Candidate trial budget blocked');
 const seen=new Map();
 for(const [actor,brand,phase]of [[candidates[1],'Needles','seed_current_inventory'],[candidates[1],'Needles','only_new_after_seed']]){

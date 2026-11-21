@@ -1,10 +1,5 @@
 {
-  "enabled": true,
-  "id": "pilot-2026-11-14",
-  "previousPilotId": "pilot-2026-11-12",
-  "startsAt": "2026-11-14T21:39:05.758231+00:00",
-  "endsAt": "2026-11-15T21:39:05.758231+00:00",
-  "maxAttempts": 24,
+  "enabled": false,
   "brands": {
     "Nonnative": "355385",
     "Wacko Maria": "614622",
@@ -77,24 +72,11 @@
   "dailyVisionLimit": 3,
   "researchEnabled": true,
   "researchTestOnce": false,
-  "visionAccountConfirmation": {
-    "accountId": "81a93f1ef55a892620ab77cf0f8163f6",
-    "plan": "free",
-    "source": "dashboard_current_plan",
-    "confirmedAt": "2026-11-14T21:39:05.758231+00:00",
-    "authorizedAt": "2026-11-14T21:39:05.758231+00:00",
-    "validUntil": "2026-11-15T21:39:05.758231+00:00"
-  },
   "reviewBacklog": false,
   "bundleChecks": {
     "enabled": true,
     "maxAttempts": 4,
     "reservePhotoChecks": false
-  },
-  "sourceBudget": {
-    "allowPaidIncludedCredits": true,
-    "maxMonthlyUsageUsd": 19,
-    "authorizedAt": "2026-11-14T21:39:05.758231+00:00"
   },
   "requireVisualBrandEvidence": true,
   "enableDiagnostics": true,
