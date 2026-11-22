@@ -9,6 +9,8 @@ const formatPrice=n=>new Intl.NumberFormat('en-IE',{style:'currency',currency:'E
 const [c, all, paymentConfig] = await Promise.all([getContent(), getProducts(), fetch(API_BASE + '/checkout/config').then(r => r.ok ? r.json() : null).catch(() => null)]);
 const root = document.getElementById('checkout-root');
 const email = c.site.email;
+// The notice shares the editable Shipping & Returns copy in both checkout modes.
+const returnCosts = c.shipping?.sections?.find(section => section.heading?.trim().toLowerCase() === 'return shipping costs')?.body || '';
 let confirmed = false;
 
 const bagItems = () => getBag().map((s) => all.find((p) => p.slug === s)).filter((p) => p && !p.sold);
@@ -48,6 +50,7 @@ function render() {
       <div class="field"><label for="f-country">Country</label>${paymentConfig?.enabled ? `<select id="f-country" name="country" autocomplete="country" required><option value="">Select country</option>${paymentConfig.shipping.map(r=>`<option value="${esc(r.country)}">${esc(new Intl.DisplayNames(['en'],{type:'region'}).of(r.country))}</option>`).join('')}</select>` : '<input id="f-country" name="country" autocomplete="country-name" required>'}</div>
       <div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" name="note"></textarea></div>
       ${paymentConfig?.enabled ? `<p class="form__help">${esc(paymentConfig.deliveryText)}</p><label class="co-consent"><input type="checkbox" name="accepted" required> <span>I agree to the purchase terms and understand this order requires payment.</span></label>${legalDetails(paymentConfig)}<p class="form__help">Secure payment via ${paymentConfig.provider === 'stripe' ? 'Stripe' : 'Mollie'}. Your piece is reserved when payment begins.</p>` : `<p class="form__help">You'll receive the total including shipping and a payment link by email.</p>`}
+      ${returnCosts ? `<p class="form__help" id="return-costs-notice">${esc(returnCosts)} <a class="u" href="shipping-returns.html">Read our return policy</a></p>` : ''}
       <p class="form__err" id="form-err" role="alert"></p>
       <button class="btn btn--primary btn--block" type="submit">${paymentConfig?.enabled ? 'Order and pay' : 'Send order request'}</button>
     </form>
