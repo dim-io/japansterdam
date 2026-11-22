@@ -7,7 +7,7 @@ const piece={slug:'legacy',name:'Needles Archive Shirt',brand:'Needles',category
 let products=[piece,{...piece,slug:'hidden',name:'Private garment',active:false}],content={site:{email:'hello@japansterdam.com'},journal:{articles:[]}};
 const template=await readFile(new URL('../../product.html',import.meta.url),'utf8');
 const brandTemplate=await readFile(new URL('../../needles.html',import.meta.url),'utf8');
-function env(){return {SOURCE_FETCH:async url=>Response.json(url.endsWith('/products')?products:content),ASSETS:{fetch:async req=>new Response(new URL(req.url).pathname==='/needles.html'?brandTemplate:template)}};}
+function env(){return {SOURCE_FETCH:async url=>Response.json(url.endsWith('/products')?products:url.endsWith('/config')?(content.site?.business||{}):content),ASSETS:{fetch:async req=>new Response(new URL(req.url).pathname==='/needles.html'?brandTemplate:template)}};}
 test('main domain redirects preserve paths and queries without redirecting previews',async()=>{
  for(const [input,expected] of [
   ['http://www.japansterdam.com/product.html?p=needles-archive-shirt','https://japansterdam.com/product.html?p=needles-archive-shirt'],
@@ -126,9 +126,9 @@ test('checkout responses restrict scripts and framing and never cache order page
 });
 
 test('same-account website reads its catalogue through the backend service binding',async()=>{
- const e=env(),calls=[];e.API_BACKEND={fetch:async url=>{calls.push(url);return Response.json(url.endsWith('/products')?products:content);}};delete e.SOURCE_FETCH;
+ const e=env(),calls=[];e.API_BACKEND={fetch:async url=>{calls.push(url);return Response.json(url.endsWith('/products')?products:url.endsWith('/config')?(content.site?.business||{}):content);}};delete e.SOURCE_FETCH;
  const r=await worker.fetch(new Request('https://japansterdam.com/product.html?p=needles-archive-shirt'),e);
- assert.equal(r.status,200);assert.equal(calls.length,2);assert.ok((await r.text()).includes('Needles Archive Shirt'));
+ assert.equal(r.status,200);assert.equal(calls.length,3);assert.ok((await r.text()).includes('Needles Archive Shirt'));
 });
 
 
@@ -168,4 +168,13 @@ test('business details escape edited settings and never turn untrusted contact v
  const html = businessDetailsHTML({company:'<script>alert(1)</script>',email:'javascript:alert(1)',phone:'" onclick="alert(1)'});
  assert.ok(html.includes('&lt;script&gt;')); assert.ok(!html.includes('<script>')); assert.ok(!html.includes('href='));
  assert.equal(businessDetailsHTML({}), '');
+});
+
+
+test('page snapshots include only whitelisted company identity from checkout configuration', async () => {
+ const e=env(); e.SOURCE_FETCH=async url=>Response.json(url.endsWith('/products')?products:url.endsWith('/config')?{company:' Japansterdam ',kvk:'42217083',vat:'NL005593473B70',address:'Amsterdam',email:'hello@example.com',phone:'+31655107791',returnAddress:'Amsterdam',enabled:true,taxNote:'PRIVATE_REVIEW_NOTE',mode:'test'}:content);
+ const html=await (await worker.fetch(new Request('https://japansterdam.com/product.html?p=needles-archive-shirt'),e)).text();
+ const snapshot=JSON.parse(html.match(/<script type="application\/json" id="jp-page-data">([\s\S]*?)<\/script>/)[1]);
+ assert.deepEqual(Object.keys(snapshot.content.site.business).sort(),['address','company','email','kvk','phone','returnAddress','vat']);
+ assert.equal(snapshot.content.site.business.company,'Japansterdam');assert.ok(!html.includes('PRIVATE_REVIEW_NOTE'));
 });

@@ -12,3 +12,12 @@ export function businessDetailsHTML(b = {}, id = 'business-details') {
 export function businessFooterHTML(b = {}) {
   return `<div class="ft__bottom"><p>© 2026 ${esc(b.company || 'Japansterdam')} · Amsterdam</p>${b.kvk || b.vat ? `<p>${[b.kvk ? 'KvK ' + esc(b.kvk) : '', b.vat ? 'VAT ' + esc(b.vat) : ''].filter(Boolean).join(' · ')}</p>` : ''}<a class="ft-link" href="contact.html#business-details">Contact &amp; business details</a></div>`;
 }
+
+// Only company identity belongs in page snapshots, never checkout settings.
+export function publicBusiness(settings = {}) {
+  const business = {};
+  for (const key of ['company', 'kvk', 'vat', 'address', 'email', 'phone', 'returnAddress']) {
+    if (typeof settings?.[key] === 'string') business[key] = settings[key].trim();
+  }
+  return business;
+}

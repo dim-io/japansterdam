@@ -1,3 +1,4 @@
+import { publicBusiness } from '../../js/business-details.js';
 import { renderChrome } from '../../js/chrome.js';
 import { renderPage } from '../../js/page-views.js';
 import { liveStories, storyCard, journalHTML, articleBody } from './editorial.mjs';
@@ -8,12 +9,12 @@ import { ORIGIN,productMeta,productSchema,withMeta,productHTML,brandCards,shopCa
 const API='https://japansterdam-api.sam-jesse.workers.dev';
 async function catalog(env){
  const source=env.SOURCE_FETCH||(env.API_BACKEND?env.API_BACKEND.fetch.bind(env.API_BACKEND):fetch);
- const results=await Promise.all(['/public/products','/public/content'].map(async path=>{
+ const results=await Promise.all(['/public/products','/public/content','/checkout/config'].map(async path=>{
   const r=await source(API+path,{signal:AbortSignal.timeout(5000),headers:{Accept:'application/json'}});
   if(!r.ok)throw Error('Catalogue unavailable');return r.json();
  }));
  if(!Array.isArray(results[0]))throw Error('Invalid catalogue');
- return [results[0].filter(p=>p.active!==false),results[1]];
+ return [results[0].filter(p=>p.active!==false),{...results[1],site:{...results[1].site,business:publicBusiness(results[2])}}];
 }
 function errorPage(status){return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${status===404?'Piece not found':'Collection temporarily unavailable'} — Japansterdam</title><body><h1>${status===404?'Piece not found':'Collection temporarily unavailable'}</h1><p>${status===404?'This piece is not currently listed.':'Please try again shortly.'}</p><a href="/shop.html">Back to the shop</a></body></html>`,{status,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Robots-Tag':'noindex'}});}
 export default {async fetch(request,env){

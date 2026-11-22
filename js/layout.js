@@ -1,3 +1,5 @@
+import { publicBusiness } from './business-details.js';
+import { API_BASE } from './config.js';
 import './statistics.js?v=visitor-insights-3';
 import { initCardImages } from './card-images.mjs';
 initCardImages();
@@ -98,8 +100,12 @@ window.addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 
 // fill data-dependent bits once content.json has loaded
-getContent().then((c) => {
+getContent().then(async (c) => {
   const s = c.site || {};
+  if (!s.business && API_BASE) {
+    const response = await fetch(API_BASE + '/checkout/config', {signal:AbortSignal.timeout(4000)}).catch(() => null);
+    if (response?.ok) s.business = publicBusiness(await response.json());
+  }
   if (footer) footer.innerHTML = renderChrome(page, s).footerHTML();
   document.querySelectorAll('[data-site]').forEach((a) => { if (s[a.dataset.site]) a.href = s[a.dataset.site]; });
 }).catch(() => {});

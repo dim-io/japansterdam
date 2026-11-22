@@ -1,15 +1,8 @@
 // japansterdam-api: Cloudflare Worker (D1 + uploaded images + hosted payments).
 // Draft stories stay in the authenticated editor, never in the public feed.
-function publicContent(data, settings) {
-  const result = data.journal ? { ...data, journal: { ...data.journal, articles: (data.journal.articles || []).filter((article) => article.published === true) } } : { ...data };
-  if (settings !== undefined) {
-    const business = {};
-    for (const key of ['company', 'kvk', 'vat', 'address', 'email', 'phone', 'returnAddress']) {
-      if (typeof settings?.[key] === 'string') business[key] = settings[key].trim();
-    }
-    result.site = { ...data.site, business };
-  }
-  return result;
+function publicContent(data) {
+  if (!data.journal) return data;
+  return { ...data, journal: { ...data.journal, articles: (data.journal.articles || []).filter((article) => article.published === true) } };
 }
 
 const CATEGORIES = ['Tops', 'Bottoms', 'Jackets & Outerwear', 'Sets', 'Footwear', 'Accessories'];
@@ -333,12 +326,9 @@ async function handle(request, env, ctx) {
     return json((await listProducts(env)).filter((p) => p.active !== false), 200, { 'Cache-Control': 'no-store' });
   }
   if (method === 'GET' && path === '/public/content') {
-    const [row, commerce] = await Promise.all([
-      env.DB.prepare("SELECT data FROM content WHERE id = 'main'").first(),
-      env.DB.prepare("SELECT data FROM commerce_settings WHERE id = 'main'").first(),
-    ]);
+    const row = await env.DB.prepare("SELECT data FROM content WHERE id = 'main'").first();
     if (!row) throw new HttpError(404, 'No content yet');
-    return json(publicContent(JSON.parse(row.data), commerce ? JSON.parse(commerce.data) : {}), 200, { 'Cache-Control': 'public, max-age=30' });
+    return json(publicContent(JSON.parse(row.data)), 200, { 'Cache-Control': 'public, max-age=30' });
   }
   if ((method === 'GET' || method === 'HEAD') && seg[0] === 'img' && seg.length > 1) {
     const key = decodeURIComponent(seg.slice(1).join('/'));

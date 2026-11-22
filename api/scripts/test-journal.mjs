@@ -20,13 +20,3 @@ test('legacy page content and an empty Journal stay usable', () => {
   assert.deepEqual(publicContent({ home: {} }), { home: {} });
   assert.deepEqual(publicContent({ journal: { title: 'Journal' } }).journal.articles, []);
 });
-
-test('public company identity comes from commerce settings and exposes only contact fields', () => {
-  const original = { site: { email: 'editor@example.com', business: { company: 'Stale value' } }, journal: { articles: [{ published: false }] } };
-  const projected = publicContent(original, { company: ' Japansterdam ', kvk: '42217083', vat: 'NL005593473B70', address: 'Amsterdam', email: 'hello@example.com', phone: '+31655107791', returnAddress: 'Amsterdam', enabled: true, taxNote: 'Internal review', reviewed: true, mode: 'test', apiKey: 'secret' });
-  assert.deepEqual(Object.keys(projected.site.business).sort(), ['address','company','email','kvk','phone','returnAddress','vat']);
-  assert.equal(projected.site.business.company, 'Japansterdam');
-  assert.equal(projected.journal.articles.length, 0);
-  assert.equal(original.site.business.company, 'Stale value');
-  assert.deepEqual(publicContent(original, {}).site.business, {});
-});
