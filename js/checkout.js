@@ -1,3 +1,4 @@
+import { businessDetailsHTML } from './business-details.js';
 import { API_BASE } from './config.js';
 import { imageFrameStyle } from './image-frames.js';
 import './layout.js?v=visitor-insights-3';
@@ -50,6 +51,7 @@ function render() {
       <p class="form__err" id="form-err" role="alert"></p>
       <button class="btn btn--primary btn--block" type="submit">${paymentConfig?.enabled ? 'Order and pay' : 'Send order request'}</button>
     </form>
+    ${businessDetailsHTML(paymentConfig || c.site.business, 'checkout-business-details')}
   </section>
 </div>`;
   restore(keep);
@@ -111,7 +113,7 @@ onBagChange(()=>{if(!location.hash.startsWith('#order='))render();});
 if(location.hash.startsWith('#order='))showPaymentStatus();else render();
 
 
-function legalDetails(s){return `<div class="co-legal"><p>${esc(s.company)} · KvK ${esc(s.kvk)}${s.vat?' · '+esc(s.vat):''}<br>${esc(s.address)}<br>${esc(s.email)}</p>${[['Purchase terms',s.termsText],['Returns and withdrawal',s.returnsText+'\nReturn address: '+s.returnAddress],['Privacy',s.privacyText]].map(([title,text])=>`<details><summary>${esc(title)}</summary><p>${esc(text).replace(/\n/g,'<br>')}</p></details>`).join('')}<a href="returns.html">Withdraw from an order</a></div>`;}
+function legalDetails(s){return `<div class="co-legal">${[['Purchase terms',s.termsText],['Returns and withdrawal',s.returnsText+'\nReturn address: '+s.returnAddress],['Privacy',s.privacyText]].map(([title,text])=>`<details><summary>${esc(title)}</summary><p>${esc(text).replace(/\n/g,'<br>')}</p></details>`).join('')}<a href="returns.html">Withdraw from an order</a></div>`;}
 const euro=cents=>new Intl.NumberFormat('en-IE',{style:'currency',currency:'EUR'}).format(cents/100);
 async function request(path,data){const r=await fetch(API_BASE+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error||'Could not reach checkout. Please try again.');return b;}
 let quoteVersion=0,latestQuote=null;

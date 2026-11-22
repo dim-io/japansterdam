@@ -1,3 +1,4 @@
+import { businessDetailsHTML } from './business-details.js';
 import { responsiveAttrs } from './responsive-images.js';
 const esc=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
 export function renderPage(kind,c){
@@ -39,6 +40,7 @@ const views = {
     <h1 class="page-title">${esc(t.title)}</h1>
     <p class="intro">${esc(t.intro)}</p>
     <div><p class="contact__label">${esc(t.label)}</p><a class="contact__mail" href="mailto:${esc(mail)}">${esc(mail)}</a></div>
+    ${businessDetailsHTML(c.site.business)}
   </div>
   <div class="contact__img"><img src="assets/img/site/contact.jpg"${responsiveAttrs('assets/img/site/contact.jpg', '(min-width:900px) 50vw, 100vw')} alt="Hands holding a navy jacket" width="1600" height="2000" fetchpriority="high"></div>
 </div>`;

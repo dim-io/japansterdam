@@ -6,7 +6,7 @@ import { imageFrameStyle } from './image-frames.js';
 import { getContent, getProducts, formatPrice, esc, productUrl } from './data.js?v=visitor-insights-3';
 import { getBag, bagCount, removeFromBag, setBag, onBagChange } from './bag.js?v=visitor-insights-3';
 
-import { renderChrome } from './chrome.js?v=checkout-1';
+import { renderChrome } from './chrome.js?v=business-details-1';
 const page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
 const { headerHTML, footerHTML, navLinks, ICON_CLOSE, site } = renderChrome(page);
 
@@ -100,6 +100,7 @@ onScroll();
 // fill data-dependent bits once content.json has loaded
 getContent().then((c) => {
   const s = c.site || {};
+  if (footer) footer.innerHTML = renderChrome(page, s).footerHTML();
   document.querySelectorAll('[data-site]').forEach((a) => { if (s[a.dataset.site]) a.href = s[a.dataset.site]; });
 }).catch(() => {});
 

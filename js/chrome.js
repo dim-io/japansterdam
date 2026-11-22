@@ -1,11 +1,13 @@
+import { businessFooterHTML } from './business-details.js';
 // Shared by the HTML generator and interactive layout; no browser or API dependency.
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function renderChrome(page = 'index.html') {
+export function renderChrome(page = 'index.html', siteData = {}) {
 // Static defaults so the chrome renders at once; content.json refines them later (data-site hooks).
 const site = {
   instagram: 'https://www.instagram.com/japansterdam_store/',
   grailed: 'https://www.grailed.com/Japansterdam',
   substack: 'https://japansterdam.substack.com/',
+  ...siteData,
 };
 
 const ICON_INSTA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".8" fill="currentColor" stroke="none"/></svg>';
@@ -58,7 +60,7 @@ function footerHTML() {
     </div>
     <a class="btn btn--light" href="${esc(site.substack)}" data-site="substack" target="_blank" rel="noopener">Subscribe on Substack</a>
   </div>
-  <p class="ft__bottom">© 2026 Japansterdam · Amsterdam · KVK 42217083</p>
+  ${businessFooterHTML(site.business)}
 </div>`;
 }
 

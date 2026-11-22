@@ -1,3 +1,4 @@
+import { renderChrome } from '../../js/chrome.js';
 import { renderPage } from '../../js/page-views.js';
 import { liveStories, storyCard, journalHTML, articleBody } from './editorial.mjs';
 import { createProductRoutes } from '../../js/product-urls.js';
@@ -79,6 +80,7 @@ export default {async fetch(request,env){
     html=withMeta(html,productMeta(p,canonical),productSchema(p,canonical));
     html=html.replace('<div id="pdp-root"></div>',()=>'<div id="pdp-root" data-server-rendered>'+productHTML(p,products,content)+'</div>');
    }
+   html=html.replace(/(<footer\b[^>]*id="site-footer"[^>]*>)[\s\S]*?<\/footer>/,(_,open)=>open+renderChrome(u.pathname.split('/').pop()||'index.html',content.site).footerHTML()+'</footer>');
    const publicContent={...content,home:{...content.home,testimonials:[]},journal:{...content.journal,articles:liveStories(content).map(a=>({...a,bodyHtml:articleBody(a.bodyHtml)}))}};
    html=html.replace('</body>',()=>'<script type="application/json" id="jp-page-data">'+jsonScript({content:publicContent,products})+'</script></body>');
    html=html.replace(/<link rel="preload" href="https:\/\/japansterdam-api\.sam-jesse\.workers\.dev\/public\/(?:content|products)"[^>]*>/g,'');

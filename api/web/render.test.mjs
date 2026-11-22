@@ -148,3 +148,24 @@ test('404 recovery links and assets resolve from the site root even on nested mi
  const r=await worker.fetch(new Request('https://japansterdam.com/deep/missing-page'),{ASSETS:{fetch:async()=>new Response(html,{status:404,headers:{'Content-Type':'text/html'}})}});
  assert.equal(r.status,404);assert.match(await r.text(),/name="robots" content="noindex"/);
 });
+
+test('current business identity is present in initial Contact HTML and shared product footer', async () => {
+ const business = { company: 'Japansterdam', address: 'Krasseurstraat 247, 1033 DW Amsterdam, The Netherlands', kvk: '42217083', vat: 'NL005593473B70', email: 'hello@japansterdam.com', phone: '+31655107791' };
+ const original = content;
+ content = {...content, site: {...content.site, business}, contact: {title:'Contact',intro:'Get in touch.',label:'Email'}};
+ try {
+  const contactTemplate = await readFile(new URL('../../contact.html',import.meta.url),'utf8');
+  const e = env(); e.ASSETS.fetch = async () => new Response(contactTemplate);
+  const html = await (await worker.fetch(new Request('https://japansterdam.com/contact.html'),e)).text();
+  for (const value of ['id="business-details"',business.address,business.vat,'href="tel:+31655107791"','href="mailto:hello@japansterdam.com"','contact.html#business-details']) assert.ok(html.includes(value),value);
+  const product = await (await worker.fetch(new Request('https://japansterdam.com/product.html?p=needles-archive-shirt'),env())).text();
+  assert.match(product, /KvK 42217083 · VAT NL005593473B70/);
+ } finally { content = original; }
+});
+
+test('business details escape edited settings and never turn untrusted contact values into active links', async () => {
+ const {businessDetailsHTML} = await import('../../js/business-details.js');
+ const html = businessDetailsHTML({company:'<script>alert(1)</script>',email:'javascript:alert(1)',phone:'" onclick="alert(1)'});
+ assert.ok(html.includes('&lt;script&gt;')); assert.ok(!html.includes('<script>')); assert.ok(!html.includes('href='));
+ assert.equal(businessDetailsHTML({}), '');
+});

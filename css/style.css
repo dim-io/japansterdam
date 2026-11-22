@@ -585,3 +585,16 @@ img[data-fade]{opacity:1}
  .hero__cta{display:none}
  .hero__mobile-shop{display:flex;position:absolute;left:50%;bottom:16px;transform:translateX(-50%);white-space:nowrap;font-size:11px;padding:12px 18px}
 }
+
+/* Company identity: the same details on Contact and checkout. */
+.business-details{border-top:1px solid var(--line);padding-top:24px;margin-top:12px;scroll-margin-top:calc(var(--header-h) + 24px);font-size:14px;line-height:1.6}
+.business-details h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin:0 0 18px}
+.business-details dl{margin:0;display:grid;gap:10px}
+.business-details dl>div{display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px}
+.business-details dt{color:var(--muted)}
+.business-details dd{margin:0;overflow-wrap:anywhere}
+.business-details a{text-decoration:underline;text-underline-offset:3px}
+.co__form>.business-details{margin-top:32px}
+.ft__bottom p{margin:0 0 5px}
+.ft__bottom>a{display:inline-block;margin-top:6px}
+@media(max-width:420px){.business-details dl>div{grid-template-columns:1fr;gap:0}}
