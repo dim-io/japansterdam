@@ -1,9 +1,10 @@
+import { checkoutFormHTML } from './checkout-form.js';
 import { businessDetailsHTML } from './business-details.js';
 import { API_BASE } from './config.js';
 import { imageFrameStyle } from './image-frames.js';
 import './layout.js?v=visitor-insights-3';
 import { getContent, getProducts, esc, productUrl } from './data.js?v=visitor-insights-3';
-import { getBag, removeFromBag, clearBag, setBag, onBagChange } from './bag.js?v=visitor-insights-3';
+import { getBag, setBag, onBagChange } from './bag.js?v=visitor-insights-3';
 
 const formatPrice=n=>new Intl.NumberFormat('en-IE',{style:'currency',currency:'EUR'}).format(Number(n));
 const [c, all, paymentConfig] = await Promise.all([getContent(), getProducts(), fetch(API_BASE + '/checkout/config').then(r => r.ok ? r.json() : null).catch(() => null)]);
@@ -38,27 +39,12 @@ function render() {
     ${paymentConfig?.enabled ? '<div class="co-total"><span>Shipping</span><strong id="shipping-total">Choose country</strong></div><div class="co-total"><span>Total</span><strong id="order-total">—</strong></div><p class="form__help">'+esc(paymentConfig.taxNote)+'</p>' : ''}
   </section>
   <section class="co__form" aria-labelledby="form-h">
-    <h2 id="form-h">Your details</h2>
-    <form class="form" id="order-form" novalidate>
-      <div class="field"><label for="f-name">Name</label><input id="f-name" name="name" autocomplete="name" required></div>
-      <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" required></div>
-      <div class="field"><label for="f-street">Street and number</label><input id="f-street" name="street" autocomplete="address-line1" required></div>
-      <div class="row">
-        <div class="field"><label for="f-zip">Postal code</label><input id="f-zip" name="zip" autocomplete="postal-code" required></div>
-        <div class="field"><label for="f-city">City</label><input id="f-city" name="city" autocomplete="address-level2" required></div>
-      </div>
-      <div class="field"><label for="f-country">Country</label>${paymentConfig?.enabled ? `<select id="f-country" name="country" autocomplete="country" required><option value="">Select country</option>${paymentConfig.shipping.map(r=>`<option value="${esc(r.country)}">${esc(new Intl.DisplayNames(['en'],{type:'region'}).of(r.country))}</option>`).join('')}</select>` : '<input id="f-country" name="country" autocomplete="country-name" required>'}</div>
-      <div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" name="note"></textarea></div>
-      ${paymentConfig?.enabled ? `<p class="form__help">${esc(paymentConfig.deliveryText)}</p><label class="co-consent"><input type="checkbox" name="accepted" required> <span>I agree to the purchase terms and understand this order requires payment.</span></label>${legalDetails(paymentConfig)}<p class="form__help">Secure payment via ${paymentConfig.provider === 'stripe' ? 'Stripe' : 'Mollie'}. Your piece is reserved when payment begins.</p>` : `<p class="form__help">You'll receive the total including shipping and a payment link by email.</p>`}
-      ${returnCosts ? `<p class="form__help" id="return-costs-notice">${esc(returnCosts)} <a class="u" href="shipping-returns.html">Read our return policy</a></p>` : ''}
-      <p class="form__err" id="form-err" role="alert"></p>
-      <button class="btn btn--primary btn--block" type="submit">${paymentConfig?.enabled ? 'Order and pay' : 'Send order request'}</button>
-    </form>
+    ${checkoutFormHTML(paymentConfig, {email, returnCosts})}
     ${businessDetailsHTML(paymentConfig || c.site.business, 'checkout-business-details')}
   </section>
 </div>`;
   restore(keep);
-  document.getElementById('order-form').addEventListener('submit', onSubmit);
+  document.getElementById('order-form')?.addEventListener('submit', onSubmit);
   if(paymentConfig?.enabled){const country=document.getElementById('f-country');country.addEventListener('change',updateQuote);if(country.value)updateQuote();}
 }
 
@@ -75,6 +61,7 @@ function restore(v) {
 
 async function onSubmit(e) {
   e.preventDefault();
+  if (!paymentConfig?.enabled) return;
   const form = e.currentTarget;
   const err = document.getElementById('form-err');
   const v = Object.fromEntries([...new FormData(form)].map(([k, x]) => [k, String(x).trim()]));
@@ -89,34 +76,14 @@ async function onSubmit(e) {
     return;
   }
   err.textContent = '';
-  if(paymentConfig?.enabled){ await startPayment(form,v,err); return; }
-  const items = bagItems();
-  const total = items.reduce((n, p) => n + p.price, 0);
-  const lines = items.map((p, i) => `${i + 1}. ${p.name}\n   Brand: ${p.brand}\n   Size: ${p.size}\n   Price: ${formatPrice(p.price)}\n   ${new URL(productUrl(p.slug), location.href).href}`);
-  const body = [
-    'Hello Japansterdam,', '', "I'd like to order the following pieces:", '', lines.join('\n\n'), '',
-    `Subtotal: ${formatPrice(total)} (excluding shipping)`, '',
-    'Name: ' + v.name, 'Email: ' + v.email, '',
-    'Shipping address:', v.street, `${v.zip} ${v.city}`, v.country, '',
-    'Note: ' + (v.note || '-'),
-  ].join('\n');
-  const subject = 'Order request — ' + v.name;
-  const href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body).replace(/%0A/g, '%0D%0A')}`;
-  confirmed = true;
-  root.innerHTML = `<div class="confirm"><h1 class="page-title">Thank you.</h1>
-    <p>Your email app should now open with your order request. Press send to complete it. You'll receive the total including shipping and a payment link by email.</p>
-    <p>If nothing opened, email <a class="u" href="${href}">${esc(email)}</a> and mention the pieces you want.</p>
-    <a class="btn" href="shop.html">Continue shopping</a><button class="btn" type="button" id="empty-bag">Empty bag</button></div>`;
-  document.getElementById('empty-bag').addEventListener('click', () => { clearBag(); confirmed = false; render(); });
-  window.scrollTo(0, 0);
-  window.location.href = href;
+  await startPayment(form,v,err);
 }
 
 onBagChange(()=>{if(!location.hash.startsWith('#order='))render();});
 if(location.hash.startsWith('#order='))showPaymentStatus();else render();
 
 
-function legalDetails(s){return `<div class="co-legal">${[['Purchase terms',s.termsText],['Returns and withdrawal',s.returnsText+'\nReturn address: '+s.returnAddress],['Privacy',s.privacyText]].map(([title,text])=>`<details><summary>${esc(title)}</summary><p>${esc(text).replace(/\n/g,'<br>')}</p></details>`).join('')}<a href="returns.html">Withdraw from an order</a></div>`;}
+
 const euro=cents=>new Intl.NumberFormat('en-IE',{style:'currency',currency:'EUR'}).format(cents/100);
 async function request(path,data){const r=await fetch(API_BASE+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error||'Could not reach checkout. Please try again.');return b;}
 let quoteVersion=0,latestQuote=null;

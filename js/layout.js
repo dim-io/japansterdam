@@ -131,7 +131,7 @@ async function renderDrawer() {
     <p class="line-item__meta">Size ${esc(p.size)} · ${formatPrice(p.price)}</p>
     <button class="line-item__remove" type="button" data-remove="${esc(p.slug)}" aria-label="Remove ${esc(p.name)}">Remove</button></div></div>`).join('');
   foot.innerHTML = `<div class="subtotal"><span>Subtotal</span><strong>${formatPrice(total)}</strong></div>
-    <p class="drawer__note">Shipping is calculated after you send your order request.</p>
+    <p class="drawer__note">Shipping and the total are shown at checkout before payment.</p>
     <a class="btn btn--primary btn--block" href="checkout.html">Checkout</a>`;
 }
 

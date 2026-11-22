@@ -2,7 +2,7 @@ name: Website on Sam's Cloudflare account
 on:
   push:
     branches: [main]
-    paths: ['api/web/**', 'api/package.json', 'api/package-lock.json', 'scripts/prepare-images.py', 'js/**', 'css/**', 'admin/**', '*.html', 'assets/**', '.github/workflows/deploy-web.yml']
+    paths: ['api/web/**', 'api/package.json', 'api/package-lock.json', 'scripts/prepare-images.py', 'scripts/checkout-form.test.mjs', 'js/**', 'css/**', 'admin/**', '*.html', 'assets/**', '.github/workflows/deploy-web.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,7 +20,7 @@ jobs:
           node-version: 22
       - run: npm ci
         working-directory: api
-      - run: node --test api/web/*.test.mjs
+      - run: node --test api/web/*.test.mjs scripts/checkout-form.test.mjs
       - run: python3 -m pip install Pillow==12.0.0
       - run: node api/web/build.mjs
       - run: npx wrangler deploy --config web/wrangler.toml

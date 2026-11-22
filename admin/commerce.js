@@ -23,7 +23,7 @@ export async function commerceView({view,root,h,api,toast,products}){
  }
  const state=await api('/admin/checkout'),s=state.settings;
  const form=h('form',{class:'commerce-settings'}),fields={};
- form.append(h('h1',{},'Checkout settings'),h('p',{class:'hint'},'Checkout stays off until payment processing, confirmation email, shipping and business details are ready. Until then the current order-request checkout remains available.'),h('p',{},`Payment key: ${state.keyMode} · Confirmation email: ${state.emailConfigured?'configured':'not configured'}`));
+ form.append(h('h1',{},'Checkout settings'),h('p',{class:'hint'},'Checkout stays off until payment processing, confirmation email, shipping and business details are ready. Until then customers can browse the collection and use the bag; online checkout shows an availability notice.'),h('p',{},`Payment key: ${state.keyMode} · Confirmation email: ${state.emailConfigured?'configured':'not configured'}`));
  const provider=h('select',{'aria-label':'Payment provider'},h('option',{value:'stripe'},'Stripe'),h('option',{value:'mollie'},'Mollie (existing integration)'));provider.value=s.provider||'mollie';
  form.append(h('label',{class:'field'},h('span',{},'Payment provider'),provider),h('p',{class:'hint'},'Save changes before checking the connection or starting a test. Switching providers applies to new orders; existing orders keep their original provider.'));
  if(state.missing?.length)form.append(h('p',{class:'form-error'},'Still needed: '+state.missing.join(', ')));
