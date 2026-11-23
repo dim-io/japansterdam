@@ -24,7 +24,7 @@ test('trusted review binds the actual listing photos and identity and expires',(
 });
 test('reported false positive is rejected and generic workwear never inherits bandana archive prices',()=>{
   const bad={...item,url:'https://www.vinted.nl/items/900201-veste-de-travail',title:'Veste de travail'};
-  assert.equal(assess(bad,config,now).authenticity.state,'brand_mismatch');
+  assert.equal(assess(bad,{...config,authenticityReviews:{'900201':{brand:'Kapital',verdict:'brand_mismatch'}}},now).authenticity.state,'brand_mismatch');
   const products=[{brand:'Kapital',name:'KAPITAL Reversible Kountry Bandana Patchwork 1st Jacket',price:360}];
   assert.equal(estimateFromShop(bad,products,config),null);
   assert.equal(matchingModelFeatures('Work jacket','Reversible Kountry Bandana Patchwork 1st Jacket'),false);

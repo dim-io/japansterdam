@@ -1,3 +1,4 @@
+import {initializeContinuousDay} from './continuous.mjs';
 import {scanLimit} from './trial-limits.mjs';
 import {DIAGNOSTIC_SCHEMA} from './diagnostics.mjs';
 import {BUNDLE_SCHEMA} from './bundles.mjs';
@@ -9,6 +10,10 @@ import { privateRuntime } from './private-runtime.mjs';
 export async function bootstrapTrial(query,p=policy,now=Date.now()){
   const runtime=privateRuntime(process.env),readiness=runtime.readiness;
   if(p===policy)p=runtime.policy;
+  if(p.continuous){
+    if((await query('SELECT verified FROM radar_transfer WHERE id=?',[SOURCE.database]))[0]?.verified!==1)throw Error('Accountoverdracht niet geverifieerd');
+    await initializeContinuousDay(query,p);return {continuous:true,historyPreserved:true};
+  }
   if(!/^pilot-\d{4}-\d{2}-\d{2}(?:-source[2-9])?$/.test(p.id)||p.id===p.previousPilotId)throw Error('Ongeldig proefvenster');
   if((await query('SELECT verified FROM radar_transfer WHERE id=?',[SOURCE.database]))[0]?.verified!==1)throw Error('Accountoverdracht niet geverifieerd');
   if(p.enableDiagnostics)await query(DIAGNOSTIC_SCHEMA);

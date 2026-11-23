@@ -15,7 +15,7 @@ export function curation(item,config){
  const preferred=brand==='Needles'&&['outerwear','shirt','knit','set'].includes(type);
  const targeted=!!config.selectionProfiles?.[brand]&&['footwear','accessory'].includes(type);
  const profile=config.curationPreferences?.brandPreferences?.[brand];
- const includes=terms=>terms?.some(term=>(' '+text+' ').includes(' '+normalize(term)+' '));
+ const includes=terms=>!!terms?.some(term=>(' '+text+' ').includes(' '+normalize(term)+' '));
  const japaneseStory=brand==='VANQUISH'&&includes(profile?.storyTerms);
  const porterTanker=brand==='Porter Yoshida'&&includes(profile?.preferredTerms);
  const porterColor=porterTanker&&includes(profile?.greenTerms)&&includes(profile?.orangeTerms);

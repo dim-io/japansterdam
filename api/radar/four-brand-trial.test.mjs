@@ -11,7 +11,7 @@ import {freePlanDecision,ACCOUNT_ID} from './free-plan.mjs';
 import config from '../../tools/deal-radar/config.json' with {type:'json'};
 import previous from '../../tools/deal-radar/pilot-v3.json' with {type:'json'};
 import readiness from './owner-readiness.json' with {type:'json'};
-const now=Date.now(),current={...previous,enabled:true,id:'pilot-fixture',maxAttempts:24,mode:'rotating-brands',deploymentAccountId:ACCOUNT_ID,startsAt:new Date(now-1000).toISOString(),endsAt:new Date(now+86400000).toISOString(),visionAccountConfirmation:{accountId:ACCOUNT_ID,plan:'free',source:'dashboard_current_plan',confirmedAt:new Date(now-1000).toISOString(),authorizedAt:new Date(now-1000).toISOString(),validUntil:new Date(now+86400000).toISOString()}};
+const now=Date.now(),current={...previous,enabled:true,id:'pilot-2099-01-01',maxAttempts:24,mode:'rotating-brands',deploymentAccountId:ACCOUNT_ID,startsAt:new Date(now-1000).toISOString(),endsAt:new Date(now+86400000).toISOString(),visionAccountConfirmation:{accountId:ACCOUNT_ID,plan:'free',source:'dashboard_current_plan',confirmedAt:new Date(now-1000).toISOString(),authorizedAt:new Date(now-1000).toISOString(),validUntil:new Date(now+86400000).toISOString()}};
 const p={...current,brands:{Kapital:'576107',Needles:'360271','Engineered Garments':'609050',orSlow:'373463'},brandGroups:[['Needles','orSlow'],['Kapital','Engineered Garments']],previousPilotId:'pilot-2026-11-06',startsAt:new Date(now).toISOString(),endsAt:new Date(now+86400000).toISOString()};
 test('all selected brands get one hundred euros, consistently at normalization and assessment',()=>{
  for(const [brand,limit] of [['Needles',100],['Kapital',100],['Kountry',100],['Engineered Garments',100],['Orslow',100]]){

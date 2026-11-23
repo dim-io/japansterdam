@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import config from '../../tools/deal-radar/config.json' with {type:'json'};
+import baseConfig from '../../tools/deal-radar/config.json' with {type:'json'};
+const config={...baseConfig,curationPreferences:{...baseConfig.curationPreferences,enabled:true}};
 import policy from '../../tools/deal-radar/pilot-v4.json' with {type:'json'};
 import {identifyBrand,itemPriceLimit} from '../../tools/deal-radar/scoring.mjs';
 import {canonicalListingBrand,selectionRejection} from '../../tools/deal-radar/selection.mjs';
@@ -17,8 +18,8 @@ const additions=['VANQUISH','A Vontade','Haversack','Junya Watanabe','Comme des 
 test('all twenty additions run within the same bounded budget, with a truthful 90-minute full cycle',()=>{
  for(const brand of additions){assert(brand in policy.brands,brand);assert.equal(identifyBrand(brand,config),brand);assert(config.researchBrands.includes(brand));}
  for(const brand of Object.keys(policy.brands))assert.equal(itemPriceLimit(brand,config),100,brand);
- assert.equal(Object.keys(policy.brands).length,51);assert.equal(policy.brandGroups.length*5,90);
- const seen=policy.brandGroups.flatMap((_,slot)=>scanSelection(policy,slot).map(([brand])=>brand));assert.equal(new Set(seen).size,51);assert.equal(seen.length,51);
+ assert.equal(Object.keys(policy.brands).length,52);assert.equal(policy.brandGroups.length*5,90);
+ const seen=policy.brandGroups.flatMap((_,slot)=>scanSelection(policy,slot).map(([brand])=>brand));assert.equal(new Set(seen).size,52);assert.equal(seen.length,52);
  assert.equal(policy.maxCostPerMonitorRunUsd,.015);
  assert.equal(policy.enabled,false);assert.equal('sourceBudget' in policy,false);assert.equal('startsAt' in policy,false); // Private trial values are supplied by the Worker secret.
  assert.throws(()=>scanSelection({...policy,brandGroups:[...policy.brandGroups,policy.brandGroups[0]]},0),/merkschema/);
@@ -74,7 +75,7 @@ test('Porter bags enter intake/research; wallets, unrelated Porter and clothing 
  for(const title of ['Porter Yoshida shoulder bag','Yoshida Porter shoulder bag','Porter Tanker backpack']){
   const item={...base,brand:'Porter',title,category:'Women > Bags'};
   assert.equal(itemType(item),'accessory');assert.equal(freshIntake(item,config,now),null);
-  const candidate=researchCandidate(item,config,now);assert(candidate?.priority>=policy.minimumResearchPriority,title);
+  const candidate=researchCandidate({...item,brand:canonicalListingBrand(item,config)},config,now);assert(candidate?.priority>=policy.minimumResearchPriority,title);
  }
  assert(selectionRejection({brand:'Porter',title:'Yoshida Porter wallet'},config));
  assert(selectionRejection({brand:'Porter',title:'Porter International bag'},config));

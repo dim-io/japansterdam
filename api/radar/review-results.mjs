@@ -48,7 +48,7 @@ export async function reviewResults(request,env,policy,{fetcher=fetch,config:rad
   const get=async path=>{const response=await fetcher('https://api.apify.com/v2'+path,{headers:{Authorization:'Bearer '+env.APIFY_TOKEN},redirect:'manual',signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('source_unavailable');return response.json();};
   const list=await get('/acts/topapi~vinted-scraper/runs?desc=true&limit='+PAGE_SIZE+'&offset='+offset);
   const runs=list.data?.items;if(!Array.isArray(runs))throw Error('invalid_source');
-  const trialStart=Date.parse(policy.startsAt),trialEnd=Date.parse(policy.endsAt);
+  const trialStart=Date.parse(policy.continuous?.historyStartsAt||policy.startsAt),trialEnd=Date.parse(policy.endsAt);
   const trialRuns=runs.filter(run=>{const started=Date.parse(run.startedAt);return Number.isFinite(started)&&started>=trialStart&&started<trialEnd;});
   const rows=[],rounds=[],ratingItems=[];let failedDatasets=0;
   // At most 41 reads including auth, catalog and rating cache; no model calls.
@@ -75,7 +75,7 @@ export async function reviewResults(request,env,policy,{fetcher=fetch,config:rad
    }catch{for(const row of rows)row.dealRating={state:'unavailable'};}
   }
   return reply({rows,rounds,runIds:trialRuns.map(run=>run.id),sourceMode:policy.sourceMode||'new-only',selectedBrands:Object.keys(policy.brands),nextOffset:trialRuns.length===PAGE_SIZE?offset+PAGE_SIZE:null,
-   loadedRuns:trialRuns.length,failedDatasets,trial:policy.id,endsAt:policy.endsAt,active:policy.enabled&&Date.now()>=Date.parse(policy.startsAt)&&Date.now()<Date.parse(policy.endsAt),
+   loadedRuns:trialRuns.length,failedDatasets,trial:policy.id,endsAt:policy.continuous?null:policy.endsAt,runMode:policy.continuous?'continuous':'trial',active:policy.enabled&&Date.now()>=Date.parse(policy.startsAt)&&Date.now()<Date.parse(policy.endsAt),
    cycleMinutes:(policy.brandGroups?.length||12)*5});
  }catch{return reply({error:'Bronresultaten tijdelijk niet beschikbaar. Er is geen nieuwe zoekopdracht gestart.'},503);}
 }

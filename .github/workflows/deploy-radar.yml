@@ -31,6 +31,8 @@ jobs:
       - name: Private Radar-configuratie valideren en deployment voorbereiden
         run: node radar/prepare-private-config.mjs
       - name: Radarcontroles
+        env:
+          RADAR_PRIVATE_CONFIG: ''
         run: node --test ../tools/deal-radar/*.test.mjs radar/*.test.mjs
       - name: Historie controleren of eenmalig prive overzetten
         env:

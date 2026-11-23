@@ -216,6 +216,13 @@
         "HenderScheme"
       ],
       "exactQueriesOnly": true
+    },
+    "Rocky Mountain Featherbed": {
+      "searchTerms": [
+        "Rocky Mountain Featherbed",
+        "Rocky Mountain Feather Bed"
+      ],
+      "exactQueriesOnly": true
     }
   },
   "brandGroups": [
@@ -304,10 +311,11 @@
     ],
     [
       "Goldwin",
-      "Hender Scheme"
+      "Hender Scheme",
+      "Rocky Mountain Featherbed"
     ]
   ],
-  "revision": "native-curated-brands-v21-eight-labels-neighborhood-title-gate",
+  "revision": "continuous-v22-rocky-mountain-featherbed",
   "dealScoring": {
     "enabled": true
   },

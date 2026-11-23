@@ -18,6 +18,11 @@ export async function prepareTrial(env,{query,now=Date.now(),fetcher=fetch,testP
   try{source=await budget(env.APIFY_TOKEN,fetcher,sourceReserve(testPolicy),testPolicy.sourceBudget);}catch{throw Error('source_budget_unavailable');}
   if(!(source.includedPlanConfirmed??source.freePlanConfirmed))throw Error('source_budget_not_confirmed:plan_unconfirmed');
   if(!source.enoughCredit)throw Error('source_budget_not_confirmed:insufficient_included_credit');
+  if(testPolicy.continuous){
+    await readCatalog({SHOP_CATALOG_URL:'https://japansterdam-api.sam-jesse.workers.dev/public/products'},fetcher);
+    if(!await telegramReadiness(env.TELEGRAM_BOT_TOKEN,env.TELEGRAM_CHAT_ID,fetcher))throw Error('trial_readiness_not_confirmed');
+    return {includedSourceBudgetConfirmed:true,continuous:true,newScraperStarts:0,messagesSent:0};
+  }
   // Reuse the actual same-account blank-image test, retaining global daily AI usage.
   if(testPolicy.sourceProvider==='topapi-monitor'&&validOwnerConfirmation(testPolicy,now)){
     let proofRows;

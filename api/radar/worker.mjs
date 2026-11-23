@@ -1,3 +1,4 @@
+import {initializeContinuousDay} from './continuous.mjs';
 import {reviewResults} from './review-results.mjs';
 import {queueDealRatings,scoreDealBatch,readDealRatings,RATING_DAILY_LIMIT} from './deal-ratings.mjs';
 import {scanLimit,sourceReserve} from './trial-limits.mjs';
@@ -219,6 +220,7 @@ export async function wake(env, options = {}) {
     const runtime=privateRuntime(env), config=options.config||runtime.config;
     const checkTime = options.now ?? Date.now(), policy = options.policy ?? runtime.policy;
     activePolicy = policy;
+    if(inWindow(checkTime,policy)&&policy.continuous)await initializeContinuousDay(async(q,args=[])=>{const result=await sql(env,q,...args).all();return result.results||[];},policy);
     if(inWindow(checkTime,policy)&&policy.researchTestOnce) {
       const test=await runResearchTest(env,config,policy,{now:checkTime,clock:options.clock||Date.now,fetcher:options.fetcher||fetch});
       if(test)return test;
@@ -271,7 +273,7 @@ export async function status(env, now = Date.now(), policy = privateRuntime(env)
     researchTest:researchTest?.report?JSON.parse(researchTest.report):researchTest?{state:researchTest.state}:null,
     dealScoringEnabled:policy.dealScoring?.enabled===true,dealRatingStates,dealRatingAttemptsToday:dealRatingDaily?.attempts||0,dealRatingDailyLimit:RATING_DAILY_LIMIT,dealScoresLastScan:report?.dealScores||null,
     researchEnabled:policy.researchEnabled===true,researchStates,researchHistoryStates,researchNoticeAttempts:researchBudget?.attempts||0,researchNoticeLimit:MAX_RESEARCH_NOTICES,researchSentLastScan:report?.researchSent||0,
-    bundleCheck: policy.bundleChecks?.enabled?'bounded_idle_wake_lookup':'inactive',bundleCheckLimit:policy.bundleChecks?.maxAttempts||0,bundleChecksUsed:bundleBudget?.attempts||0,bundleStates, active: inWindow(now,policy), endsAt: policy.endsAt,
+    bundleCheck: policy.bundleChecks?.enabled?'bounded_idle_wake_lookup':'inactive',bundleCheckLimit:policy.bundleChecks?.maxAttempts||0,bundleChecksUsed:bundleBudget?.attempts||0,bundleStates, active: inWindow(now,policy), endsAt: policy.continuous?null:policy.endsAt, runMode:policy.continuous?'continuous':'trial',nextDailyResetAt:policy.continuous?policy.endsAt:null,
     lastWakeAt: row?.last_wake_at ? new Date(row.last_wake_at).toISOString() : null,
     lastScanAt: row?.last_scan_at ? new Date(row.last_scan_at).toISOString() : null,
     attempts: row?.attempts ?? null, limit: Math.min(policy.maxAttempts, scanLimit(policy)),

@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import fs from 'node:fs';
-import config from '../../tools/deal-radar/config.json' with {type:'json'};
+import baseConfig from '../../tools/deal-radar/config.json' with {type:'json'};
+const config={...baseConfig,curationPreferences:{...baseConfig.curationPreferences,enabled:true}};
 import {researchCandidate,researchText,processResearch,TELEGRAM_STANDOUT_SCORE,TELEGRAM_STANDOUT_MAX_PRICE} from './research.mjs';
 import {BUNDLE_SCHEMA} from './bundles.mjs';
 import {selectPhotoUrls} from './vision.mjs';
@@ -26,7 +27,7 @@ function setup(outcome='consistent',failure=false){
  };
  return {db,env,messages,calls:()=>calls,dbCalls:()=>dbCalls,photoFetches:()=>photoFetches,fetcher};
 }
-const options=(ctx,changes={})=>({now,clock:()=>now,policy,fetcher:ctx.fetcher,probeFn:async()=>({runId:'fixture',items:[item]}),...changes});
+const options=(ctx,changes={})=>({now,clock:()=>now,policy,config,fetcher:ctx.fetcher,probeFn:async()=>({runId:'fixture',items:[item]}),...changes});
 test('unpriced research keeps availability, condition, freshness, brand identity and counterfeit gates',()=>{
  assert(researchCandidate(item,config,now));
  for(const patch of [{price:100.01},{price:0},{currency:'GBP'},{available:false},{condition:'satisfactory'},{flaws:['hole']},{title:'Needles replica track pants'},{description:'Uniqlo collaboration'},{title:'Needles child jacket'},{title:'Work jacket',brand:'Kapital'},{title:'Needles handmade scarf'},{observedAt:new Date(now-2*3600000).toISOString()},{photoUrls:[]}])assert.equal(researchCandidate({...item,...patch},config,now),null,JSON.stringify(patch));

@@ -4,6 +4,8 @@ import {DatabaseSync} from 'node:sqlite';
 import fs from 'node:fs';
 import {reviewBacklog} from './research-backlog.mjs';
 const now=Date.now();
+import baseConfig from '../../tools/deal-radar/config.json' with {type:'json'};
+const config={...baseConfig,researchExcludedItems:{'10594928216':{reason:'Synthetic exclusion'}}};
 const policy={id:'pilot-2026-11-06',enabled:true,researchEnabled:true,startsAt:new Date(now-3600000).toISOString(),endsAt:new Date(now+3600000).toISOString()};
 const item=id=>({url:`https://www.vinted.nl/items/${id}-test`,title:'orSlow white denim jacket',brand:'orSlow',price:35,currency:'EUR',condition:'very_good',size:'XXS',available:true,observedAt:new Date(now-60000).toISOString(),photoUrls:['https://images1.vinted.net/a.png','https://images1.vinted.net/b.png'],comparables:[],dealRating:{state:'scored',score:57,reason:'Strong bargain'}});
 function setup(ids){
@@ -18,7 +20,7 @@ function setup(ids){
 }
 test('backlog sends only recently available matching candidates, without AI or scraper starts, once',async()=>{
  const ctx=setup(['1','2','3','4','10594928216']);
- const options={query:ctx.query,now,clock:()=>now,fetcher:ctx.fetcher,testPolicy:policy,readExisting:async()=>[item('1'),{...item('2'),available:false},{...item('3'),observedAt:new Date(now-2*3600000).toISOString()},item('10594928216')]};
+ const options={query:ctx.query,now,clock:()=>now,fetcher:ctx.fetcher,testPolicy:policy,config,readExisting:async()=>[item('1'),{...item('2'),available:false},{...item('3'),observedAt:new Date(now-2*3600000).toISOString()},item('10594928216')]};
  const report=await reviewBacklog(ctx.env,options);
  assert.equal(report.waiting,5);assert.equal(report.revalidated,1);assert.equal(report.sent,1);assert.equal(report.excluded,1);assert.equal(report.unconfirmed,3);assert.equal(report.newScraperStarts,0);assert.equal(report.aiCalls,0);
  assert(ctx.messages[0].startsWith('JAPANSTERDAM PICK'));assert(ctx.messages[0].includes('XXS'));assert(ctx.messages[0].includes('Authenticiteit: niet bevestigd'));
@@ -28,12 +30,12 @@ test('backlog sends only recently available matching candidates, without AI or s
 test('a prior skipped notice may be delivered, but a previously sent or ambiguous notice cannot be repeated',async()=>{
  const ctx=setup(['1','2','3']);
  for(const [id,delivery] of [['1','skipped'],['2','sent'],['3','pending']])ctx.db.prepare('INSERT INTO radar_alerts (pilot_id,item_id,price,delivery,attempted_at) VALUES (?,?,?,?,?)').run(policy.id,'photo-review:'+id,35,delivery,now-1000);
- const report=await reviewBacklog(ctx.env,{query:ctx.query,now,clock:()=>now,fetcher:ctx.fetcher,testPolicy:policy,readExisting:async()=>[item('1'),item('2'),item('3')]});
+ const report=await reviewBacklog(ctx.env,{query:ctx.query,now,clock:()=>now,fetcher:ctx.fetcher,testPolicy:policy,config,readExisting:async()=>[item('1'),item('2'),item('3')]});
  assert.equal(report.sent,1);assert.equal(ctx.messages.length,1);ctx.db.close();
 });
 test('failed source checks cannot deliver stale backlog items or auto retry; expired trials remain inert',async()=>{
  const ctx=setup(['1']);
- const options={query:ctx.query,now,clock:()=>now,testPolicy:policy,readExisting:async()=>{throw Error('private-provider-token');}};
+ const options={query:ctx.query,now,clock:()=>now,testPolicy:policy,config,readExisting:async()=>{throw Error('private-provider-token');}};
  const report=await reviewBacklog(ctx.env,options);assert.equal(report.state,'incomplete');assert.equal(report.sent,0);assert(!JSON.stringify(report).includes('private-provider-token'));
  assert.deepEqual(await reviewBacklog(ctx.env,options),{state:'already_attempted'});
  assert.deepEqual(await reviewBacklog(ctx.env,{...options,now:now+7200000}),{state:'outside_trial'});ctx.db.close();
