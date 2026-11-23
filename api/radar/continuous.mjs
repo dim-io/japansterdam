@@ -14,7 +14,7 @@ export async function initializeContinuousDay(query,policy) {
   if(!(await query('SELECT id FROM radar_control WHERE id=?',[policy.continuous.previousPilotId])).length)throw Error('Previous radar history missing');
   // Include yesterday's research queue. Seen IDs are already deduplicated globally.
   const yesterday='continuous-'+new Date(Date.parse(policy.startsAt)-86400000).toISOString().slice(0,10);
-  for(const source of [policy.continuous.previousPilotId,yesterday]) {
+  for(const source of [yesterday,policy.continuous.previousPilotId]) {
     await query('INSERT OR IGNORE INTO radar_research SELECT ?,item_id,data,priority,state,photo_state,first_seen,last_seen FROM radar_research WHERE pilot_id=?',[policy.id,source]);
   }
   await query('INSERT OR IGNORE INTO radar_control (id) VALUES (?)',[policy.id]);

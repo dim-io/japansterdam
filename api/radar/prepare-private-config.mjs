@@ -14,5 +14,4 @@ if(process.env.GITHUB_ENV){
 }
 // Keep validation output free of account and database identifiers.
 if(!policy.enabled)throw Error('Radar trial policy is disabled in the private config');
-privateRuntime(process.env);
 console.log('Private Radar-config en deploymentinstellingen zijn geldig.');
