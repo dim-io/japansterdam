@@ -28,6 +28,8 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - name: Bestaande private configuratie herstellen indien GitHub-secret ontbreekt
+        run: node radar/restore-private-runtime.mjs
       - name: Private Radar-configuratie valideren en deployment voorbereiden
         run: node radar/prepare-private-config.mjs
       - name: Radarcontroles
