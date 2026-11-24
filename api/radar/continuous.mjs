@@ -3,10 +3,17 @@ export function continuousPolicy(policy, operation, now=Date.now()) {
   if(!operation.enabled||operation.mode!=='continuous')return policy;
   if(operation.dailyScanLimit!==288||!Number.isFinite(Date.parse(operation.authorizedAt))||now<Date.parse(operation.authorizedAt))throw Error('Invalid continuous authorization');
   const start=new Date(now);start.setUTCHours(0,0,0,0);
-  return {...policy,enabled:true,id:'continuous-'+start.toISOString().slice(0,10),
+  const result={...policy,enabled:true,id:'continuous-'+start.toISOString().slice(0,10),
     startsAt:start.toISOString(),endsAt:new Date(+start+86400000).toISOString(),maxAttempts:288,
     mode:'fresh-rotation',sourceProvider:'topapi-monitor',sourceMode:'new-only',maxCostPerMonitorRunUsd:.015,
     continuous:{authorizedAt:operation.authorizedAt,previousPilotId:policy.id,historyStartsAt:policy.startsAt}};
+  // A new owner confirmation renews only the same previously verified account.
+  // Keep the actual confirmation timestamp: day rollover cannot freshen evidence.
+  if(operation.freePlanConfirmation?.plan==='free'&&policy.visionAccountConfirmation?.plan==='free'&&policy.visionAccountConfirmation.accountId===policy.deploymentAccountId){
+    const confirmedAt=operation.freePlanConfirmation.confirmedAt;
+    result.visionAccountConfirmation={...policy.visionAccountConfirmation,source:'owner_confirmation',confirmedAt,authorizedAt:confirmedAt,validUntil:result.endsAt};
+  }
+  return result;
 }
 export async function initializeContinuousDay(query,policy) {
   if(!policy.continuous)return;

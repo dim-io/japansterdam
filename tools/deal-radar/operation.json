@@ -2,5 +2,9 @@
   "mode": "continuous",
   "enabled": true,
   "authorizedAt": "2026-11-23T00:00:00Z",
-  "dailyScanLimit": 288
+  "dailyScanLimit": 288,
+  "freePlanConfirmation": {
+    "plan": "free",
+    "confirmedAt": "2026-11-24T20:15:00Z"
+  }
 }

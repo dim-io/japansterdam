@@ -56,3 +56,12 @@ test('Rocky Mountain Featherbed uses exact full-brand queries and does not accep
  const input=monitorInput([['Rocky Mountain Featherbed',p.brands['Rocky Mountain Featherbed']]]);
  assert.deepEqual(input.searchQueries.map(q=>new URL(q).searchParams.get('search_text')),['Rocky Mountain Featherbed','Rocky Mountain Feather Bed']);
 });
+
+test('new owner Free-plan confirmation is account-bound and does not refresh itself on later days',()=>{
+ const confirmed=Date.parse('2026-11-24T20:15:00Z');
+ const op={...operation,freePlanConfirmation:{plan:'free',confirmedAt:new Date(confirmed).toISOString()}};
+ const p=continuousPolicy({...old,deploymentAccountId:'fixture'},op,confirmed);
+ assert.equal(validOwnerConfirmation(p,confirmed),true);
+ assert.equal(validOwnerConfirmation(continuousPolicy({...old,deploymentAccountId:'fixture'},op,confirmed+2*86400000),confirmed+2*86400000),false);
+ assert.equal(validOwnerConfirmation(continuousPolicy({...old,deploymentAccountId:'other'},op,confirmed),confirmed),false);
+});
