@@ -5,6 +5,7 @@ compatibility_date = "2025-01-01"
 
 [vars]
 STRIPE_TEST_ACCOUNT_ID = "acct_1Ubp6ACt5Jg0Obb0"
+STRIPE_LIVE_ACCOUNT_ID = "acct_1Uc3SoE15Xx80iNy"
 ALLOWED_ORIGINS = "https://japansterdam.com,https://japansterdam-web.sam-jesse.workers.dev,https://www.japansterdam.com,https://dim-io.github.io,http://localhost:8080,http://127.0.0.1:8080"
 
 [[d1_databases]]
