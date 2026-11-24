@@ -44,7 +44,8 @@
     "Comoli",
     "Goldwin",
     "Hender Scheme",
-    "Rocky Mountain Featherbed"
+    "Rocky Mountain Featherbed",
+    "The Real McCoy's"
   ],
   "peripheralBrands": [
     "Visvim",
@@ -216,6 +217,13 @@
       "Rocky Mountain Featherbed",
       "Rocky Mountain Feather Bed",
       "RockyMountainFeatherbed"
+    ],
+    "The Real McCoy's": [
+      "The Real McCoy's",
+      "The Real McCoys",
+      "The Real McCoy’s",
+      "Real McCoys",
+      "Real McCoy"
     ]
   },
   "authenticityRequiredBrands": [

@@ -3,7 +3,7 @@
 The owner's 23 November 2026 instruction enables `tools/deal-radar/operation.json`.
 Only an installed private runtime can activate it; the public pilot stays disabled.
 Cloudflare Cron wakes every five minutes, scanning one group of up to three brands.
-The 52 brands rotate in 18 groups (90 minutes per full cycle).
+The 53 brands rotate in 18 groups (90 minutes per full cycle).
 
 Each UTC day has its own `continuous-YYYY-MM-DD` reservation key, a 24-hour window
 and at most 288 scans. Initialization uses INSERT OR IGNORE and preserves existing

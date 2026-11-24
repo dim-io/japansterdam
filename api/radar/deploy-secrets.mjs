@@ -1,3 +1,4 @@
+import {privateConfigBindings} from './private-config-bindings.mjs';
 import { spawnSync } from 'node:child_process';
 import { requirePrivateRuntime } from './private-runtime.mjs';
 import { freePlanDecision } from './free-plan.mjs';
@@ -18,7 +19,7 @@ try {
   decision = freePlanDecision({ok:response.ok,data,status:response.status},policy.visionAccountConfirmation?.accountId===accountId?policy:{...policy,visionAccountConfirmation:null});
   console.log('Gratis AI-account bevestigd: ' + decision.allowed + ' · bron: ' + decision.basis + ' (controle HTTP ' + response.status + ').');
 } catch { console.log('Account-API niet bereikbaar; beslissing: ' + decision.basis); }
-const input = JSON.stringify({ ...Object.fromEntries(keys.map((key) => [key, process.env[key]])), VISION_FREE_CONFIRMED: String(decision.allowed) });
+const input = JSON.stringify({ ...Object.fromEntries(keys.filter(key=>key!=='RADAR_PRIVATE_CONFIG').map((key) => [key, process.env[key]])), ...privateConfigBindings(process.env.RADAR_PRIVATE_CONFIG), VISION_FREE_CONFIRMED: String(decision.allowed) });
 // Secrets travel only through stdin into Cloudflare's encrypted secret store.
 const result = spawnSync('node_modules/.bin/wrangler', ['secret', 'bulk', '--config', 'radar/.wrangler.generated.toml'], {
   input, stdio: ['pipe', 'inherit', 'inherit'], env: process.env,

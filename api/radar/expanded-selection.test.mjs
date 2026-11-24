@@ -18,8 +18,8 @@ const additions=['VANQUISH','A Vontade','Haversack','Junya Watanabe','Comme des 
 test('all twenty additions run within the same bounded budget, with a truthful 90-minute full cycle',()=>{
  for(const brand of additions){assert(brand in policy.brands,brand);assert.equal(identifyBrand(brand,config),brand);assert(config.researchBrands.includes(brand));}
  for(const brand of Object.keys(policy.brands))assert.equal(itemPriceLimit(brand,config),100,brand);
- assert.equal(Object.keys(policy.brands).length,52);assert.equal(policy.brandGroups.length*5,90);
- const seen=policy.brandGroups.flatMap((_,slot)=>scanSelection(policy,slot).map(([brand])=>brand));assert.equal(new Set(seen).size,52);assert.equal(seen.length,52);
+ assert.equal(Object.keys(policy.brands).length,53);assert.equal(policy.brandGroups.length*5,90);
+ const seen=policy.brandGroups.flatMap((_,slot)=>scanSelection(policy,slot).map(([brand])=>brand));assert.equal(new Set(seen).size,53);assert.equal(seen.length,53);
  assert.equal(policy.maxCostPerMonitorRunUsd,.015);
  assert.equal(policy.enabled,false);assert.equal('sourceBudget' in policy,false);assert.equal('startsAt' in policy,false); // Private trial values are supplied by the Worker secret.
  assert.throws(()=>scanSelection({...policy,brandGroups:[...policy.brandGroups,policy.brandGroups[0]]},0),/merkschema/);

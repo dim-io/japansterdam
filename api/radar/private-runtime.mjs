@@ -1,3 +1,4 @@
+import {readPrivateConfig} from './private-config-bindings.mjs';
 import operation from '../../tools/deal-radar/operation.json' with {type:'json'};
 import {continuousPolicy} from './continuous.mjs';
 import publicConfig from '../../tools/deal-radar/config.json' with {type:'json'};
@@ -5,7 +6,7 @@ import publicPolicy from '../../tools/deal-radar/pilot-v4.json' with {type:'json
 import publicReadiness from './owner-readiness.json' with {type:'json'};
 
 export function privateRuntime(env={},now=Date.now()) {
-  const raw=env.RADAR_PRIVATE_CONFIG;
+  const raw=readPrivateConfig(env);
   if(!raw)return {config:publicConfig,policy:publicPolicy,readiness:publicReadiness,deployment:{}};
   let privateValues;
   try { privateValues=JSON.parse(raw); } catch { throw Error('Radar private config is invalid'); }

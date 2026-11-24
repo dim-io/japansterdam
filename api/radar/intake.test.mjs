@@ -48,7 +48,7 @@ test('brand-tagged non-clothing and missing/old timestamps never enter the photo
 });
 test('fresh trial covers all selected canonical brands each cycle within an unchanged monthly ceiling',()=>{
  const selections=Array.from({length:policy.brandGroups.length},(_,slot)=>scanSelection(policy,slot));
- assert.equal(new Set(selections.flat().map(([b])=>b)).size,52);
+ assert.equal(new Set(selections.flat().map(([b])=>b)).size,53);
  assert(selections.every(g=>g.length>=2&&g.length<=3));
  assert.deepEqual(scanSelection(policy,policy.brandGroups.length),scanSelection(policy,0));
  assert.equal(policy.requireVisualBrandEvidence,true);

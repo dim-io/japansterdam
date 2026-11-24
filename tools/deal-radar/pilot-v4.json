@@ -223,6 +223,14 @@
         "Rocky Mountain Feather Bed"
       ],
       "exactQueriesOnly": true
+    },
+    "The Real McCoy's": {
+      "searchTerms": [
+        "The Real McCoy's",
+        "The Real McCoys",
+        "Real McCoy"
+      ],
+      "exactQueriesOnly": true
     }
   },
   "brandGroups": [
@@ -273,7 +281,8 @@
     ],
     [
       "Nulabel",
-      "Portvel"
+      "Portvel",
+      "The Real McCoy's"
     ],
     [
       "Wislom",
@@ -315,7 +324,7 @@
       "Rocky Mountain Featherbed"
     ]
   ],
-  "revision": "continuous-v22-rocky-mountain-featherbed",
+  "revision": "continuous-v23-real-mccoys",
   "dealScoring": {
     "enabled": true
   },

@@ -20,7 +20,7 @@ test('continuous private runtime replaces expired trial windows and stale brand 
  assert(privateRuntime(env,now).config.researchBrands.includes('Hender Scheme'));
  assert(privateRuntime(env,now).config.aliases.Needles.includes('Private fixture alias'));
  assert.equal(p.maxAttempts,288);assert.equal(p.sourceBudget.maxMonthlyUsageUsd,19);assert.equal(sourceReserve(p),.31);
- assert.equal(Object.keys(p.brands).length,52);assert.equal(p.brandGroups.length,18);assert.equal(p.continuous.historyStartsAt,old.startsAt);
+ assert.equal(Object.keys(p.brands).length,53);assert.equal(p.brandGroups.length,18);assert.equal(p.continuous.historyStartsAt,old.startsAt);
  for(let i=0;i<18;i++)assert(monitorInput(scanSelection(p,i)).searchQueries.length<=9);
  assert.equal(privateRuntime().policy.enabled,false); // Public fixtures cannot enable production.
  // Continuous operation does not extend a stale Free-account attestation.
