@@ -43,6 +43,9 @@
 .story-body sup{font-size:11px;line-height:0}
 .story-body figure{margin:36px 0 16px}
 .story-body figure img{width:100%;height:auto;max-height:850px;object-fit:contain;background:var(--stone)}
+.story-body figure:has(>img+img){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.story-body figure:has(>img+img)>figcaption{grid-column:1/-1}
+@media(max-width:600px){.story-body figure:has(>img+img){grid-template-columns:1fr}}
 .story-body figure+p:has(>em:only-child),.story-body figcaption{font-size:12px;line-height:1.65;color:var(--muted);max-width:800px;margin:0 auto 36px}
 .story-body ul,.story-body ol{padding-left:22px;list-style:disc;font-size:14px;line-height:1.65;margin-bottom:28px}
 .story-body ol{list-style:decimal}
