@@ -178,3 +178,17 @@ test('page snapshots include only whitelisted company identity from checkout con
  assert.deepEqual(Object.keys(snapshot.content.site.business).sort(),['address','company','email','kvk','phone','returnAddress','vat']);
  assert.equal(snapshot.content.site.business.company,'Japansterdam');assert.ok(!html.includes('PRIVATE_REVIEW_NOTE'));
 });
+
+test('size guide retires universal conversion tables and renders CMS measuring advice safely',async()=>{
+ const {renderSizeGuide}=await import('../../js/size-guide.js');
+ const guide={title:'Size Guide',intro:'Compare actual pieces.',statement:'Labels and measurements.',sections:[{heading:'How to measure',body:'First paragraph.\n\nSecond paragraph.',diagram:'garments',topCaption:'Flat chest width',bottomCaption:'Flat waist and inseam',measurements:[{label:'Waist (flat)',body:'Double the width for approximate circumference.'}]}],contactText:'Ask about the piece.',contactLabel:'Get in touch',tables:[{heading:'Obsolete conversion',columns:['Size'],rows:[['XS (0–2)']]}]};
+ const html=renderSizeGuide(guide);
+ for(const value of ['Flat chest width','Flat waist and inseam','Waist (flat)','approximate circumference','href="contact.html"','First paragraph.</p><p>Second paragraph.'])assert(html.includes(value));
+ assert.equal((html.match(/<svg /g)||[]).length,2);
+ assert.doesNotMatch(html,/<table|XS \(0–2\)|data-unit=/);
+ const unsafe=renderSizeGuide({...guide,statement:'<script>bad()</script>',sections:[{heading:'<img src=x>',body:'<script>bad()</script>'}]});
+ assert.doesNotMatch(unsafe,/<script|<img/);assert(unsafe.includes('&lt;script&gt;'));
+ // A stale fallback cannot reintroduce the misleading size conversions or claims.
+ const old=renderSizeGuide({title:'Size Guide',intro:'Japanese brands tend to run smaller.',tables:guide.tables});
+ assert.doesNotMatch(old,/tend to run smaller|XS \(0–2\)|<table/);
+});

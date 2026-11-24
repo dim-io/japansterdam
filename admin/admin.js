@@ -776,6 +776,18 @@ async function viewPages(sectionKey) {
   else if (sectionVal && typeof sectionVal === 'object' && !Array.isArray(sectionVal)) Object.keys(sectionVal).forEach((c) => form.append(renderField(sectionVal, c, key === 'about' && c === 'closingQuote' ? 'Opening statement' : humanize(c))));
   else form.append(renderField(content, key, label(key)));
 
+  if (key === 'sizeGuide') {
+    const prepared = h('textarea', {rows:8,'aria-label':'Prepared size guide JSON',placeholder:'Paste prepared guide content'});
+    form.append(h('details', {class:'grp'}, h('summary', {}, 'Import prepared size guide'), prepared,
+      h('button', {type:'button',class:'btn btn--sm',onclick:()=>{
+        try {
+          const guide=JSON.parse(prepared.value);
+          if(!guide||typeof guide.title!=='string'||typeof guide.intro!=='string'||!Array.isArray(guide.sections)||!guide.sections.length||guide.sections.length>20||guide.sections.some(s=>!s||typeof s.heading!=='string'||typeof s.body!=='string'||s.measurements&&(!Array.isArray(s.measurements)||s.measurements.some(m=>!m||typeof m.label!=='string'||typeof m.body!=='string'))))throw Error('Use a title, intro and sections with heading/body text.');
+          content.sizeGuide=guide;touch();viewPages('sizeGuide');toast('Guide imported. Save all pages to publish.');
+        }catch(error){toast(error.message,true);}
+      }}, 'Import size guide')));
+  }
+
   const saveBtn = h('button', { type: 'button', class: 'btn btn--primary' }, 'Save all pages');
   async function save() {
     saveBtn.disabled = true;

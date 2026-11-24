@@ -429,10 +429,19 @@ img[data-fade]{opacity:1}
 .toggle button{border:1px solid var(--ink);background:var(--paper);padding:10px 20px;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
 .toggle button+button{border-left:0}
 .toggle button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
-.sg-table{width:100%;border-collapse:collapse;margin:8px 0 40px;font-size:15px}
-.sg-table caption{text-align:left;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding-bottom:10px}
-.sg-table th,.sg-table td{text-align:left;padding:12px 12px 12px 0;border-bottom:1px solid var(--line)}
-.sg-table thead th{border-bottom:1px solid var(--ink);font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.sg-statement{font:clamp(26px,4vw,36px)/1.2 var(--serif);padding:0 0 32px;max-width:32ch!important}
+.page--size .block p+p{margin-top:16px}
+.sg-example{white-space:pre-line;border-left:3px solid var(--red);padding:16px 20px;background:var(--cream);font-weight:600;margin-bottom:20px}
+.sg-diagrams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:24px 0}
+.sg-diagrams figure{padding:20px;background:var(--cream)}
+.sg-diagrams svg{display:block;width:100%;height:180px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linejoin:round}
+.sg-diagrams .sg-measure-line{stroke:var(--red);stroke-width:2.5}
+.sg-diagrams figcaption{font-size:13px;line-height:1.5;margin-top:12px}
+.sg-methods{display:grid;gap:20px;margin-top:24px}
+.sg-methods dt{font-weight:700;margin-bottom:4px}
+.sg-methods dd{margin:0;color:var(--muted)}
+.sg-contact{padding-top:28px;border-top:1px solid var(--line)}
+@media(min-width:650px){.sg-methods{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 32px}}
 
 /* about */
 .page--about{padding-top:32px}

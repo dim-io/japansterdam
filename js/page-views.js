@@ -1,3 +1,4 @@
+import {renderSizeGuide} from './size-guide.js';
 import { businessDetailsHTML } from './business-details.js';
 import { responsiveAttrs } from './responsive-images.js';
 const esc=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
@@ -56,12 +57,7 @@ const views = {
 <div class="faq">${c.faq.items.map((i) => `<details><summary>${esc(i.q)}</summary><p class="faq__a">${esc(i.a)}</p></details>`).join('')}</div></div></div>`;
   },
   size() {
-    const s = c.sizeGuide;
-    return `<div class="page page--text"><div class="wrap"><h1 class="page-title">${esc(s.title)}</h1>
-<p class="lead">${esc(s.intro)}</p>
-<div class="toggle" role="group" aria-label="Units"><button type="button" data-unit="in" aria-pressed="true">Inches</button><button type="button" data-unit="cm" aria-pressed="false">Centimetres</button></div>
-${s.tables.map((t) => `<table class="sg-table"><caption>${esc(t.heading)}</caption><thead><tr>${t.columns.map((h) => `<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((cell, i) => (i === 0 ? `<th scope="row">${esc(cell)}</th>` : `<td data-in="${esc(cell)}">${esc(cell)}</td>`)).join('')}</tr>`).join('')}</tbody></table>`).join('')}
-</div></div>`;
+    return renderSizeGuide(c.sizeGuide);
   },
 };
 
