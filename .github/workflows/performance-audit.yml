@@ -1,0 +1,37 @@
+name: Storefront desktop and mobile speed audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['tools/performance/request.json', '.github/workflows/performance-audit.yml']
+permissions:
+  contents: read
+concurrency:
+  group: storefront-performance
+  cancel-in-progress: false
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [mobile, desktop]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned audit tool
+        run: npm install --prefix "$RUNNER_TEMP/jp-lighthouse" lighthouse@13.6.0 --no-audit --no-fund
+      - name: Measure five live pages
+        env:
+          MODE: ${{ matrix.mode }}
+        run: LIGHTHOUSE_BIN="$RUNNER_TEMP/jp-lighthouse/node_modules/.bin/lighthouse" node tools/performance/audit.mjs "$MODE"
+      - name: Keep detailed reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storefront-speed-${{ matrix.mode }}
+          path: ${{ runner.temp }}/japansterdam-performance
+          retention-days: 14
