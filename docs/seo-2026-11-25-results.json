@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-25",
+  "implementationCommit": "54b09c74dd2b1c7b794e7e56a19a212e5263500b",
+  "sitemapURLs": 109,
+  "http200": 109,
+  "missingTitles": 0,
+  "missingDescriptions": 0,
+  "wrongCanonical": 0,
+  "h1CountErrors": 0,
+  "journalSearchTitles": 12,
+  "productsWithBreadcrumbsShippingReturns": 61,
+  "tests": {
+    "webAndBrand": 44,
+    "backend": 64
+  },
+  "searchConsole": {
+    "overviewReportUpdated": "2026-11-16",
+    "overviewNonIndexed": 64,
+    "overviewIndexed": 0,
+    "homepageInspection": "Indexed; live test passed",
+    "shopInspection": "Indexed",
+    "sitemapResubmitted": "Success; 109 discovered URLs",
+    "shoe36Inspection": "Not indexed/unknown; live test passed, valid Product snippets, merchant listing and breadcrumbs, optional warnings; indexing request accepted into priority crawl queue. Merchant-listing warnings are 16 optional deliveryTime fields."
+  },
+  "provenance": "3 confirmed NULABEL generated JPEGs labelled, four responsive sizes retain XMP; other images are not automatically classified",
+  "remaining": [
+    "Merchant Center account and catalogue not confirmed or activated",
+    "Other generated images still need explicit provenance classification",
+    "Public checkout config enabled=false; no payment settings changed",
+    "Search Console reporting and rankings need time to update"
+  ]
+}
