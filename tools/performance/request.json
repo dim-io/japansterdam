@@ -1,1 +1,1 @@
-{"phase":"before","requestedAt":"2026-11-24","reason":"Desktop and mobile baseline before performance changes"}
+{"phase":"after","requestedAt":"2026-11-25","reason":"Compare five desktop and mobile pages after deploying 01d6fcb performance optimizations"}
