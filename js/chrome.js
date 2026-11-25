@@ -1,4 +1,5 @@
 import { businessFooterHTML } from './business-details.js';
+import { responsiveAttrs } from './responsive-images.js';
 // Shared by the HTML generator and interactive layout; no browser or API dependency.
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function renderChrome(page = 'index.html', siteData = {}) {
@@ -38,7 +39,7 @@ function footerHTML() {
   const ext = (key, label) => `<a class="ft-link" href="${esc(site[key])}" data-site="${key}" target="_blank" rel="noopener">${label}</a>`;
   return `<div class="ft">
   <div class="ft__top">
-    <div class="ft__brand"><a href="index.html" aria-label="Japansterdam, home"><img src="assets/img/site/footer-logo.jpg" alt="Japansterdam" width="1535" height="1024" loading="lazy"></a></div>
+    <div class="ft__brand"><a href="index.html" aria-label="Japansterdam, home"><img src="assets/img/site/footer-logo.jpg"${responsiveAttrs('assets/img/site/footer-logo.jpg','260px')} alt="Japansterdam" width="1535" height="1024" loading="lazy"></a></div>
     <div class="ft__col"><h2>Help</h2><ul>
       <li><a class="ft-link" href="shipping-returns.html">Shipping &amp; Returns</a></li>
       <li><a class="ft-link" href="returns.html">Withdraw from an order</a></li>

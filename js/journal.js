@@ -20,7 +20,7 @@ function canonical(path) {
 if (!slug) {
   canonical('journal.html');
   root.innerHTML = `<div class="wrap journal-index"><header class="journal-intro"><p class="eyebrow">Japansterdam / Editorial</p><h1 class="page-title">${esc(journal.title || 'Journal')}</h1><p>${esc(journal.intro || 'People, materials and cultural connections behind Japanese garments. Curated in Amsterdam.')}</p></header>
-    ${stories.length ? `<div class="journal-grid">${stories.map(storyCard).join('')}</div>` : '<p class="journal-empty">The first stories are on their way. Subscribe to hear when they arrive.</p>'}${subscribe}</div>`;
+    ${stories.length ? `<div class="journal-grid">${stories.map((a,i)=>storyCard(a,i,{eager:i<2,priority:i===0})).join('')}</div>` : '<p class="journal-empty">The first stories are on their way. Subscribe to hear when they arrive.</p>'}${subscribe}</div>`;
 } else {
   const article = stories.find(a => a.slug === slug);
   if (!article) {

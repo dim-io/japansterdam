@@ -1,4 +1,5 @@
 import { optimizePageAssets } from './page-assets.mjs';
+import { bundlePageAssets } from './bundles.mjs';
 import { execFileSync } from 'node:child_process';
 import { responsiveAttrs } from '../../js/responsive-images.js';
 // Copy only public website files. Never publish API code, credentials,
@@ -23,3 +24,4 @@ for (const name of await readdir(out)) if(name.endsWith('.html')) {
  html=html.replace(/<img\b[^>]*>/g,tag=>{const src=tag.match(/\bsrc="([^"]+)"/)?.[1];return src&&!tag.includes('srcset=')?tag.replace('<img','<img'+responsiveAttrs(src,'(min-width:900px) 50vw, 100vw')):tag;});
  await writeFile(path,html);
 }
+await bundlePageAssets(fileURLToPath(out),(await readdir(out)).filter(name=>name.endsWith('.html')).map(name=>fileURLToPath(new URL(name,out))));

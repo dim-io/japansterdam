@@ -3,6 +3,7 @@ import { imageFrameStyle } from './image-frames.js';
 import { publishedStories, storyCard } from './journal-shared.js?v=journal-love-piece-first-1';
 import './layout.js?v=visitor-insights-3';
 import { initHomeMotion } from './home-motion.js';
+import { imageVariant } from './responsive-images.js';
 import { getContent, getProducts, byNewest, cardHTML, esc, catNo, productUrl, brandUrl, formatPrice } from './data.js?v=visitor-insights-3';
 
 // Cover the pictured CTA with an opaque HTML button so the original border
@@ -53,7 +54,8 @@ if (hp && cap) {
 const marquee = document.getElementById('marquee');
 // Reuse the actual embroidered first cross from the wordmark. The SVG viewport
 // isolates it without altering the logo asset or loading an imitation texture.
-const X = '<svg class="marquee__x" viewBox="518 26 58 58" overflow="hidden" aria-hidden="true" focusable="false"><image href="assets/img/site/header-logo.png" width="702" height="104"/></svg>';
+const marqueeLogo=document.getElementById('jp-page-data')?imageVariant('assets/img/site/header-logo.png',320):'assets/img/site/header-logo.png';
+const X = `<svg class="marquee__x" viewBox="518 26 58 58" overflow="hidden" aria-hidden="true" focusable="false"><image href="${marqueeLogo}" width="702" height="104"/></svg>`;
 const lead = 'Now online:';
 const raw = h.marquee.startsWith(lead) ? h.marquee.slice(lead.length) : h.marquee;
 const names = raw.split(',').map((s) => s.trim()).filter(Boolean);

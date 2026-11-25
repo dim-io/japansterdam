@@ -1,10 +1,12 @@
 import { publicBusiness } from '../../js/business-details.js';
 import { renderChrome } from '../../js/chrome.js';
 import { renderPage } from '../../js/page-views.js';
-import { liveStories, storyCard, journalHTML, articleBody } from './editorial.mjs';
+import { liveStories, storyCard, journalHTML } from './editorial.mjs';
+import { editorialSource, editorialKey } from '../../js/responsive-images.js';
 import { createProductRoutes } from '../../js/product-urls.js';
 import { BRAND_PAGES } from '../../js/brand-pages.js';
 import { sitemapXML } from '../src/sitemap.mjs';
+import { clientSnapshot } from './client-snapshot.mjs';
 import { ORIGIN,productMeta,productSchema,withMeta,productHTML,brandCards,shopCategoryHTML,esc,jsonScript } from './render.mjs';
 const API='https://japansterdam-api.sam-jesse.workers.dev';
 async function catalog(env){
@@ -29,6 +31,12 @@ export default {async fetch(request,env){
  // Missing build variants (for example a new CMS upload) use the original.
  if(u.pathname.startsWith('/assets/optimized/')){
   const asset=await env.ASSETS.fetch(request);if(asset.status!==404)return asset;
+  const editorial=u.pathname.match(/^\/assets\/optimized\/editorial\/([a-f0-9]{16})-(320|480|768|960)\.webp$/);
+  if(editorial){
+   const source=editorialSource(u.searchParams.get('source'));
+   if(source&&editorialKey(source)===editorial[1])return new Response(null,{status:302,headers:{Location:source,'Cache-Control':'public, max-age=60'}});
+   return errorPage(404);
+  }
   const m=u.pathname.match(/^\/assets\/optimized\/(uploads|local)\/([\w./-]+\.(?:jpe?g|png|webp))-(320|480|768|960)\.webp$/i);
   if(!m||m[2].includes('..'))return errorPage(404);
   const original=m[1]==='uploads'?API+'/img/products/'+m[2]:u.origin+'/assets/img/'+m[2];
@@ -82,14 +90,14 @@ export default {async fetch(request,env){
     html=html.replace('<div id="pdp-root"></div>',()=>'<div id="pdp-root" data-server-rendered>'+productHTML(p,products,content)+'</div>');
    }
    html=html.replace(/(<footer\b[^>]*id="site-footer"[^>]*>)[\s\S]*?<\/footer>/,(_,open)=>open+renderChrome(u.pathname.split('/').pop()||'index.html',content.site).footerHTML()+'</footer>');
-   const publicContent={...content,home:{...content.home,testimonials:[]},journal:{...content.journal,articles:liveStories(content).map(a=>({...a,bodyHtml:articleBody(a.bodyHtml)}))}};
-   html=html.replace('</body>',()=>'<script type="application/json" id="jp-page-data">'+jsonScript({content:publicContent,products})+'</script></body>');
+   html=html.replace('</body>',()=>'<script type="application/json" id="jp-page-data">'+jsonScript(clientSnapshot(content,products,u))+'</script></body>');
    html=html.replace(/<link rel="preload" href="https:\/\/japansterdam-api\.sam-jesse\.workers\.dev\/public\/(?:content|products)"[^>]*>/g,'');
    html=html.replace(/<noscript>[\s\S]*?<\/noscript>/,'<noscript><p style="padding:24px">Enable JavaScript for interactive filters, the bag and measurement units.</p></noscript>');
    response=new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
   }catch{return errorPage(503);}
  }else response=await env.ASSETS.fetch(request);
  const out=new Response(request.method==='HEAD'?null:response.body,response);
+ if(u.pathname.startsWith('/assets/bundles/')&&response.ok)out.headers.set('Cache-Control','public, max-age=31536000, immutable');
  if(u.pathname==='/checkout.html'){
   out.headers.set('Cache-Control','no-store');
   out.headers.set('Referrer-Policy','no-referrer');

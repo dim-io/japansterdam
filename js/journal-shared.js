@@ -7,12 +7,12 @@ export const publishedStories = (journal) => orderJournalStories((journal?.artic
 export const readingMinutes = (html) => Math.max(1, Math.ceil(String(html || '').replace(/<[^>]*>/g, ' ').trim().split(/\s+/).length / 220));
 export const storyDate = (date) => /^\d{4}-\d{2}-\d{2}$/.test(date || '') ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(date + 'T12:00:00Z')) : '';
 
-export function storyCard(article, index = 0) {
+export function storyCard(article, index = 0, options = {}) {
   return `<a class="story-card" href="${storyUrl(article.slug)}">
-    <div class="story-card__image"><img src="${esc(article.cover)}"${responsiveAttrs(article.cover)} alt="${esc(article.coverAlt || article.title)}" width="1200" height="900" loading="lazy" decoding="async"></div>
+    <div class="story-card__image"><img src="${esc(article.cover)}"${responsiveAttrs(article.cover)} alt="${esc(article.coverAlt || article.title)}" width="1200" height="900" loading="${options.eager===true?'eager':'lazy'}"${options.priority===true?' fetchpriority="high"':''} decoding="async"></div>
     <div class="story-card__copy"><p class="eyebrow">${String(index + 1).padStart(2, '0')} / ${esc(article.category || 'Journal')}</p>
     <h2>${esc(article.title)}</h2><p class="story-card__summary">${esc(article.subtitle)}</p>
-    <p class="story-card__meta">${esc(storyDate(article.date))} <span aria-hidden="true">·</span> ${readingMinutes(article.bodyHtml)} min read</p>
+    <p class="story-card__meta">${esc(storyDate(article.date))} <span aria-hidden="true">·</span> ${article.readingMinutes || readingMinutes(article.bodyHtml)} min read</p>
     <span class="story-card__read">Read story <span aria-hidden="true">↗</span></span></div></a>`;
 }
 

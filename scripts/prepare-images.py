@@ -1,5 +1,5 @@
 """Build responsive public images, without changing originals or CMS content."""
-import concurrent.futures, io, json, pathlib, subprocess
+import concurrent.futures, html, io, json, pathlib, re, subprocess, urllib.parse
 from PIL import Image, ImageOps
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 OUT=ROOT/'.site-dist/assets/optimized'
@@ -21,6 +21,22 @@ try:
                 if '/' not in name and '?' not in name and all(c.isalnum() or c in '._-' for c in name): sources['uploads/'+name]=url
 except Exception as e:
     print('Live image catalogue unavailable; existing image URLs remain the fallback:',type(e).__name__)
+editorial_hosts={'substackcdn.com','images.squarespace-cdn.com','images.metmuseum.org','world-fn.com','image-cdn.hypb.st','www.couvertureandthegarbstore.com','nepenthes.co.jp','media.gqjapan.jp','cdn.shopify.com','go.wool.com','old.mu.nl'}
+def editorial_key(url):
+    value=14695981039346656037
+    for byte in url.encode('utf-8'):value=((value^byte)*1099511628211)&0xffffffffffffffff
+    return f'{value:016x}'
+try:
+    content=json.loads(download(API+'/public/content'))
+    for article in content.get('journal',{}).get('articles',[]):
+        if article.get('published') is not True: continue
+        urls=[article.get('cover','')]+re.findall(r'<img\b[^>]*\bsrc=[\"\x27]([^\"\x27]+)',article.get('bodyHtml',''),re.I)
+        for raw in urls:
+            url=html.unescape(raw);parsed=urllib.parse.urlsplit(url)
+            if parsed.scheme=='https' and parsed.hostname in editorial_hosts and not parsed.username and not parsed.password:
+                sources['editorial/'+editorial_key(url)]=url
+except Exception as e:
+    print('Editorial images use their original URLs until the next build:',type(e).__name__)
 def prepare(entry):
     name,source=entry
     try:
