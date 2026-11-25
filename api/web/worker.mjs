@@ -1,3 +1,4 @@
+import { publicCommerce, productBreadcrumb } from '../../js/seo-metadata.js';
 import { publicBusiness } from '../../js/business-details.js';
 import { renderChrome } from '../../js/chrome.js';
 import { renderPage } from '../../js/page-views.js';
@@ -16,7 +17,7 @@ async function catalog(env){
   if(!r.ok)throw Error('Catalogue unavailable');return r.json();
  }));
  if(!Array.isArray(results[0]))throw Error('Invalid catalogue');
- return [results[0].filter(p=>p.active!==false),{...results[1],site:{...results[1].site,business:publicBusiness(results[2])}}];
+ return [results[0].filter(p=>p.active!==false),{...results[1],site:{...results[1].site,business:publicBusiness(results[2]),commerce:publicCommerce(results[2])}}];
 }
 function errorPage(status){return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${status===404?'Piece not found':'Collection temporarily unavailable'} — Japansterdam</title><body><h1>${status===404?'Piece not found':'Collection temporarily unavailable'}</h1><p>${status===404?'This piece is not currently listed.':'Please try again shortly.'}</p><a href="/shop.html">Back to the shop</a></body></html>`,{status,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Robots-Tag':'noindex'}});}
 export default {async fetch(request,env){
@@ -78,6 +79,7 @@ export default {async fetch(request,env){
     }
    }else if(brand){
     const cards=brandCards(products,brand.brand);
+    if(brand.listed===false && !products.some(p=>p.brand===brand.brand)) html=html.replace('</head>','<meta name="robots" content="noindex,follow"></head>');
     html=html.replace(/<div class="grid" id="brand-pieces">[\s\S]*?<\/div>/,()=>'<div class="grid" id="brand-pieces">'+cards.html+'</div>');
     html=html.replace(/<p id="brand-count"[^>]*>[\s\S]*?<\/p>/,()=>'<p id="brand-count" aria-live="polite">'+cards.count+' '+(cards.count===1?'piece':'pieces')+'</p>');
    }else{
@@ -86,7 +88,7 @@ export default {async fetch(request,env){
     const canonical=new URL(routes.urlFor(p.slug),ORIGIN).href;
     const friendly=new URL(canonical).searchParams.get('p');
     if(u.searchParams.get('p')!==friendly){const redirect=new URL(u);redirect.searchParams.set('p',friendly);return Response.redirect(redirect.href,301);}
-    html=withMeta(html,productMeta(p,canonical),productSchema(p,canonical));
+    html=withMeta(html,productMeta(p,canonical),[productSchema(p,canonical,content.site.commerce),productBreadcrumb(p,canonical)]);
     html=html.replace('<div id="pdp-root"></div>',()=>'<div id="pdp-root" data-server-rendered>'+productHTML(p,products,content)+'</div>');
    }
    html=html.replace(/(<footer\b[^>]*id="site-footer"[^>]*>)[\s\S]*?<\/footer>/,(_,open)=>open+renderChrome(u.pathname.split('/').pop()||'index.html',content.site).footerHTML()+'</footer>');

@@ -1,3 +1,4 @@
+import { productSEOTitle, offerPolicy } from '../../js/seo-metadata.js';
 import { responsiveAttrs } from '../../js/responsive-images.js';
 import { createProductRoutes } from '../../js/product-urls.js';
 import { imageFrameStyle } from '../../js/image-frames.js';
@@ -10,10 +11,9 @@ export const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const plain=s=>String(s||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
 const money=n=>'€'+Math.round(Number(n)).toLocaleString('en-US');
 export function productMeta(p,url){
- const hasBrand=String(p.name).toLowerCase().includes(String(p.brand).toLowerCase());
- return {title:p.name+(hasBrand?'':' — '+p.brand)+' — Japansterdam',description:`${p.name}. Size ${p.size}. ${money(p.price)}. ${p.condition}. ${p.conditionNotes||''}`.slice(0,180),url,image:new URL(p.images[0],ORIGIN).href};
+ return {title:productSEOTitle(p),description:`${p.name}. Size ${p.size}. ${money(p.price)}. ${p.condition}. ${p.conditionNotes||''}`.slice(0,180),url,image:new URL(p.images[0],ORIGIN).href};
 }
-export function productSchema(p,url){return {'@context':'https://schema.org','@type':'Product',name:p.name,brand:{'@type':'Brand',name:p.brand},category:p.category,size:p.size,description:plain(p.description),image:p.images.map(i=>new URL(i,ORIGIN).href),offers:{'@type':'Offer',url,price:Number(p.price).toFixed(2),priceCurrency:'EUR',itemCondition:p.condition==='New / unworn'?'https://schema.org/NewCondition':'https://schema.org/UsedCondition',availability:p.sold?'https://schema.org/SoldOut':'https://schema.org/InStock'}};}
+export function productSchema(p,url,commerce={}){return {'@context':'https://schema.org','@type':'Product',name:p.name,brand:{'@type':'Brand',name:p.brand},category:p.category,size:p.size,description:plain(p.description),image:p.images.map(i=>new URL(i,ORIGIN).href),offers:{'@type':'Offer',url,price:Number(p.price).toFixed(2),priceCurrency:'EUR',itemCondition:p.condition==='New / unworn'?'https://schema.org/NewCondition':'https://schema.org/UsedCondition',availability:p.sold?'https://schema.org/SoldOut':'https://schema.org/InStock',...offerPolicy(commerce)}};}
 export const jsonScript=data=>JSON.stringify(data).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
 export function withMeta(html,meta,schema){
  html=html.replace(/<title>[\s\S]*?<\/title>/,()=>`<title>${esc(meta.title)}</title>`).replace(/<script src="js\/seo.js[^\"]*"><\/script>/,'');

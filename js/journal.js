@@ -1,3 +1,4 @@
+import { articleSEOTitle, articleSEODescription } from './seo-metadata.js';
 import './layout.js?v=visitor-insights-3';
 import { getContent, getProducts, esc, cardHTML, setMeta, jsonLd } from './data.js?v=visitor-insights-3';
 import { publishedStories, storyUrl, storyCard, storyDate, readingMinutes, matchesProduct, safeArticleHTML } from './journal-shared.js?v=journal-love-piece-first-1';
@@ -29,7 +30,7 @@ if (!slug) {
     root.innerHTML = '<div class="wrap notfound"><h1 class="page-title">Story not found</h1><p>This story is not currently published.</p><a class="btn" href="journal.html">Back to Journal</a></div>';
   } else {
     const url = canonical(storyUrl(article.slug));
-    setMeta({ title: article.title + ' — Japansterdam Journal', description: article.subtitle, image: article.cover, url });
+    setMeta({ title: articleSEOTitle(article), description: articleSEODescription(article), image: article.cover, url });
     const date = storyDate(article.date);
     jsonLd({ '@context': 'https://schema.org', '@type': 'Article', headline: article.title, description: article.subtitle, image: [article.cover], author: { '@type': 'Person', name: 'Sam de Greef' }, publisher: { '@type': 'Organization', name: 'Japansterdam', url: 'https://japansterdam.com/' }, ...(date ? { datePublished: article.date } : {}), mainEntityOfPage: url });
     root.innerHTML = `<article class="journal-article"><header class="story-header wrap"><a class="story-back" href="journal.html">← Journal</a><p class="eyebrow">${esc(article.category || 'Journal')}</p><h1>${esc(article.title)}</h1><p class="story-deck">${esc(article.subtitle)}</p><p class="story-byline">By Sam de Greef <span aria-hidden="true">·</span> ${esc(date)} <span aria-hidden="true">·</span> ${readingMinutes(article.bodyHtml)} min read</p></header>

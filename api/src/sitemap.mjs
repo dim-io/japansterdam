@@ -3,7 +3,7 @@ import { createProductRoutes } from '../../js/product-urls.js';
 
 // Brand destinations follow the complete public brand-page registry.
 const origin = 'https://japansterdam.com/';
-export const staticPaths = ['', 'shop.html', 'about.html', 'contact.html', 'journal.html', 'size-guide.html', 'faq.html', 'shipping-returns.html', 'privacy-policy.html', ...BRAND_PAGES.map(b=>b.slug+'.html')];
+export const staticPaths = ['', 'shop.html', 'about.html', 'contact.html', 'journal.html', 'size-guide.html', 'faq.html', 'shipping-returns.html', 'privacy-policy.html', ...BRAND_PAGES.filter(b=>b.listed!==false).map(b=>b.slug+'.html')];
 const xml = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 
 export function sitemapXML(products, content) {

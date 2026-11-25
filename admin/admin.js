@@ -831,6 +831,7 @@ function journalEditor(journal, touch) {
       const item = h('details', { class: 'grp', open: true }, h('summary', {}, `${i + 1}. ${article.title || 'New story'}`),
         h('label', { class: 'switch' }, published, 'Published on website'),
         field(article, 'title', 'Story title'), field(article, 'slug', 'Story slug'), field(article, 'subtitle', 'Subtitle'),
+        field(article, 'seoTitle', 'Search title (optional)'), field(article, 'seoDescription', 'Search description (optional)'),
         field(article, 'category', 'Category'), field(article, 'date', 'Publication date (YYYY-MM-DD)'),
         field(article, 'cover', 'Cover image URL'), field(article, 'coverAlt', 'Cover image description'),
         field(article, 'bodyHtml', 'Article HTML', true),

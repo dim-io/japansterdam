@@ -12,8 +12,8 @@ test('all listed brands have crawlable pages with live, isolated collections',as
   const path=b.slug+'.html',html=await readFile(new URL('../'+path,import.meta.url),'utf8');
   assert.ok(html.includes('href="https://japansterdam.com/'+path+'"'),path);
   assert.ok(html.replaceAll('&amp;','&').toLowerCase().includes(('<h1 class="page-title">'+b.brand+'</h1>').toLowerCase()),path);
-  assert.ok(staticPaths.includes(path));
-  assert.ok(sitemap.includes('<loc>https://japansterdam.com/'+path+'</loc>'),path+': static sitemap');
+  assert.equal(staticPaths.includes(path),b.listed!==false);
+  assert.equal(sitemap.includes('<loc>https://japansterdam.com/'+path+'</loc>'),b.listed!==false,path+': static sitemap');
   const piece={slug:'available',name:'Available selection',brand:b.brand,category:'Tops',size:'M',price:100,images:[],addedOn:1};
   const env={SOURCE_FETCH:async url=>Response.json(url.endsWith('/products')?[
    piece,{...piece,slug:'hidden',active:false,name:'Hidden selection'},

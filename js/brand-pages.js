@@ -7,7 +7,7 @@ export const BRAND_PAGES = [
     "title": "Pre-Owned Needles Clothing",
     "description": "Shop pre-owned Needles clothing at Japansterdam: individual shirts, trousers, jackets and coordinated sets, curated in Amsterdam.",
     "intro": "Unexpected proportions, expressive fabrics and pieces with a point of view. Our Needles selection brings together individual garments and coordinated sets, chosen for the details that make each piece worth a closer look.",
-    "detail": "Browse the available pieces below. Each listing includes the original label size, our fit assessment where available, condition notes and garment measurements when supplied. Use these details to compare with a garment you already own."
+    "detail": "Explore pre-owned Needles shirts, jeans, painter pants and coordinated sets from our Amsterdam selection. A complete set offers two ways to wear the same fabric: together as a considered outfit, or separately with everyday layers. Individual pieces can be just as distinctive, with unusual proportions, textured cloth and small construction details that reward a closer look. Our product pages describe the actual garment for sale rather than a standard seasonal size chart. Check the tagged size, condition notes and available measurements before ordering. For the story behind one workwear collaboration, read <a class=\"u\" href=\"journal.html?story=needles-smiths-american-painter-pants\">Needles, Smith’s American and the painter pant</a>."
   },
   {
     "slug": "kapital",
@@ -15,7 +15,7 @@ export const BRAND_PAGES = [
     "title": "Pre-Owned Kapital & Kountry Clothing",
     "description": "Explore pre-owned Kapital and Kapital Kountry clothing at Japansterdam. Discover distinctive Japanese garments, selected in Amsterdam.",
     "intro": "Texture, playful construction and distinctive silhouettes define our Kapital selection. From characterful trousers to substantial knitwear and Kountry pieces, every garment is selected individually rather than as part of a seasonal collection.",
-    "detail": "Our selection changes as individual pieces find new owners. Explore the current garments below, with product-specific condition notes, original label sizes and measurements where available."
+    "detail": "Looking for pre-owned Kapital knitwear, trousers or a Kountry piece? Start with the fabric and silhouette: the weight of a knit, the volume through a trouser leg and the way a garment layers can matter more than the size on its label. Our selection spans different cuts and seasons, so two Kapital pieces in the same tagged size may fit quite differently. Each listing identifies the individual garment, its condition and the measurements available. Compare those flat measurements with something you already wear before choosing. Pieces are curated one at a time in Amsterdam; availability follows the actual collection."
   },
   {
     "slug": "wacko-maria",
@@ -39,7 +39,7 @@ export const BRAND_PAGES = [
     "title": "Pre-Owned Engineered Garments Clothing",
     "description": "Explore pre-owned Engineered Garments clothing at Japansterdam. Discover characterful workwear-inspired pieces, selected individually in Amsterdam.",
     "intro": "Familiar workwear shapes with unexpected details. Our Engineered Garments selection is chosen for useful pockets, considered proportions and the character that makes a garment interesting to wear and layer.",
-    "detail": "Explore the current selection below. Each piece has its own condition notes and original label size, with a fit assessment and garment measurements where supplied. Compare these details with a garment you already own before ordering."
+    "detail": "Browse pre-owned Engineered Garments jackets and layers selected for their construction, pockets and proportions. A workwear-inspired jacket can become an everyday outer layer, while a lighter piece can sit comfortably beneath a coat. The details vary by garment, so we describe the individual piece and provide its original label size, condition and measurements where available. Compare shoulder, chest and length measurements with a similar layer you own, allowing room for whatever you plan to wear underneath. Our selection changes as pieces find new owners. Read more about the design connection between <a class=\"u\" href=\"journal.html?story=suzuki-brothers-tss-engineered-garments\">Engineered Garments and ts(s) in our Suzuki brothers story</a>."
   },
   {
     "slug": "nonnative",
@@ -127,7 +127,8 @@ export const BRAND_PAGES = [
     "title": "Pre-Owned Kenzo Clothing",
     "description": "Explore pre-owned Kenzo clothing at Japansterdam. Discover the current selection, individually curated in Amsterdam, with product-specific condition and sizing details.",
     "intro": "Expressive colour and distinctive details in pieces with their own character. Our Kenzo selection brings together individual garments chosen to add something unexpected to an everyday wardrobe.",
-    "detail": "Read the individual condition notes, original label size and measurements where supplied before ordering. Our collection changes as pieces find new owners; the available garments below update with the shop."
+    "detail": "Read the individual condition notes, original label size and measurements where supplied before ordering. Our collection changes as pieces find new owners; the available garments below update with the shop.",
+    "listed": false
   },
   {
     "slug": "maison-kitsune",
@@ -215,7 +216,7 @@ export const BRAND_PAGES = [
     "title": "Pre-Owned Moonstar Shoes",
     "description": "Explore pre-owned Moonstar shoes at Japansterdam. Discover thoughtfully made Japanese footwear, selected individually in Amsterdam.",
     "intro": "Made in Kurume, Japan, Moonstar footwear brings practical design and careful shoemaking to everyday pairs. Our selection focuses on comfortable, well-made shoes with a clear sense of purpose.",
-    "detail": "Explore the available footwear below. Check each listing for its condition, original label size and fit notes. Our selection changes as individual pairs find new owners."
+    "detail": "Discover pre-owned Moonstar footwear selected individually in Amsterdam, alongside our <a class=\"u\" href=\"shoes-like-pottery.html\">Shoes Like Pottery sneakers</a>. A shoe’s label size is a useful starting point, but the shape of the last and the particular model determine how it feels on foot. Check each pair’s listed size, condition and any fit notes; contact us if you need additional details before ordering. The photographs and description refer to the individual pair being offered, and stock changes as pairs find their next owner. For a closer look at Kurume shoemaking and the vulcanizing process, read <a class=\"u\" href=\"journal.html?story=out-of-the-kiln-into-the-everyday\">our Moonstar and Shoes Like Pottery story</a>."
   },
   {
     "slug": "shoes-like-pottery",

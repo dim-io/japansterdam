@@ -1,3 +1,4 @@
+import { productSEOTitle, productBreadcrumb, offerPolicy } from './seo-metadata.js';
 import { track } from './statistics.js?v=visitor-insights-3';
 import { responsiveAttrs } from './responsive-images.js';
 import { productFitsLike } from './sizing.js?v=footwear-filter-1';
@@ -49,7 +50,7 @@ if (!p) {
   const descriptionHTML = descriptionDoc.body.innerHTML;
   const desc = stripHtml(p.description).slice(0, 155);
   setMeta({
-    title: `${p.name}${p.name.toLowerCase().includes(p.brand.toLowerCase()) ? '' : ' — ' + p.brand} — Japansterdam`,
+    title: productSEOTitle(p),
     description: `${p.brand} ${p.name}, size ${p.size}, ${formatPrice(p.price)}. ${desc}`.slice(0, 200),
     image: p.images[0],
     url: new URL(productUrl(p.slug), 'https://japansterdam.com/').href,
@@ -71,8 +72,11 @@ if (!p) {
       priceCurrency: 'EUR',
       itemCondition: p.condition === 'New / unworn' ? 'https://schema.org/NewCondition' : 'https://schema.org/UsedCondition',
       availability: p.sold ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+      ...offerPolicy(c.site.commerce),
     },
   });
+
+  jsonLd(productBreadcrumb(p, canonical.href));
 
   const n = p.images.length;
   const slides = p.images.map((src, i) => `<figure class="gallery__slide"><button class="gallery__open" type="button" data-i="${i}" aria-label="Enlarge photo ${i + 1} of ${n}" aria-haspopup="dialog"><img style="${imageFrameStyle(p, src)}" src="${esc(src)}"${responsiveAttrs(src, '(min-width:900px) 25vw, 100vw')} alt="${esc(altFor(p, i))}" width="960" height="1200" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" data-fade></button></figure>`).join('');

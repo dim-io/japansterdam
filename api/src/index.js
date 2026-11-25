@@ -340,7 +340,9 @@ async function handle(request, env, ctx) {
     h.set('Cache-Control', 'public, max-age=31536000, immutable');
     h.set('Cross-Origin-Resource-Policy', 'cross-origin');
     h.set('X-Content-Type-Options', 'nosniff');
-    return new Response(method === 'HEAD' ? null : value, { headers: h });
+    const { knownGeneratedImage, markGeneratedJPEG } = await import('./image-provenance.mjs');
+    const body = method === 'HEAD' ? null : knownGeneratedImage(key) && h.get('Content-Type') === 'image/jpeg' ? markGeneratedJPEG(await new Response(value).arrayBuffer()) : value;
+    return new Response(body, { headers: h });
   }
 
   if (method === 'POST' && path === '/auth/login') return login(request, env);

@@ -1,0 +1,8 @@
+{
+  "description": "Confirmed generated NULABEL product visualisations from the supplied Japansterdam generation history. Unlisted images retain their existing metadata; no blanket AI classification.",
+  "trainedAlgorithmicMedia": [
+    "products/26ee686a-74ab-4a70-a97a-d919c031b03d.jpg",
+    "products/526b767c-4512-4244-a2f5-b45da98d90a0.jpg",
+    "products/2422f255-48af-4939-98b1-13f00aa8df98.jpg"
+  ]
+}
