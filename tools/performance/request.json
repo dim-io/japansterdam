@@ -1,1 +1,1 @@
-{"phase":"after","requestedAt":"2026-11-25","reason":"Compare five desktop and mobile pages after deploying 01d6fcb performance optimizations"}
+{"phase":"after-final","requestedAt":"2026-11-25","repeatPages":["home","story"],"reason":"Final measurement after duplicate image request fix and homepage task splitting; repeat variable pages three times"}
