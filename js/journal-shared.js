@@ -1,4 +1,4 @@
-import { responsiveAttrs, imageVariant } from './responsive-images.js';
+import { responsiveAttrs } from './responsive-images.js';
 import { esc, productUrl } from './data.js?v=visitor-insights-3';
 import { orderJournalStories } from './journal-order.js';
 
@@ -52,8 +52,13 @@ export function safeArticleHTML(html) {
       if (node.tagName === 'A' && /^https?:\/\//i.test(node.getAttribute('href') || '')) node.setAttribute('rel', 'noopener');
       if (node.tagName === 'IMG') {
         node.setAttribute('loading', 'lazy'); node.setAttribute('decoding', 'async');
-        const small=imageVariant(node.getAttribute('src'),480),large=imageVariant(node.getAttribute('src'),960);
-        if(small&&large&&responsiveAttrs(node.getAttribute('src'))){node.setAttribute('srcset',small+' 480w, '+large+' 960w');node.setAttribute('sizes','(min-width:900px) 800px, 100vw');}
+        // Match the server's candidates and sizes exactly, so hydration does
+        // not replace an in-flight 768px request with a second 960px download.
+        const attrs=responsiveAttrs(node.getAttribute('src'),'(min-width:900px) 800px, 100vw');
+        for(const name of ['srcset','sizes']){
+          const value=attrs.match(new RegExp(' '+name+'="([^"]+)"'))?.[1];
+          if(value)node.setAttribute(name,value);
+        }
       }
     }
   };

@@ -50,6 +50,8 @@ if (hp && cap) {
   cap.hidden = false;
 }
 
+// Yield between sections so slower phones can paint and respond to input.
+await new Promise(resolve=>setTimeout(resolve,0));
 // marquee: "Now online:" first, then the brands separated by a red cross. Two identical groups, translated by -50%.
 const marquee = document.getElementById('marquee');
 // Reuse the actual embroidered first cross from the wordmark. The SVG viewport
@@ -68,6 +70,7 @@ requestAnimationFrame(() => {
 });
 
 // collection
+await new Promise(resolve=>setTimeout(resolve,0));
 // Keep custom CMS headings; shorten the original default for the tighter showcase.
 const collectionTitle = h.collectionTitle?.trim();
 document.getElementById('collection-title').textContent = !collectionTitle || /^Explore our current collection[.!]?$/i.test(collectionTitle) ? 'Selected pieces' : collectionTitle;
@@ -80,6 +83,7 @@ const newest = [...products].sort(byNewest);
 document.getElementById('collection-grid').innerHTML = pick.map(cardHTML).join('');
 
 // brand index
+await new Promise(resolve=>setTimeout(resolve,0));
 document.getElementById('brands-title').textContent = h.brandsTitle || 'Brands';
 const byBrand = new Map();
 for (const p of newest) {
