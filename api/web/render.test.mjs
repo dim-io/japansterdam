@@ -136,7 +136,7 @@ test('conventional favicon requests resolve to the existing icon without reading
  const e={ASSETS:{fetch:async()=>{throw Error('Unexpected asset lookup');}},SOURCE_FETCH:async()=>{throw Error('Unexpected catalogue lookup');}};
  for(const method of ['GET','HEAD']){
   const r=await worker.fetch(new Request('https://japansterdam.com/favicon.ico',{method}),e);
-  assert.equal(r.status,302);assert.equal(r.headers.get('Location'),'https://japansterdam.com/assets/icons/favicon.svg');assert.equal(await r.text(),'');
+  assert.equal(r.status,302);assert.equal(r.headers.get('Location'),'https://japansterdam.com/assets/icons/favicon.ico');assert.equal(await r.text(),'');
  }
 });
 test('404 recovery links and assets resolve from the site root even on nested missing URLs',async()=>{

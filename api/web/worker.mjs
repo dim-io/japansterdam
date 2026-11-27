@@ -28,7 +28,7 @@ export default {async fetch(request,env){
   return Response.redirect(u.href,301);
  }
  // Browsers and crawlers also request the conventional icon URL.
- if(u.pathname==='/favicon.ico')return new Response(null,{status:302,headers:{Location:new URL('/assets/icons/favicon.svg',u.origin).href,'Cache-Control':'public, max-age=3600'}});
+ if(u.pathname==='/favicon.ico')return new Response(null,{status:302,headers:{Location:new URL('/assets/icons/favicon.ico',u.origin).href,'Cache-Control':'public, max-age=3600'}});
  // Missing build variants (for example a new CMS upload) use the original.
  if(u.pathname.startsWith('/assets/optimized/')){
   const asset=await env.ASSETS.fetch(request);if(asset.status!==404)return asset;
