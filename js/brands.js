@@ -2,7 +2,7 @@
 const key = value => String(value || '').normalize('NFKD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 const names = new Map(Object.entries({
   'beams plus':'BEAMS Plus','fragment':'Fragment Design','fragment design':'Fragment Design',
-  'sophnet':'SOPHNET.','visvim':'Visvim','nulabel':'Nulabel','nulabel cm1y0k42':'Nulabel',
+  'sophnet':'SOPHNET.','visvim':'Visvim','nulabel':'NULABEL','nulabel cm1y0k42':'NULABEL','portvel':'PORTVEL',
   'ts s':'Ts(s)','tss':'Ts(s)','kapital':'KAPITAL','orslow':'orSlow','or slow':'orSlow',
   'sage de cret':'Sage de Cret','wislom':'WISLOM','wtaps':'WTAPS',
   'shoes like pottery by moonstar':'Shoes Like Pottery',
