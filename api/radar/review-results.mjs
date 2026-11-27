@@ -9,6 +9,7 @@ import {queueDealRatings,readDealRatings} from './deal-ratings.mjs';
 
 const ORIGINS=new Set(['https://japansterdam.com','https://www.japansterdam.com','https://dim-io.github.io','https://japansterdam-web.sam-jesse.workers.dev']);
 const PAGE_SIZE=36;
+export const sourceDatasetLimit=policy=>policy.maxResultsPerBrand===20?60:30;
 const clean=(s,n=240)=>String(s||'').replace(/\s+/g,' ').slice(0,n);
 export function reviewItem(row,run,radarConfig=config){
  const url=listingUrl(row.url||row.link);if(!url||row.record_type&&row.record_type!=='item')return null;
@@ -56,7 +57,7 @@ export async function reviewResults(request,env,policy,{fetcher=fetch,config:rad
   for(let start=0;start<trialRuns.length;start+=4)await Promise.all(trialRuns.slice(start,start+4).map(async run=>{
    if(run.status!=='SUCCEEDED'||!/^[a-zA-Z0-9]+$/.test(run.defaultDatasetId||'')||!/^[a-zA-Z0-9]+$/.test(run.id||''))return;
    if(/Nothing was charged\.|First monitor run:/.test(run.statusMessage||'')){rounds.push({id:run.id,empty:true,startedAt:run.startedAt,label:clean(run.statusMessage,400)});return;}
-   try{const data=await get('/datasets/'+run.defaultDatasetId+'/items?clean=true&limit=30');if(!Array.isArray(data))throw Error('invalid_dataset');
+   try{const data=await get('/datasets/'+run.defaultDatasetId+'/items?clean=true&limit='+sourceDatasetLimit(policy));if(!Array.isArray(data))throw Error('invalid_dataset');
     rows.push(...data.map(row=>reviewItem(row,run,radarConfig)).filter(Boolean));
     if(policy.dealScoring?.enabled&&env.RADAR_DB)ratingItems.push(...data.map(row=>monitorRow(row,run.finishedAt||run.startedAt)).filter(Boolean));
     rounds.push({id:run.id,count:data.length,startedAt:run.startedAt,label:clean(run.statusMessage,400)});

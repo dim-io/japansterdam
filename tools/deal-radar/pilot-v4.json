@@ -329,7 +329,7 @@
     "enabled": true
   },
   "mode": "fresh-rotation",
-  "maxResultsPerBrand": 10,
+  "maxResultsPerBrand": 20,
   "maxCostPerRunUsd": 0.03,
   "maxPhotoChecks": 4,
   "dailyVisionLimit": 3,
@@ -345,6 +345,6 @@
   "maxListingAgeHours": 6,
   "minimumResearchPriority": 7,
   "sourceProvider": "topapi-monitor",
-  "maxCostPerMonitorRunUsd": 0.015,
+  "maxCostPerMonitorRunUsd": 0.03,
   "sourceMode": "new-only"
 }

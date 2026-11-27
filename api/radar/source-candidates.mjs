@@ -2,7 +2,8 @@
 const API='https://api.apify.com/v2';
 export const candidates=['epicscrapers~vinted-search-scraper','topapi~vinted-scraper'];
 export async function candidateRun(actor,input,{token,fetcher=fetch,maxCostUsd=.03,maxItems=10,runLabel=null}={}){
- if(!candidates.includes(actor)||![.015,.03,.09].includes(maxCostUsd)||![10,20,30].includes(maxItems)||!token)throw Error('Invalid source trial');
+ if(!candidates.includes(actor)||![.015,.03,.09].includes(maxCostUsd)||![10,20,30,40,60].includes(maxItems)||!token)throw Error('Invalid source trial');
+ if(maxItems>30&&(actor!=='topapi~vinted-scraper'||maxCostUsd!==.03))throw Error('Invalid expanded source budget');
  const request=async(path,method='GET',body)=>{
   const r=await fetcher(API+path,{method,redirect:'manual',signal:AbortSignal.timeout(30000),headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
   if(!r.ok)throw Error('source_http_'+r.status);return r.json();

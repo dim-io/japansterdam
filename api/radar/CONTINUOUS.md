@@ -14,7 +14,12 @@ runs since the previous private pilot's start rather than only today's runs.
 Apify account preflight still runs before every scan. Existing included-credit and
 monthly spending limits remain authoritative: continuous scheduling can pause at
 the budget ceiling. No plan upgrade or extra paid credit is authorized by this code.
-The per-run provider ceiling remains $0.015. Global daily AI limits remain 240 deal
+The owner’s 27 November instruction increases the result allowance to 20 per brand
+(up to 60 listings per grouped run), with the same 18 groups / 90-minute cycle.
+Alias searches share each group’s source allowance; normalization caps each brand
+at 20. The provider ceiling is $0.03 per run. The monthly included-credit limit,
+monitor memories, scan reservations and AI budgets stay unchanged. Backend dataset
+reads include all 60 potential rows rather than silently stopping at 30. Global daily AI limits remain 240 deal
 ratings and three image calls. Expired Free-plan attestations are not renewed by
 changing the scan window; deployment rechecks account subscriptions. Without Free
 confirmation, scanning continues with automatic AI disabled.

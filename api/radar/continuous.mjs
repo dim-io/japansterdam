@@ -5,7 +5,7 @@ export function continuousPolicy(policy, operation, now=Date.now()) {
   const start=new Date(now);start.setUTCHours(0,0,0,0);
   const result={...policy,enabled:true,id:'continuous-'+start.toISOString().slice(0,10),
     startsAt:start.toISOString(),endsAt:new Date(+start+86400000).toISOString(),maxAttempts:288,
-    mode:'fresh-rotation',sourceProvider:'topapi-monitor',sourceMode:'new-only',maxCostPerMonitorRunUsd:.015,
+    mode:'fresh-rotation',sourceProvider:'topapi-monitor',sourceMode:'new-only',maxResultsPerBrand:20,maxCostPerMonitorRunUsd:.03,
     continuous:{authorizedAt:operation.authorizedAt,previousPilotId:policy.id,historyStartsAt:policy.startsAt}};
   // A new owner confirmation renews only the same previously verified account.
   // Keep the actual confirmation timestamp: day rollover cannot freshen evidence.

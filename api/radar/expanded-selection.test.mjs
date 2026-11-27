@@ -20,7 +20,7 @@ test('all twenty additions run within the same bounded budget, with a truthful 9
  for(const brand of Object.keys(policy.brands))assert.equal(itemPriceLimit(brand,config),100,brand);
  assert.equal(Object.keys(policy.brands).length,53);assert.equal(policy.brandGroups.length*5,90);
  const seen=policy.brandGroups.flatMap((_,slot)=>scanSelection(policy,slot).map(([brand])=>brand));assert.equal(new Set(seen).size,53);assert.equal(seen.length,53);
- assert.equal(policy.maxCostPerMonitorRunUsd,.015);
+ assert.equal(policy.maxCostPerMonitorRunUsd,.03);
  assert.equal(policy.enabled,false);assert.equal('sourceBudget' in policy,false);assert.equal('startsAt' in policy,false); // Private trial values are supplied by the Worker secret.
  assert.throws(()=>scanSelection({...policy,brandGroups:[...policy.brandGroups,policy.brandGroups[0]]},0),/merkschema/);
 });

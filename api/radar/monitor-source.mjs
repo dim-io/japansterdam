@@ -8,9 +8,10 @@ export function monitorStore(names){
  let hash=2166136261;for(const c of [...names].sort().join('|'))hash=Math.imul(hash^c.charCodeAt(0),16777619);
  return MONITOR_STORE+'-'+(hash>>>0).toString(16);
 }
-export function monitorInput(selection,{mode='new-only'}={}){
+export function monitorInput(selection,{mode='new-only',perBrandLimit=10}={}){
  if(!Array.isArray(selection)||selection.length<1||selection.length>3)throw Error('Invalid monitor group');
  if(!['new-only','recent-snapshot'].includes(mode))throw Error('Invalid source mode');
+ if(![10,20].includes(perBrandLimit))throw Error('Invalid per-brand limit');
  const names=selection.map(([b])=>b);
  if(names.some(b=>identifyBrand(b,config)!==b))throw Error('Unrecognized monitor brand');
  const terms=([brand,id])=>typeof id==='object'?(id.searchTerms||[id.searchText||brand]):[brand];
@@ -26,8 +27,8 @@ export function monitorInput(selection,{mode='new-only'}={}){
  if(searchQueries.length>9)throw Error('Too many monitor queries');
  // Explicit URLs are authoritative. Actor brand-name lookups can select a
  // different collaboration and create an unwanted extra broad search.
- const maxItems=selection.length*10;
- return {searchQueries,brands:[],includeKeywords:[...new Set(selection.flatMap(([brand,id])=>id?.includeKeywords||[brand,...(config.aliases[brand]||[])]))],priceTo:Math.max(...names.map(b=>itemPriceLimit(b,config))),country:'nl',order:'newest_first',maxItems,maxItemsPerSearch:Math.min(10,Math.max(1,Math.floor(maxItems/searchQueries.length))),includeDetails:true,includeSellerDetails:false,includeSellerReviews:false,language:'en',catalogIds:['5','1904'],monitorMode:mode==='new-only',monitorStoreName:monitorStore(names),skipFirstRun:mode==='new-only',resetMonitor:false,alertOnPriceDrop:false};
+ const maxItems=selection.length*perBrandLimit;
+ return {searchQueries,brands:[],includeKeywords:[...new Set(selection.flatMap(([brand,id])=>id?.includeKeywords||[brand,...(config.aliases[brand]||[])]))],priceTo:Math.max(...names.map(b=>itemPriceLimit(b,config))),country:'nl',order:'newest_first',maxItems,maxItemsPerSearch:perBrandLimit===20?20:Math.min(perBrandLimit,Math.max(1,Math.floor(maxItems/searchQueries.length))),includeDetails:true,includeSellerDetails:false,includeSellerReviews:false,language:'en',catalogIds:['5','1904'],monitorMode:mode==='new-only',monitorStoreName:monitorStore(names),skipFirstRun:mode==='new-only',resetMonitor:false,alertOnPriceDrop:false};
 }
 export function monitorRow(row,observedAt){
  if(row.record_type&&row.record_type!=='item')return null;
@@ -43,9 +44,9 @@ export function monitorRow(row,observedAt){
  return item;
 }
 const namesLabel=selection=>selection.map(([brand])=>brand==='Needles'?'Needles / Rebuild by Needles':brand==='ASICS'?'ASICS (Kiko / NOVALIS / Cecilie / JJJJound / HAL)':brand).join(' + ');
-export async function monitorGroup(selection,{token,fetcher=fetch,maxCostUsd=.015,mode='new-only'}={}){
- const input=monitorInput(selection,{mode});
- const r=await candidateRun('topapi~vinted-scraper',input,{token,fetcher,maxCostUsd,maxItems:selection.length*10,runLabel:'Japansterdam — '+namesLabel(selection)+(mode==='recent-snapshot'?' · recente selectie':'')});
+export async function monitorGroup(selection,{token,fetcher=fetch,maxCostUsd=.015,mode='new-only',perBrandLimit=10}={}){
+ const input=monitorInput(selection,{mode,perBrandLimit});
+ const r=await candidateRun('topapi~vinted-scraper',input,{token,fetcher,maxCostUsd,maxItems:selection.length*perBrandLimit,runLabel:'Japansterdam — '+namesLabel(selection)+(mode==='recent-snapshot'?' · recente selectie':'')});
  const normalized=r.rows.map(row=>monitorRow(row,r.observedAt)).filter(Boolean).map(item=>{
   // The input uses explicit numeric Vinted brand filters for verified labels.
   // Keep that provenance so generic/mistyped titles do not lose valid results
@@ -53,5 +54,5 @@ export async function monitorGroup(selection,{token,fetcher=fetch,maxCostUsd=.01
   const match=selection.find(([brand])=>identifyBrand(brand,config)===identifyBrand(item.brand,config));
   return match&&typeof match[1]==='string'&&/^\d+$/.test(match[1])?{...item,brandEvidence:'verified_vinted_brand_filter'}:item;
  });
- return selection.map(([brand])=>({brand,runId:r.runId,returned:r.rows.filter(row=>canonicalListingBrand({brand:row.brand_title,title:row.title,description:row.description,category:row.category_path},config)===brand).length,normalizedCount:normalized.filter(i=>identifyBrand(i.brand,config)===brand).length,items:normalized.filter(i=>identifyBrand(i.brand,config)===brand),freshness:{state:mode==='recent-snapshot'?'source_recent_snapshot':'source_monitor_new_only',baseline:input.skipFirstRun?'skip_first_run':'none',store:input.monitorStoreName}}));
+ return selection.map(([brand])=>({brand,runId:r.runId,returned:r.rows.filter(row=>canonicalListingBrand({brand:row.brand_title,title:row.title,description:row.description,category:row.category_path},config)===brand).length,normalizedCount:normalized.filter(i=>identifyBrand(i.brand,config)===brand).length,items:normalized.filter(i=>identifyBrand(i.brand,config)===brand).slice(0,perBrandLimit),freshness:{state:mode==='recent-snapshot'?'source_recent_snapshot':'source_monitor_new_only',baseline:input.skipFirstRun?'skip_first_run':'none',store:input.monitorStoreName}}));
 }

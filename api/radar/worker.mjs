@@ -73,7 +73,7 @@ export async function scan(env, options = {}) {
   const selectedBrand = selection.map(([brand]) => brand).join(' + ');
   const results = [];
   if(policy.sourceProvider==='topapi-monitor'&&probeFn===probe){
-    try {results.push(...await monitorGroup(selection,{token:env.APIFY_TOKEN,fetcher,maxCostUsd:policy.maxCostPerMonitorRunUsd||.09,mode:policy.sourceMode||'new-only'}));}catch{throw Error('RADAR_PROVIDER_FAILED');}
+    try {results.push(...await monitorGroup(selection,{token:env.APIFY_TOKEN,fetcher,maxCostUsd:policy.maxCostPerMonitorRunUsd||.09,mode:policy.sourceMode||'new-only',perBrandLimit:policy.maxResultsPerBrand||10}));}catch{throw Error('RADAR_PROVIDER_FAILED');}
   }else for (const [brand, brandId] of selection) {
     if (!inWindow(clock(), policy)) break;
     try {
@@ -264,7 +264,7 @@ export async function status(env, now = Date.now(), policy = privateRuntime(env)
     researchPhotoCheckRequired:policy.requireVisualBrandEvidence===true, photoAnalysisState: env.VISION_FREE_CONFIRMED !== 'true' ? readinessResult?.state==='ready'?'inactive_after_readiness_test':'free_plan_not_confirmed' : vision?.last_outcome || 'smoke_pending',
     readinessTest: readiness ? {state:readinessResult?.state||readiness.state,reason:readinessResult?.reason||null,checkedAt:new Date(readiness.created_at).toISOString()} : null,
     photoChecksUsed: vision?.attempts ?? 0, photoChecksLimit: policy.maxPhotoChecks || MAX_VISION_CALLS,
-    trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,brandsPerCycle:Object.keys(policy.brands).length,cycleMinutes:policy.mode==='fresh-rotation'?policy.brandGroups.length*5:null,
+    trial:pilotId,resultsPerBrand:policy.maxResultsPerBrand || 3,sourceRunCostLimitUsd:policy.maxCostPerMonitorRunUsd,brandsPerCycle:Object.keys(policy.brands).length,cycleMinutes:policy.mode==='fresh-rotation'?policy.brandGroups.length*5:null,
     brandsPerHour:policy.mode==='fresh-rotation'?Math.round(Object.keys(policy.brands).length*12/policy.brandGroups.length*10)/10:boundedMode(policy) ? 2 : 1,
     priceLimits:Object.fromEntries(Object.keys(policy.brands).map(brand=>[brand,itemPriceLimit(brand,config)])),
     brandSchedule:policy.brandGroups||null,scanIntervalHours:policy.mode==='fresh-rotation'?policy.brandGroups.length/12:policy.mode==='rotating-brands'?policy.brandGroups.length:policy.mode==='both-brands'?1:Object.keys(policy.brands).length,
