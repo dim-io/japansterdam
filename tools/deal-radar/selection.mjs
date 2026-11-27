@@ -2,6 +2,13 @@ import {identifyBrand,normalize} from './scoring.mjs';
 import {itemType} from './valuation.mjs';
 
 const contains=(text,term)=>(' '+normalize(text)+' ').includes(' '+normalize(term)+' ');
+// Goldwin also makes dedicated snow-sport equipment. Keep its lifestyle and
+// technical everyday clothing, but reject ski/snowboard listings in any of the
+// source's title, description or category fields, including common EU wording.
+export function goldwinSkiwear(item) {
+  const text=normalize([item.title,item.description,item.category].filter(Boolean).join(' '));
+  return /\b(ski|skis|skiing|skiwear|skikleding|skijas|skijassen|skijack|skijacks|skijacket|skijackets|skibroek|skibroeken|skipak|skipakken|skijacke|skijacken|skihose|skihosen|skianzug|skianzuge|skisuit|skisuits|skibukse|skibukser|skidjacka|skidbyxor|snowboard|snowboarding|snowboardwear|snowpants|snowsuit|snowsuits|snowsports|snow sports|sci|sciatore|sciatrice|esqui|esquiar|esquies|narciarskie|narciarska|narciarski|narciarstwo|narty)\b/.test(text);
+}
 export function canonicalListingBrand(item,config) {
   const direct=identifyBrand(item.brand,config);
   if(direct)return direct;
@@ -22,6 +29,9 @@ export function brandClaimSupported(item,config) {
 // These restrictions also apply to priced candidates, before photo/alert budgets.
 export function selectionRejection(item,config) {
   const brand=identifyBrand(item.brand,config),profile=config.selectionProfiles?.[brand];
+  // An owner-requested exclusion also applies to older stored source results
+  // and cannot be undone by an older private selection-profile override.
+  if(brand==='Goldwin'&&goldwinSkiwear(item))return 'goldwin_skiwear';
   if(!profile)return ['footwear','accessory'].includes(itemType(item))?'garment_type_unknown':null;
   const text=item.title+' '+(item.description||'');
   if(profile.excludedTerms?.some(term=>contains(text,term)))return 'excluded_brand_line';
