@@ -12,8 +12,8 @@ test('collaborations match each participant while preserving the original credit
 });
 test('short labels and available counts do not double-count a collaboration or expose hidden pieces',()=>{
  const products=[{brand:'Nulabel CM1Y0K42',category:'Bottoms'},{brand:'Nike x Fragment Design',category:'Tops'},{brand:'Fragment Design x Fragment',category:'Tops'},{brand:'Needles',sold:true},{brand:'Secret',active:false}];
- assert(!brandOptions(products).includes('Secret'));assert(brandOptions(products).includes('Nulabel'));
- assert.equal(brandCounts(products).get('Fragment Design'),2);assert.equal(brandCounts(products,p=>p.category==='Tops').get('Nulabel'),undefined);
+ assert(!brandOptions(products).includes('Secret'));assert(brandOptions(products).includes('NULABEL'));
+ assert.equal(brandCounts(products).get('Fragment Design'),2);assert.equal(brandCounts(products,p=>p.category==='Tops').get('NULABEL'),undefined);
  assert.equal(brandCounts(products).get('Needles'),undefined);
 });
 
